@@ -4,7 +4,6 @@
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <title>Rollover Budget Pro</title>
-    <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
@@ -123,6 +122,7 @@
                 <button class="btn-github" onclick="signInWithGitHub()">GitHub Login</button>
             </div>
             <button class="btn-outline" id="navHome" onclick="switchView('home')">Home</button>
+            <button class="btn-outline" id="navRecurring" onclick="switchView('recurring')">🔄 Recurring</button>
             <button class="btn-outline" id="navSummary" onclick="switchView('summary')">📊 Summary</button>
             <button class="btn-outline" id="themeToggle">🌓</button>
             <button class="btn-primary" onclick="saveData()">💾 Save</button>
@@ -134,7 +134,7 @@
             <div class="hero-content">
                 <div id="yearTag" style="background: var(--purple2); color: var(--purple); padding: 4px 12px; border-radius: 20px; display: inline-block; font-size: 0.75rem; font-weight: 700; margin-bottom: 12px;">ANNUAL TRACKING</div>
                 <h1>Plan your flow, <br>month by month.</h1>
-                <p class="muted">Your rollover values update instantly. Sign in with GitHub to prepare for future cloud sync.</p>
+                <p class="muted">Check your monthly projection. Global recurring bills are subtracted automatically from every month.</p>
             </div>
             <div class="kpi-grid">
                 <div class="kpi-card">
@@ -164,12 +164,16 @@
                     <h2>Monthly Expenses <button class="btn-ghost" onclick="addItem('expenses')">+ Add</button></h2>
                     <div id="expenseContainer"></div>
                 </section>
-                <section class="panel">
-                    <h2>Global Recurring <button class="btn-ghost" onclick="addRecurring()">+ Add</button></h2>
-                    <div id="recurringContainer"></div>
-                </section>
             </main>
         </div>
+    </div>
+
+    <div id="recurringView" class="view-section">
+        <section class="panel">
+            <h2>Global Recurring Bills <button class="btn-ghost" onclick="addRecurring()">+ Add New Bill</button></h2>
+            <p class="muted" style="margin-top: -15px; margin-bottom: 25px; font-size: 0.9rem;">Items added here are automatically deducted from <strong>every single month</strong> in your calendar.</p>
+            <div id="recurringContainer"></div>
+        </section>
     </div>
 
     <div id="summaryView" class="view-section">
@@ -189,15 +193,12 @@
 
 <script>
     // --- 1. SUPABASE CONFIGURATION ---
-    // PASTE YOUR KEYS HERE
-    const SUPABASE_URL = 'https://awalptqpsjflrahkrjzk.supabase.co'; 
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3YWxwdHFwc2pmbHJhaGtyanprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNzEyMDgsImV4cCI6MjA5MTg0NzIwOH0.Ls-OkgNeABakndkR4Omk5EKSRyU7X2BXDSDoXW4SL40'; 
+    const SUPABASE_URL = 'https://your-project-id.supabase.co'; 
+    const SUPABASE_ANON_KEY = 'your-anon-key-here'; 
 
     let supabaseClient = null;
     try {
-        if (SUPABASE_URL.includes('your-project')) {
-            console.warn("Supabase URL not set. Auth will be disabled.");
-        } else {
+        if (!SUPABASE_URL.includes('your-project')) {
             supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         }
     } catch(e) { console.error("Supabase Init Error", e); }
@@ -221,23 +222,11 @@
         years: [createNewYearData('2026')]
     };
 
-    // --- 3. AUTH LOGIC (THE FIX) ---
+    // --- 3. AUTH LOGIC ---
     async function signInWithGitHub() {
-        if (!supabaseClient) {
-            alert("Please set your SUPABASE_URL and SUPABASE_ANON_KEY in the code first!");
-            return;
-        }
-
-        // Logic: Redirect back to exactly where we are now (GitHub Pages friendly)
+        if (!supabaseClient) return alert("Setup Supabase first!");
         const siteUrl = window.location.origin + window.location.pathname;
-        
-        const { error } = await supabaseClient.auth.signInWithOAuth({
-            provider: 'github',
-            options: {
-                redirectTo: siteUrl
-            }
-        });
-        if (error) console.error('Login error:', error.message);
+        await supabaseClient.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: siteUrl } });
     }
 
     async function signOut() {
@@ -248,16 +237,12 @@
     async function renderAuth() {
         const container = document.getElementById('authContainer');
         if (!supabaseClient) return;
-
         const { data: { user } } = await supabaseClient.auth.getUser();
-
         if (user) {
-            const avatar = user.user_metadata.avatar_url;
-            const name = user.user_metadata.full_name || user.email;
             container.innerHTML = `
                 <div class="user-pill">
-                    ${avatar ? `<img src="${avatar}" alt="User">` : ''}
-                    <span>${name}</span>
+                    <img src="${user.user_metadata.avatar_url || ''}" alt="U">
+                    <span>${user.user_metadata.full_name || user.email}</span>
                 </div>
                 <button class="btn-ghost" onclick="signOut()">Sign Out</button>
             `;
@@ -286,13 +271,24 @@
         });
     }
 
-    function render() {
+    // Smart Render: Only redraws UI when structural changes happen (add/remove/tab switch)
+    function render(isTyping = false) {
         calculate();
         const activeYear = state.years[state.activeYearIndex];
         const m = activeYear.months[activeYear.activeMonth];
         
         document.getElementById('kpiStart').textContent = money(m.startRollover);
         document.getElementById('kpiEnd').textContent = money(m.endRollover);
+        
+        if (isTyping) {
+            // If typing, only update the running balance numbers, don't recreate inputs
+            m.paychecks.forEach((p, i) => {
+                const el = document.getElementById(`running-bal-${i}`);
+                if (el) el.textContent = money(p.balanceAfter);
+            });
+            return;
+        }
+
         document.getElementById('historyTitle').textContent = `${activeYear.year} History`;
         document.getElementById('yearTag').textContent = `${activeYear.year} TRACKING`;
 
@@ -317,10 +313,10 @@
     function renderPaychecks(data) {
         document.getElementById('paycheckContainer').innerHTML = data.map((item, i) => `
             <div class="row row-paycheck">
-                <div class="field"><label>Label</label><input value="${item.name}" oninput="update('paychecks', ${i}, 'name', this.value)"></div>
-                <div class="field"><label>Date</label><input type="date" value="${item.date || ''}" oninput="update('paychecks', ${i}, 'date', this.value)"></div>
-                <div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('paychecks', ${i}, 'amount', this.value)"></div>
-                <div class="field"><label>Running</label><div class="running-bal">${money(item.balanceAfter)}</div></div>
+                <div class="field"><label>Label</label><input value="${item.name}" onchange="update('paychecks', ${i}, 'name', this.value)"></div>
+                <div class="field"><label>Date</label><input type="date" value="${item.date || ''}" onchange="update('paychecks', ${i}, 'date', this.value)"></div>
+                <div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('paychecks', ${i}, 'amount', this.value, true)"></div>
+                <div class="field"><label>Running</label><div class="running-bal" id="running-bal-${i}">${money(item.balanceAfter)}</div></div>
                 <button class="btn-outline" onclick="removeItem('paychecks', ${i})">✕</button>
             </div>
         `).join('');
@@ -329,9 +325,9 @@
     function renderExpenses(data) {
         document.getElementById('expenseContainer').innerHTML = data.map((item, i) => `
             <div class="row">
-                <div class="field"><label>Expense</label><input value="${item.name}" oninput="update('expenses', ${i}, 'name', this.value)"></div>
-                <div class="field"><label>Category</label><input value="${item.category || ''}" oninput="update('expenses', ${i}, 'category', this.value)"></div>
-                <div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('expenses', ${i}, 'amount', this.value)"></div>
+                <div class="field"><label>Expense</label><input value="${item.name}" onchange="update('expenses', ${i}, 'name', this.value)"></div>
+                <div class="field"><label>Category</label><input value="${item.category || ''}" onchange="update('expenses', ${i}, 'category', this.value)"></div>
+                <div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('expenses', ${i}, 'amount', this.value, true)"></div>
                 <button class="btn-outline" onclick="removeItem('expenses', ${i})">✕</button>
             </div>
         `).join('');
@@ -340,12 +336,12 @@
     function renderRecurringList() {
         document.getElementById('recurringContainer').innerHTML = state.recurring.map((item, i) => `
             <div class="row">
-                <div class="field"><label>Name</label><input value="${item.name}" oninput="updateRec(${i}, 'name', this.value)"></div>
-                <div class="field"><label>Category</label><input value="${item.category || ''}" oninput="updateRec(${i}, 'category', this.value)"></div>
-                <div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="updateRec(${i}, 'amount', this.value)"></div>
+                <div class="field"><label>Bill Name</label><input value="${item.name}" onchange="updateRec(${i}, 'name', this.value)"></div>
+                <div class="field"><label>Category</label><input value="${item.category || ''}" onchange="updateRec(${i}, 'category', this.value)"></div>
+                <div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="updateRec(${i}, 'amount', this.value, true)"></div>
                 <button class="btn-outline" onclick="removeRec(${i})">✕</button>
             </div>
-        `).join('');
+        `).join('') || '<p class="muted">No recurring bills set up.</p>';
     }
 
     function renderSummary(activeYear) {
@@ -358,20 +354,23 @@
 
     // --- 5. HELPERS ---
     window.money = (n) => '$' + Number(n||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-    window.saveData = () => { localStorage.setItem('rollover_pro_v4', JSON.stringify(state)); alert('Local Data Saved!'); };
-    window.update = (type, i, key, val) => { state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth][type][i][key] = val; render(); };
-    window.updateRec = (i, key, val) => { state.recurring[i][key] = val; render(); };
+    window.saveData = () => { localStorage.setItem('rollover_pro_v4', JSON.stringify(state)); alert('Data Saved!'); };
+    
+    // update functions now accept a 'typing' flag to prevent structural redraw
+    window.update = (type, i, key, val, isTyping = false) => { 
+        state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth][type][i][key] = val; 
+        render(isTyping); 
+    };
+    window.updateRec = (i, key, val, isTyping = false) => { 
+        state.recurring[i][key] = val; 
+        render(isTyping); 
+    };
+
     window.addItem = (type) => { state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth][type].push({name: 'New', amount: 0}); render(); };
     window.addRecurring = () => { state.recurring.push({name: 'New Recurring', amount: 0}); render(); };
     window.removeItem = (type, i) => { state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth][type].splice(i, 1); render(); };
     window.removeRec = (i) => { state.recurring.splice(i, 1); render(); };
     window.setActive = (i) => { state.years[state.activeYearIndex].activeMonth = i; render(); };
-    window.switchView = (v) => { 
-        document.getElementById('homeView').style.display = v==='home'?'block':'none'; 
-        document.getElementById('summaryView').style.display = v==='summary'?'block':'none'; 
-        document.getElementById('navHome').classList.toggle('btn-active', v === 'home');
-        document.getElementById('navSummary').classList.toggle('btn-active', v === 'summary');
-    };
     window.addNewYear = () => {
         const lastYear = parseInt(state.years[state.years.length-1].year);
         const name = prompt("Enter new year:", lastYear + 1);
@@ -379,10 +378,17 @@
     };
     window.changeYear = (i) => { state.activeYearIndex = parseInt(i); render(); };
 
+    window.switchView = (v) => { 
+        document.querySelectorAll('.view-section').forEach(el => el.classList.remove('view-active'));
+        document.getElementById(v + 'View').classList.add('view-active');
+        
+        document.getElementById('navHome').classList.toggle('btn-active', v === 'home');
+        document.getElementById('navRecurring').classList.toggle('btn-active', v === 'recurring');
+        document.getElementById('navSummary').classList.toggle('btn-active', v === 'summary');
+    };
+
     // --- 6. INITIALIZE ---
-    if (supabaseClient) {
-        supabaseClient.auth.onAuthStateChange(() => { renderAuth(); });
-    }
+    if (supabaseClient) supabaseClient.auth.onAuthStateChange(() => { renderAuth(); });
     document.documentElement.dataset.theme = localStorage.getItem('budget_theme') || 'light';
     document.getElementById('themeToggle').onclick = () => {
         const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
