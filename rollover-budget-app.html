@@ -4,6 +4,8 @@
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <title>Rollover Budget Pro</title>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --bg: #f6f4ef;
@@ -41,6 +43,11 @@
         .brand strong { font-size: 1.4rem; letter-spacing: -0.5px; }
         .nav-group { display: flex; gap: 8px; align-items: center; }
 
+        /* Auth Section */
+        .auth-zone { display: flex; align-items: center; gap: 12px; }
+        .user-pill { display: flex; align-items: center; gap: 8px; background: var(--surface2); padding: 4px 12px; border-radius: 50px; font-size: 0.85rem; border: 1px solid var(--border); }
+        .user-pill img { width: 20px; height: 20px; border-radius: 50%; }
+
         /* Year Selector */
         .year-controls { display: flex; align-items: center; gap: 10px; background: var(--surface); padding: 5px 15px; border-radius: 50px; border: 1px solid var(--border); }
         .year-controls select { border: none; background: transparent; color: var(--text); font-weight: 700; cursor: pointer; padding-right: 5px; }
@@ -49,6 +56,7 @@
         /* Buttons */
         button { border: none; border-radius: 12px; padding: 10px 20px; cursor: pointer; font-weight: 600; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px; }
         .btn-primary { background: var(--purple); color: white; }
+        .btn-github { background: #24292e; color: white; }
         .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
         .btn-active { background: var(--purple2); color: var(--purple); border-color: var(--purple); }
         .btn-ghost { background: transparent; color: var(--muted); }
@@ -121,11 +129,17 @@
         </div>
 
         <div class="nav-group">
-            <button class="btn-outline btn-active" id="navHome" onclick="switchView('home')">Home</button>
-            <button class="btn-outline" id="navRecurring" onclick="switchView('recurring')">🔄 Recurring</button>
+            <div id="authContainer" class="auth-zone">
+                <!-- Login or User Pill injected here -->
+                <button class="btn-github" onclick="signInWithGitHub()">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+                    GitHub Login
+                </button>
+            </div>
+            <button class="btn-outline" id="navHome" onclick="switchView('home')">Home</button>
             <button class="btn-outline" id="navSummary" onclick="switchView('summary')">📊 Summary</button>
             <button class="btn-outline" id="themeToggle">🌓</button>
-            <button class="btn-primary" onclick="saveData()">💾 Save All</button>
+            <button class="btn-primary" onclick="saveData()">💾 Save</button>
         </div>
     </header>
 
@@ -167,17 +181,13 @@
                     <h2>Monthly Expenses <button class="btn-ghost" onclick="addItem('expenses')">+ Add</button></h2>
                     <div id="expenseContainer"></div>
                 </section>
+                
+                <section class="panel">
+                    <h2>Global Recurring <button class="btn-ghost" onclick="addRecurring()">+ Add</button></h2>
+                    <div id="recurringContainer"></div>
+                </section>
             </main>
         </div>
-    </div>
-
-    <!-- RECURRING VIEW -->
-    <div id="recurringView" class="view-section">
-        <section class="panel">
-            <h2>Global Recurring Items <button class="btn-ghost" onclick="addRecurring()">+ Add Item</button></h2>
-            <p class="muted" style="margin-bottom: 24px;">Items defined here are automatically applied as expenses to every month across <strong>all years</strong> (e.g., Rent, Insurance, Netflix).</p>
-            <div id="recurringContainer"></div>
-        </section>
     </div>
 
     <!-- SUMMARY VIEW -->
@@ -194,6 +204,15 @@
 </div>
 
 <script>
+    // --- SUPABASE CONFIG ---
+    // Replace these with your project details
+    const SUPABASE_URL = 'https://awalptqpsjflrahkrjzk.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3YWxwdHFwc2pmbHJhaGtyanprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNzEyMDgsImV4cCI6MjA5MTg0NzIwOH0.Ls-OkgNeABakndkR4Omk5EKSRyU7X2BXDSDoXW4SL40';
+    
+    // Fix: Using a different variable name for the client instance to avoid collision 
+    // with the global 'supabase' object imported from the CDN script tag.
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
     const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     
     // Initial State Factory
@@ -207,30 +226,62 @@
         }))
     });
 
-    // Default Load Logic
     let state = JSON.parse(localStorage.getItem('rollover_pro_v4')) || {
         activeYearIndex: 0,
         recurring: [{name: 'Housing/Rent', amount: 1500, category: 'Housing'}],
         years: [createNewYearData('2026')]
     };
 
+    // --- AUTH LOGIC ---
+    async function signInWithGitHub() {
+        const { data, error } = await supabaseClient.auth.signInWithOAuth({
+            provider: 'github',
+        });
+        if (error) console.error('Login error:', error.message);
+    }
+
+    async function signOut() {
+        await supabaseClient.auth.signOut();
+        renderAuth();
+    }
+
+    async function renderAuth() {
+        const container = document.getElementById('authContainer');
+        // Fix: Use the client instance and await session if necessary
+        const { data: { user } } = await supabaseClient.auth.getUser();
+
+        if (user) {
+            container.innerHTML = `
+                <div class="user-pill">
+                    <img src="${user.user_metadata.avatar_url || ''}" alt="">
+                    <span>${user.user_metadata.full_name || user.email}</span>
+                </div>
+                <button class="btn-ghost" onclick="signOut()">Sign Out</button>
+            `;
+        } else {
+            container.innerHTML = `
+                <button class="btn-github" onclick="signInWithGitHub()">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+                    GitHub Login
+                </button>
+            `;
+        }
+    }
+
+    // --- BUDGET CALCULATIONS ---
     function calculate() {
         state.years.forEach(yearData => {
             let runningYearlyRollover = 0;
             const recTotal = state.recurring.reduce((s, r) => s + Number(r.amount || 0), 0);
-
             yearData.months.forEach((m) => {
                 m.startRollover = runningYearlyRollover;
                 const incTotal = m.paychecks.reduce((s, p) => s + Number(p.amount || 0), 0);
                 const expTotal = m.expenses.reduce((s, e) => s + Number(e.amount || 0), 0) + recTotal;
-                
-                // Running balances per paycheck
                 let runningInMonth = m.startRollover;
                 m.paychecks.forEach(p => {
                     runningInMonth += Number(p.amount || 0);
                     p.balanceAfter = runningInMonth;
                 });
-
                 m.endRollover = m.startRollover + incTotal - expTotal;
                 runningYearlyRollover = m.endRollover;
             });
@@ -243,16 +294,12 @@
         const m = activeYear.months[activeYear.activeMonth];
         const recTotal = state.recurring.reduce((s, r) => s + Number(r.amount || 0), 0);
 
-        // Update Labels
         document.getElementById('historyTitle').textContent = `${activeYear.year} History`;
         document.getElementById('summaryTitle').textContent = `${activeYear.year} Financial Summary`;
         document.getElementById('yearTag').textContent = `${activeYear.year} TRACKING`;
-
-        // Update KPIs
         document.getElementById('kpiStart').textContent = money(m.startRollover);
         document.getElementById('kpiEnd').textContent = money(m.endRollover);
 
-        // Sidebar
         document.getElementById('monthList').innerHTML = activeYear.months.map((mm, i) => `
             <div class="month-item ${i === activeYear.activeMonth ? 'active' : ''}" onclick="setActive(${i})">
                 <strong>${mm.name}</strong>
@@ -260,37 +307,27 @@
             </div>
         `).join('');
 
-        // Year Selector
         document.getElementById('yearSelector').innerHTML = state.years.map((y, i) => `
             <option value="${i}" ${i === state.activeYearIndex ? 'selected' : ''}>${y.year}</option>
         `).join('');
 
-        // Tables
         renderPaychecks(m.paychecks);
         renderExpenses(m.expenses, recTotal);
         renderSummary(activeYear);
         renderRecurringList();
+        renderAuth();
     }
 
     function softUpdate() {
         calculate();
         const activeYear = state.years[state.activeYearIndex];
         const m = activeYear.months[activeYear.activeMonth];
-        
         document.getElementById('kpiStart').textContent = money(m.startRollover);
         document.getElementById('kpiEnd').textContent = money(m.endRollover);
-        
         const monthItems = document.querySelectorAll('.month-item');
-        activeYear.months.forEach((mm, i) => {
-            if (monthItems[i]) {
-                monthItems[i].querySelector('small').textContent = `End: ${money(mm.endRollover)}`;
-            }
-        });
-
+        activeYear.months.forEach((mm, i) => { if (monthItems[i]) monthItems[i].querySelector('small').textContent = `End: ${money(mm.endRollover)}`; });
         const balElements = document.querySelectorAll('.running-bal');
-        m.paychecks.forEach((p, i) => {
-            if (balElements[i]) balElements[i].textContent = money(p.balanceAfter);
-        });
+        m.paychecks.forEach((p, i) => { if (balElements[i]) balElements[i].textContent = money(p.balanceAfter); });
     }
 
     function renderPaychecks(data) {
@@ -314,12 +351,6 @@
                 <button class="btn-outline" onclick="removeItem('expenses', ${i})">✕</button>
             </div>
         `).join('');
-
-        if (recTotal > 0) {
-            html += `<div style="padding: 12px; background: var(--surface2); border-radius: 12px; font-size: 0.85rem; color: var(--muted); border: 1px dashed var(--border);">
-                + Includes <strong>${money(recTotal)}</strong> in global recurring items.
-            </div>`;
-        }
         document.getElementById('expenseContainer').innerHTML = html || '<p class="muted">No monthly expenses added.</p>';
     }
 
@@ -328,10 +359,10 @@
             <div class="row">
                 <div class="field"><label>Name</label><input value="${item.name}" oninput="updateRec(${i}, 'name', this.value, true)"></div>
                 <div class="field"><label>Category</label><input placeholder="e.g. Bill" value="${item.category || ''}" oninput="updateRec(${i}, 'category', this.value, true)"></div>
-                <div class="field"><label>Monthly Amount</label><input type="number" value="${item.amount}" oninput="updateRec(${i}, 'amount', this.value, true)"></div>
+                <div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="updateRec(${i}, 'amount', this.value, true)"></div>
                 <button class="btn-outline" onclick="removeRec(${i})">✕</button>
             </div>
-        `).join('') || '<p class="muted">No global recurring items.</p>';
+        `).join('') || '<p class="muted">No recurring items.</p>';
     }
 
     function renderSummary(activeYear) {
@@ -342,65 +373,41 @@
         }).join('');
     }
 
-    // Year Management
-    window.changeYear = (index) => {
-        state.activeYearIndex = parseInt(index);
-        render();
-    };
-
+    window.changeYear = (index) => { state.activeYearIndex = parseInt(index); render(); };
     window.addNewYear = () => {
         const lastYearValue = state.years.length > 0 ? parseInt(state.years[state.years.length - 1].year) : 2026;
         const nextYear = prompt("Enter year name:", lastYearValue + 1);
-        if (nextYear) {
-            state.years.push(createNewYearData(nextYear));
-            state.activeYearIndex = state.years.length - 1;
-            render();
-        }
+        if (nextYear) { state.years.push(createNewYearData(nextYear)); state.activeYearIndex = state.years.length - 1; render(); }
     };
-
-    // Event Handlers
     window.setActive = (i) => { state.years[state.activeYearIndex].activeMonth = i; render(); };
-    window.update = (type, i, key, val, soft = false) => { 
-        state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth][type][i][key] = val; 
-        if (soft) softUpdate(); else render(); 
-    };
-    window.updateRec = (i, key, val, soft = false) => { 
-        state.recurring[i][key] = val; 
-        if (soft) softUpdate(); else render(); 
-    };
+    window.update = (type, i, key, val, soft = false) => { state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth][type][i][key] = val; if (soft) softUpdate(); else render(); };
+    window.updateRec = (i, key, val, soft = false) => { state.recurring[i][key] = val; if (soft) softUpdate(); else render(); };
     window.addItem = (type) => { state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth][type].push({name: 'New Item', amount: 0, category: ''}); render(); };
     window.addRecurring = () => { state.recurring.push({name: 'New Recurring', amount: 0, category: ''}); render(); };
     window.removeItem = (type, i) => { state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth][type].splice(i, 1); render(); };
     window.removeRec = (i) => { state.recurring.splice(i, 1); render(); };
     window.money = (n) => '$' + Number(n||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-    
-    window.saveData = () => {
-        localStorage.setItem('rollover_pro_v4', JSON.stringify(state));
-        const notification = document.createElement('div');
-        notification.style.cssText = 'position:fixed; bottom:20px; right:20px; background:var(--purple); color:white; padding:12px 24px; border-radius:12px; font-weight:600; box-shadow:var(--shadow); z-index:100;';
-        notification.textContent = 'Budget Saved';
-        document.body.appendChild(notification);
-        setTimeout(() => notification.remove(), 3000);
-    };
+    window.saveData = () => { localStorage.setItem('rollover_pro_v4', JSON.stringify(state)); alert('Saved!'); };
 
     window.switchView = (view) => {
         render();
         document.getElementById('homeView').style.display = view === 'home' ? 'block' : 'none';
-        document.getElementById('recurringView').style.display = view === 'recurring' ? 'block' : 'none';
         document.getElementById('summaryView').style.display = view === 'summary' ? 'block' : 'none';
         document.getElementById('navHome').classList.toggle('btn-active', view === 'home');
-        document.getElementById('navRecurring').classList.toggle('btn-active', view === 'recurring');
         document.getElementById('navSummary').classList.toggle('btn-active', view === 'summary');
     };
 
-    // Dark Mode
     document.getElementById('themeToggle').onclick = () => {
         const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
         document.documentElement.dataset.theme = t;
         localStorage.setItem('budget_theme', t);
     };
 
-    // Init
+    // Listen for auth changes
+    supabaseClient.auth.onAuthStateChange(() => {
+        renderAuth();
+    });
+
     document.documentElement.dataset.theme = localStorage.getItem('budget_theme') || 'light';
     render();
 </script>
