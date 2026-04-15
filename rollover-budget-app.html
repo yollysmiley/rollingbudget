@@ -1,123 +1,408 @@
 <!doctype html>
 <html lang='en'>
 <head>
-<meta charset='UTF-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1.0'>
-<title>Rollover Budget App</title>
-<style>
-:root{--bg:#f6f4ef;--surface:#ffffff;--surface2:#f1eee8;--border:#ddd7ce;--text:#1f1b17;--muted:#6e665d;--purple:#7c5cff;--purple2:#ece6ff;--shadow:0 10px 30px rgba(31,27,23,.08);--r1:14px;--r2:18px;--space:16px;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-[data-theme='dark']{--bg:#171413;--surface:#201c1a;--surface2:#26211f;--border:#4a423b;--text:#f6f1ea;--muted:#d6cbbf;--purple:#a78bfa;--purple2:#2d2740;--shadow:0 16px 34px rgba(0,0,0,.32)}
-*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,var(--bg),var(--surface2));color:var(--text)}a{color:inherit;text-decoration:none}button,input,select{font:inherit}input,select{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--text);min-height:44px;position:relative;z-index:1}button{border:none;border-radius:999px;padding:12px 16px;min-height:44px;cursor:pointer;white-space:nowrap}
-.shell{max-width:none;width:100%;margin:0 auto;padding:16px 20px}.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;position:sticky;top:0;z-index:30;background:linear-gradient(180deg,var(--bg),transparent);padding:12px 0 16px}.brand{display:flex;flex-direction:column;gap:2px}.brand strong{font-size:1.15rem}.brand span{font-size:.85rem;color:var(--muted)}.menu{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.navlink{display:inline-flex;align-items:center;justify-content:center;padding:11px 14px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:#d9d9d9;box-shadow:var(--shadow);cursor:pointer}.navlink.active{background:var(--purple);border-color:var(--purple);color:#fff}.iconbtn{display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:#d9d9d9;box-shadow:var(--shadow);cursor:pointer;font-size:1.1rem}
-.card,.panel{background:rgba(255,255,255,.7);border:1px solid var(--border);border-radius:var(--r2);box-shadow:var(--shadow);padding:20px;position:relative;overflow:hidden;width:100%}[data-theme='dark'] .card,[data-theme='dark'] .panel{background:rgba(32,28,26,.88)}h1,h2,h3,p{margin:0}.hero h1{font-size:clamp(2rem,3vw,3.2rem);line-height:1.02;max-width:12ch;margin-top:8px}.muted{color:var(--muted)}.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:18px;width:100%}.kpi{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px}.kpi .label{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}.kpi .value{font-size:1.35rem;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
-.layout{display:block;width:100%;margin-top:20px}.stack{display:grid;gap:20px;width:100%}.panel h2{font-size:1.1rem;margin-bottom:12px}.month-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:100%}.month-btn{padding:14px;border-radius:14px;border:1px solid var(--border);background:var(--surface);text-align:left;color:#d9d9d9;display:flex;flex-direction:column;align-items:flex-start}.month-btn.active{border-color:var(--purple);background:var(--purple2);color:#ececec}.month-btn small{display:block;color:#cfcfcf;margin-bottom:4px}.month-btn strong{display:block;margin-top:4px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{display:grid;gap:6px}.field label{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}.list{display:grid;gap:14px}.row{display:grid;grid-template-columns:minmax(180px,1.15fr) minmax(160px,.9fr) minmax(140px,.8fr) auto;gap:12px;align-items:end}.row .field,.grid2 .field{min-width:0}.totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:100%}.box{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:16px}.box .label{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}.box .value{font-size:1.35rem;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}.table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px solid var(--border);text-align:left;font-size:.95rem}th{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
-.chart{height:300px;border-radius:16px;background:linear-gradient(180deg,var(--surface),var(--surface2));border:1px solid var(--border);padding:12px;display:flex;align-items:end;gap:8px;overflow:auto}.barwrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:end;min-width:0}.bar{width:100%;max-width:44px;background:linear-gradient(180deg,var(--purple),#b99cff);border-radius:12px 12px 4px 4px;min-height:6px}.barlabel{font-size:.72rem;color:var(--muted);margin-top:8px;writing-mode:vertical-rl;transform:rotate(180deg);height:58px;display:flex;align-items:center}
-.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:100}.modal{width:min(760px,100%);background:var(--surface);border:1px solid var(--border);border-radius:22px;box-shadow:var(--shadow);padding:20px}.modal h2{margin-bottom:8px}.modal .grid2{margin-top:14px}.modal .actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px}.toggle{display:flex;align-items:center;gap:10px}.toggle input{width:auto;min-height:0}
-@media (max-width: 1000px){.hero,.kpis,.totals,.grid2,.month-grid,.row{grid-template-columns:1fr}.row{grid-template-columns:1fr}.topbar{flex-direction:column;align-items:flex-start}.chart{height:220px}.barlabel{writing-mode:horizontal-tb;transform:none;height:auto}.panel,.card{padding:16px}.month-btn{padding:12px}}
-</style>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>Rollover Budget Pro</title>
+    <style>
+        :root {
+            --bg: #f6f4ef;
+            --surface: #ffffff;
+            --surface2: #f1eee8;
+            --border: #ddd7ce;
+            --text: #1f1b17;
+            --muted: #6e665d;
+            --purple: #7c5cff;
+            --purple2: #ece6ff;
+            --shadow: 0 10px 30px rgba(31,27,23,.08);
+            --r1: 14px;
+            --r2: 22px;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        [data-theme='dark'] {
+            --bg: #171413;
+            --surface: #201c1a;
+            --surface2: #26211f;
+            --border: #4a423b;
+            --text: #f6f1ea;
+            --muted: #d6cbbf;
+            --purple: #a78bfa;
+            --purple2: #2d2740;
+        }
+
+        * { box-sizing: border-box; transition: background 0.2s, color 0.2s; }
+        body { margin: 0; background: var(--bg); color: var(--text); line-height: 1.5; min-height: 100vh; }
+        
+        .shell { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        
+        /* Nav */
+        .topbar { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; margin-bottom: 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 15px; }
+        .brand strong { font-size: 1.4rem; letter-spacing: -0.5px; }
+        .nav-group { display: flex; gap: 8px; align-items: center; }
+
+        /* Year Selector */
+        .year-controls { display: flex; align-items: center; gap: 10px; background: var(--surface); padding: 5px 15px; border-radius: 50px; border: 1px solid var(--border); }
+        .year-controls select { border: none; background: transparent; color: var(--text); font-weight: 700; cursor: pointer; padding-right: 5px; }
+        .year-controls select:focus { outline: none; }
+
+        /* Buttons */
+        button { border: none; border-radius: 12px; padding: 10px 20px; cursor: pointer; font-weight: 600; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-primary { background: var(--purple); color: white; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+        .btn-active { background: var(--purple2); color: var(--purple); border-color: var(--purple); }
+        .btn-ghost { background: transparent; color: var(--muted); }
+
+        /* Hero */
+        .hero { 
+            display: grid; 
+            grid-template-columns: 1.2fr 1fr; 
+            gap: 40px; 
+            background: var(--surface); 
+            padding: 40px; 
+            border-radius: var(--r2); 
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+            align-items: center;
+        }
+        .hero h1 { font-size: 2.2rem; margin: 10px 0; line-height: 1.1; }
+        .kpi-grid { display: flex; flex-direction: column; gap: 12px; }
+        .kpi-card { background: var(--surface2); padding: 16px; border-radius: 16px; border: 1px solid var(--border); }
+        .kpi-label { font-size: 0.7rem; text-transform: uppercase; color: var(--muted); font-weight: 700; letter-spacing: 0.05em; }
+        .kpi-value { font-size: 1.4rem; font-weight: 800; color: var(--purple); }
+
+        /* Layout Views */
+        .view-section { display: none; }
+        .view-active { display: block; }
+
+        .main-grid { display: grid; grid-template-columns: 280px 1fr; gap: 30px; }
+        .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r2); padding: 24px; margin-bottom: 24px; box-shadow: var(--shadow); }
+        .panel h2 { font-size: 1.1rem; margin-top: 0; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+
+        /* Sidebar Months */
+        .month-list { display: flex; flex-direction: column; gap: 8px; }
+        .month-item { padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface2); cursor: pointer; text-align: left; }
+        .month-item.active { border-color: var(--purple); background: var(--purple2); color: var(--purple); }
+        .month-item strong { display: block; font-size: 1rem; }
+        .month-item small { opacity: 0.7; font-size: 0.8rem; }
+
+        /* Form Rows */
+        .row { display: grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap: 12px; margin-bottom: 12px; align-items: end; }
+        .row-paycheck { grid-template-columns: 1.5fr 1fr 1fr 1fr auto; }
+        .field { display: flex; flex-direction: column; gap: 4px; }
+        .field label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--muted); }
+        input { padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.9rem; width: 100%; }
+        
+        .running-bal { font-size: 0.85rem; font-weight: 700; color: var(--purple); background: var(--purple2); padding: 8px; border-radius: 8px; text-align: center; }
+
+        /* Tables */
+        .summary-table { width: 100%; border-collapse: collapse; }
+        .summary-table th { text-align: left; font-size: 0.75rem; color: var(--muted); padding: 12px; border-bottom: 1px solid var(--border); }
+        .summary-table td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+
+        @media (max-width: 950px) {
+            .hero, .main-grid { grid-template-columns: 1fr; }
+            .row { grid-template-columns: 1fr 1fr; }
+            .row button { grid-column: span 2; }
+            .row-paycheck { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
 </head>
 <body>
-<div class='shell'>
-  <header class='topbar'>
-    <div class='brand'><strong>Rollover Budget</strong><span>Offline self-contained app</span></div>
-    <nav class='menu' aria-label='Primary'>
-      <button class='navlink active' id='homeNav'>Home</button>
-      <button class='navlink' id='recurringNav'>Recurring Item</button>
-      <button class='iconbtn' id='profileBtn' aria-label='Profile settings'>👤</button>
-    </nav>
-  </header>
 
-  <section class='hero card'>
-    <div>
-      <div style='display:inline-flex;padding:6px 10px;border-radius:999px;background:var(--purple2);color:var(--purple);font-size:.78rem;font-weight:700'>Rollover-first budgeting</div>
-      <h1>Track every paycheck, every bill, and what rolls into next month.</h1>
-      <p class='muted' style='margin-top:10px;max-width:62ch'>This rebuild is fully self-contained so it does not depend on CloudFront, signed cookies, or external assets. Everything lives in one local HTML file.</p>
-      <div class='kpis'>
-        <div class='kpi'><div class='label'>Start rollover</div><div class='value' id='kpiStart'>$0.00</div></div>
-        <div class='kpi'><div class='label'>End rollover</div><div class='value' id='kpiEnd'>$0.00</div></div>
-        <div class='kpi'><div class='label'>Bi-weekly available</div><div class='value' id='kpiBiweekly'>$0.00</div></div>
-      </div>
-    </div>
-  </section>
-
-  <section class='layout'>
-    <div class='stack'>
-      <section class='panel' id='dashboardAnchor'>
-        <h2>Choose month</h2>
-        <div class='month-grid' id='monthGrid'></div>
-      </section>
-      <section class='panel'>
-        <h2>Paycheck buckets</h2>
-        <div class='list' id='paycheckList'></div>
-        <div class='totals' style='margin-top:12px'>
-          <div class='box'><div class='label'>After paycheck 1</div><div class='value' id='after1'>$0.00</div></div>
-          <div class='box'><div class='label'>After paycheck 2</div><div class='value' id='after2'>$0.00</div></div>
-          <div class='box'><div class='label'>After paycheck 3+</div><div class='value' id='after3'>$0.00</div></div>
+<div class="shell">
+    <header class="topbar">
+        <div class="brand"><strong>Rollover Budget Pro</strong></div>
+        
+        <div class="year-controls">
+            <select id="yearSelector" onchange="changeYear(this.value)"></select>
+            <button class="btn-ghost" style="padding: 2px 8px; font-size: 1.2rem;" onclick="addNewYear()" title="Add New Year">+</button>
         </div>
-      </section>
-      <section class='panel'>
-        <h2>Monthly expenses</h2>
-        <div class='list' id='expenseList'></div>
-        <div class='totals' style='margin-top:12px'>
-          <div class='box'><div class='label'>Income total</div><div class='value' id='incomeTotal'>$0.00</div></div>
-          <div class='box'><div class='label'>Expense total</div><div class='value' id='expenseTotal'>$0.00</div></div>
-          <div class='box'><div class='label'>Net end rollover</div><div class='value' id='netTotal'>$0.00</div></div>
-        </div>
-      </section>
-      <section class='panel'>
-        <h2>Year summary</h2>
-        <table class='table'>
-          <thead><tr><th>Month</th><th>Start</th><th>Income</th><th>Expenses</th><th>End</th></tr></thead>
-          <tbody id='summaryBody'></tbody>
-        </table>
-      </section>
-    </div>
-  </section>
-</div>
 
-<div class='modal-backdrop' id='profileModal'>
-  <div class='modal'>
-    <h2>Profile</h2>
-    <p class='muted'>Create your profile, choose email notifications, and set your preferred theme.</p>
-    <div class='grid2'>
-      <div class='field'><label>Name</label><input id='profileName' placeholder='Your name'></div>
-      <div class='field'><label>Email</label><input id='profileEmail' type='email' placeholder='you@example.com'></div>
-      <div class='field'><label>Theme</label><select id='profileTheme'><option value='light'>Light</option><option value='dark'>Dark</option></select></div>
-      <div class='field'><label>Preferred notifications</label><select id='profileNotify'><option value='weekly'>Weekly</option><option value='biweekly'>Bi-weekly</option><option value='monthly'>Monthly</option></select></div>
+        <div class="nav-group">
+            <button class="btn-outline btn-active" id="navHome" onclick="switchView('home')">Home</button>
+            <button class="btn-outline" id="navRecurring" onclick="switchView('recurring')">🔄 Recurring</button>
+            <button class="btn-outline" id="navSummary" onclick="switchView('summary')">📊 Summary</button>
+            <button class="btn-outline" id="themeToggle">🌓</button>
+            <button class="btn-primary" onclick="saveData()">💾 Save All</button>
+        </div>
+    </header>
+
+    <!-- HOME VIEW -->
+    <div id="homeView" class="view-section view-active">
+        <section class="hero">
+            <div class="hero-content">
+                <div id="yearTag" style="background: var(--purple2); color: var(--purple); padding: 4px 12px; border-radius: 20px; display: inline-block; font-size: 0.75rem; font-weight: 700; margin-bottom: 12px;">ANNUAL TRACKING</div>
+                <h1>Plan your flow, <br>month by month.</h1>
+                <p class="muted" style="max-width: 45ch;">Track your projected rollover after every single paycheck. Your data is stored locally and securely in your browser.</p>
+            </div>
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Month Starting Rollover</div>
+                    <div class="kpi-value" id="kpiStart">$0.00</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Projected End Rollover</div>
+                    <div class="kpi-value" id="kpiEnd">$0.00</div>
+                </div>
+            </div>
+        </section>
+
+        <div class="main-grid">
+            <aside>
+                <div class="panel">
+                    <h2 id="historyTitle">2026 History</h2>
+                    <div class="month-list" id="monthList"></div>
+                </div>
+            </aside>
+
+            <main>
+                <section class="panel">
+                    <h2>Paychecks <button class="btn-ghost" onclick="addItem('paychecks')">+ Add</button></h2>
+                    <div id="paycheckContainer"></div>
+                </section>
+
+                <section class="panel">
+                    <h2>Monthly Expenses <button class="btn-ghost" onclick="addItem('expenses')">+ Add</button></h2>
+                    <div id="expenseContainer"></div>
+                </section>
+            </main>
+        </div>
     </div>
-    <div class='grid2' style='margin-top:14px'>
-      <label class='toggle'><input id='emailAlerts' type='checkbox'> Enable email notifications</label>
-      <label class='toggle'><input id='budgetAlerts' type='checkbox'> Send rollover reminders</label>
+
+    <!-- RECURRING VIEW -->
+    <div id="recurringView" class="view-section">
+        <section class="panel">
+            <h2>Global Recurring Items <button class="btn-ghost" onclick="addRecurring()">+ Add Item</button></h2>
+            <p class="muted" style="margin-bottom: 24px;">Items defined here are automatically applied as expenses to every month across <strong>all years</strong> (e.g., Rent, Insurance, Netflix).</p>
+            <div id="recurringContainer"></div>
+        </section>
     </div>
-    <div class='actions'>
-      <button class='navlink' id='closeProfile'>Cancel</button>
-      <button class='navlink active' id='saveProfile'>Save profile</button>
+
+    <!-- SUMMARY VIEW -->
+    <div id="summaryView" class="view-section">
+        <section class="panel">
+            <h2 id="summaryTitle">Yearly Financial Summary</h2>
+            <p class="muted" style="margin-bottom: 24px;">A high-level overview of your income, expenses, and rollover status for the selected year.</p>
+            <table class="summary-table">
+                <thead><tr><th>Month</th><th>Start Rollover</th><th>Income</th><th>Expense</th><th>End Rollover</th></tr></thead>
+                <tbody id="summaryBody"></tbody>
+            </table>
+        </section>
     </div>
-  </div>
 </div>
 
 <script>
-const recurringDefaults={basics:[{name:'Mortgage',amount:1093.34,category:'Basics'},{name:'USAA Insurance',amount:235.46,category:'Basics'},{name:'ATT Phone',amount:221.8,category:'Basics'},{name:'ATT WiFi',amount:67.21,category:'Basics'},{name:'Hulu + Disney',amount:28.88,category:'Basics'}],variable:[{name:'Duke Power',amount:75,category:'Variable'},{name:'SJWD Water',amount:31,category:'Variable'},{name:'Trash',amount:65,category:'Variable'}],credit:[{name:'Chase Unlimited',amount:500,category:'Credit cards'},{name:'Chase Flex',amount:225,category:'Credit cards'},{name:'Barclays',amount:200,category:'Credit cards'}],loans:[{name:'Student 2014',amount:40,category:'Loans'},{name:'Student 2012',amount:25,category:'Loans'},{name:'Colorado',amount:887.4,category:'Loans'},{name:'Bluegreen',amount:191.37,category:'Loans'},{name:'Bluegreen 2',amount:155.62,category:'Loans'},{name:'Solar Panel',amount:100.17,category:'Loans'}]};
-const recurring=JSON.parse(JSON.stringify(recurringDefaults));
-const months=[{month:'January',rollover:0,paychecks:[{date:'2026-01-15',name:'Paycheck 1',amount:3498.73},{date:'2026-01-30',name:'Paycheck 2',amount:3443.73},{date:'2026-01-11',name:'Military Pay',amount:1967}],expenses:[]},{month:'February',rollover:1861.46,paychecks:[{date:'2026-02-15',name:'Paycheck 1',amount:3443.73},{date:'2026-02-28',name:'Paycheck 2',amount:3443.73},{date:'2026-02-20',name:'Other income',amount:1904.04}],expenses:[]},{month:'March',rollover:1864.93,paychecks:[{date:'2026-03-15',name:'Paycheck 1',amount:3443.73},{date:'2026-03-30',name:'Paycheck 2',amount:3443.73},{date:'2026-03-20',name:'Other income',amount:2550.18}],expenses:[]},{month:'April',rollover:1921.35,paychecks:[{date:'2026-04-15',name:'Paycheck 1',amount:3443.73},{date:'2026-04-30',name:'Paycheck 2',amount:9206.6},{date:'2026-04-20',name:'Other income',amount:10382.62}],expenses:[]},{month:'May',rollover:1861.72,paychecks:[{date:'2026-05-15',name:'Paycheck 1',amount:3443.73},{date:'2026-05-30',name:'Paycheck 2',amount:3443.73},{date:'2026-05-20',name:'Other income',amount:1146.66}],expenses:[]},{month:'June',rollover:1899.86,paychecks:[{date:'2026-06-15',name:'Paycheck 1',amount:3443.73},{date:'2026-06-30',name:'Paycheck 2',amount:3443.73},{date:'2026-06-20',name:'Other income',amount:1972.51}],expenses:[]}];
-months.forEach(m=>m.expenses=[...Object.values(recurring).flat().map(x=>({...x,recurring:true}))]);
-const money=n=>'$'+Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
-let current=0; const themeKey='budget-theme'; const profileKey='budget-profile'; let recurringVisible=false;
-function calc(i){const m=months[i]; const start=i===0?m.rollover:calc(i-1).end; const income=m.paychecks.reduce((s,x)=>s+Number(x.amount||0),0); const expense=m.expenses.reduce((s,x)=>s+Number(x.amount||0),0); const end=start+income-expense; return {start,income,expense,end,biweekly:end/Math.max(m.paychecks.length,2),buckets:m.paychecks.map((p,idx)=>({total:start+m.paychecks.slice(0,idx+1).reduce((s,x)=>s+Number(x.amount||0),0)}))};}
-function renderMonthGrid(){const grid=document.getElementById('monthGrid'); grid.innerHTML=''; months.forEach((m,i)=>{const c=calc(i); const b=document.createElement('button'); b.className='month-btn'+(i===current?' active':''); b.innerHTML='<small>Start '+money(c.start)+'</small><strong>'+m.month+'</strong><small>End '+money(c.end)+'</small>'; b.onclick=()=>{current=i; render()}; grid.appendChild(b);});}
-function rowHTML(type,item,idx){const meta=type==='pay'?item.date:item.category; return `<div class='row'><div class='field'><label>Name</label><input data-type='${type}' data-idx='${idx}' data-key='name' value='${item.name}'></div><div class='field'><label>${type==='pay'?'Date':'Category'}</label><input data-type='${type}' data-idx='${idx}' data-key='meta' value='${meta}'></div><div class='field'><label>Amount</label><input data-type='${type}' data-idx='${idx}' data-key='amount' type='number' step='0.01' value='${item.amount}'></div><button class='navlink' data-remove='${type}' data-idx='${idx}'>Remove</button></div>`;}
-function renderRecurring(){document.getElementById('recurringNav').classList.toggle('active', recurringVisible); document.getElementById('homeNav').classList.toggle('active', !recurringVisible); const body=document.querySelector('.stack'); if(recurringVisible){body.innerHTML=`<section class='panel'><h2>Recurring library</h2><div class='list' id='recurringList'></div></section>`; const list=document.getElementById('recurringList'); list.innerHTML=Object.entries(recurring).map(([group,items])=>`<section class='panel' style='margin-bottom:12px;background:var(--surface2)'><h3 style='margin-bottom:8px'>${group}</h3>${items.map((item,idx)=>`<div class='row'><div class='field'><label>Name</label><input value='${item.name}'></div><div class='field'><label>Category</label><input value='${item.category}'></div><div class='field'><label>Amount</label><input value='${item.amount.toFixed(2)}'></div><button class='navlink'>Remove</button></div>`).join('')}</section>`).join('');} else {body.innerHTML=`<section class='panel' id='dashboardAnchor'><h2>Choose month</h2><div class='month-grid' id='monthGrid'></div></section><section class='panel'><h2>Paycheck buckets</h2><div class='list' id='paycheckList'></div><div class='totals' style='margin-top:12px'><div class='box'><div class='label'>After paycheck 1</div><div class='value' id='after1'>$0.00</div></div><div class='box'><div class='label'>After paycheck 2</div><div class='value' id='after2'>$0.00</div></div><div class='box'><div class='label'>After paycheck 3+</div><div class='value' id='after3'>$0.00</div></div></div></section><section class='panel'><h2>Monthly expenses</h2><div class='list' id='expenseList'></div><div class='totals' style='margin-top:12px'><div class='box'><div class='label'>Income total</div><div class='value' id='incomeTotal'>$0.00</div></div><div class='box'><div class='label'>Expense total</div><div class='value' id='expenseTotal'>$0.00</div></div><div class='box'><div class='label'>Net end rollover</div><div class='value' id='netTotal'>$0.00</div></div></div></section><section class='panel'><h2>Year summary</h2><table class='table'><thead><tr><th>Month</th><th>Start</th><th>Income</th><th>Expenses</th><th>End</th></tr></thead><tbody id='summaryBody'></tbody></table></section>`; render();}}
-function render(){if(recurringVisible) return; renderMonthGrid(); const m=months[current],c=calc(current); document.getElementById('kpiStart').textContent=money(c.start); document.getElementById('kpiEnd').textContent=money(c.end); document.getElementById('kpiBiweekly').textContent=money(c.biweekly); document.getElementById('after1').textContent=money(c.buckets[0]?.total||c.start); document.getElementById('after2').textContent=money(c.buckets[1]?.total||c.end); document.getElementById('after3').textContent=money(c.buckets[2]?.total||c.end); document.getElementById('incomeTotal').textContent=money(c.income); document.getElementById('expenseTotal').textContent=money(c.expense); document.getElementById('netTotal').textContent=money(c.end); document.getElementById('paycheckList').innerHTML=m.paychecks.map((p,i)=>rowHTML('pay',p,i)).join(''); document.getElementById('expenseList').innerHTML=m.expenses.map((e,i)=>rowHTML('exp',e,i)).join(''); document.getElementById('summaryBody').innerHTML=months.map((mm,i)=>{const cc=calc(i); return `<tr><td>${mm.month}</td><td>${money(cc.start)}</td><td>${money(cc.income)}</td><td>${money(cc.expense)}</td><td>${money(cc.end)}</td></tr>`}).join(''); applyTheme(); loadProfile();}
-function updateFromInput(e){const type=e.target.dataset.type; if(!type||recurringVisible) return; const item=months[current][type==='pay'?'paychecks':'expenses'][Number(e.target.dataset.idx)]; if(!item) return; if(e.target.dataset.key==='name') item.name=e.target.value; if(e.target.dataset.key==='amount') item.amount=Number(e.target.value)||0; if(e.target.dataset.key==='meta'){ if(type==='pay') item.date=e.target.value; else item.category=e.target.value;} render();}
-document.addEventListener('input', updateFromInput); document.addEventListener('click', e=>{ if(e.target.dataset.remove && !recurringVisible){ const arr=months[current][e.target.dataset.remove==='pay'?'paychecks':'expenses']; arr.splice(Number(e.target.dataset.idx),1); render(); }});
-function applyTheme(){const t=localStorage.getItem(themeKey)||'light'; document.documentElement.dataset.theme=t; document.getElementById('profileTheme').value=t;}
-function loadProfile(){try{const p=JSON.parse(localStorage.getItem(profileKey)||'{}'); document.getElementById('profileName').value=p.name||''; document.getElementById('profileEmail').value=p.email||''; document.getElementById('profileNotify').value=p.notify||'monthly'; document.getElementById('emailAlerts').checked=!!p.emailAlerts; document.getElementById('budgetAlerts').checked=!!p.budgetAlerts; if(p.theme) document.getElementById('profileTheme').value=p.theme;}catch(e){} }
-function saveProfile(){const p={name:document.getElementById('profileName').value,email:document.getElementById('profileEmail').value,notify:document.getElementById('profileNotify').value,emailAlerts:document.getElementById('emailAlerts').checked,budgetAlerts:document.getElementById('budgetAlerts').checked,theme:document.getElementById('profileTheme').value}; localStorage.setItem(profileKey,JSON.stringify(p)); localStorage.setItem(themeKey,p.theme); applyTheme(); closeProfile();}
-function openProfile(){document.getElementById('profileModal').style.display='flex'} function closeProfile(){document.getElementById('profileModal').style.display='none'}
-function goHome(){recurringVisible=false; renderRecurring();}
-function goRecurring(){recurringVisible=true; renderRecurring();}
-document.getElementById('profileBtn').onclick=openProfile; document.getElementById('closeProfile').onclick=closeProfile; document.getElementById('saveProfile').onclick=saveProfile; document.getElementById('profileTheme').onchange=(e)=>{localStorage.setItem(themeKey,e.target.value); applyTheme();}; document.getElementById('homeNav').onclick=goHome; document.getElementById('recurringNav').onclick=goRecurring; document.addEventListener('keydown',e=>{if(e.key==='Escape') closeProfile()}); render();
+    const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    
+    // Initial State Factory
+    const createNewYearData = (yearName) => ({
+        year: yearName,
+        activeMonth: 0,
+        months: MONTHS.map(name => ({
+            name: name,
+            paychecks: [{name: 'Paycheck 1', amount: 2500, date: ''}],
+            expenses: []
+        }))
+    });
+
+    // Default Load Logic
+    let state = JSON.parse(localStorage.getItem('rollover_pro_v4')) || {
+        activeYearIndex: 0,
+        recurring: [{name: 'Housing/Rent', amount: 1500, category: 'Housing'}],
+        years: [createNewYearData('2026')]
+    };
+
+    function calculate() {
+        state.years.forEach(yearData => {
+            let runningYearlyRollover = 0;
+            const recTotal = state.recurring.reduce((s, r) => s + Number(r.amount || 0), 0);
+
+            yearData.months.forEach((m) => {
+                m.startRollover = runningYearlyRollover;
+                const incTotal = m.paychecks.reduce((s, p) => s + Number(p.amount || 0), 0);
+                const expTotal = m.expenses.reduce((s, e) => s + Number(e.amount || 0), 0) + recTotal;
+                
+                // Running balances per paycheck
+                let runningInMonth = m.startRollover;
+                m.paychecks.forEach(p => {
+                    runningInMonth += Number(p.amount || 0);
+                    p.balanceAfter = runningInMonth;
+                });
+
+                m.endRollover = m.startRollover + incTotal - expTotal;
+                runningYearlyRollover = m.endRollover;
+            });
+        });
+    }
+
+    function render() {
+        calculate();
+        const activeYear = state.years[state.activeYearIndex];
+        const m = activeYear.months[activeYear.activeMonth];
+        const recTotal = state.recurring.reduce((s, r) => s + Number(r.amount || 0), 0);
+
+        // Update Labels
+        document.getElementById('historyTitle').textContent = `${activeYear.year} History`;
+        document.getElementById('summaryTitle').textContent = `${activeYear.year} Financial Summary`;
+        document.getElementById('yearTag').textContent = `${activeYear.year} TRACKING`;
+
+        // Update KPIs
+        document.getElementById('kpiStart').textContent = money(m.startRollover);
+        document.getElementById('kpiEnd').textContent = money(m.endRollover);
+
+        // Sidebar
+        document.getElementById('monthList').innerHTML = activeYear.months.map((mm, i) => `
+            <div class="month-item ${i === activeYear.activeMonth ? 'active' : ''}" onclick="setActive(${i})">
+                <strong>${mm.name}</strong>
+                <small>End: ${money(mm.endRollover)}</small>
+            </div>
+        `).join('');
+
+        // Year Selector
+        document.getElementById('yearSelector').innerHTML = state.years.map((y, i) => `
+            <option value="${i}" ${i === state.activeYearIndex ? 'selected' : ''}>${y.year}</option>
+        `).join('');
+
+        // Tables
+        renderPaychecks(m.paychecks);
+        renderExpenses(m.expenses, recTotal);
+        renderSummary(activeYear);
+        renderRecurringList();
+    }
+
+    function softUpdate() {
+        calculate();
+        const activeYear = state.years[state.activeYearIndex];
+        const m = activeYear.months[activeYear.activeMonth];
+        
+        document.getElementById('kpiStart').textContent = money(m.startRollover);
+        document.getElementById('kpiEnd').textContent = money(m.endRollover);
+        
+        const monthItems = document.querySelectorAll('.month-item');
+        activeYear.months.forEach((mm, i) => {
+            if (monthItems[i]) {
+                monthItems[i].querySelector('small').textContent = `End: ${money(mm.endRollover)}`;
+            }
+        });
+
+        const balElements = document.querySelectorAll('.running-bal');
+        m.paychecks.forEach((p, i) => {
+            if (balElements[i]) balElements[i].textContent = money(p.balanceAfter);
+        });
+    }
+
+    function renderPaychecks(data) {
+        document.getElementById('paycheckContainer').innerHTML = data.map((item, i) => `
+            <div class="row row-paycheck">
+                <div class="field"><label>Label</label><input value="${item.name}" oninput="update('paychecks', ${i}, 'name', this.value, true)"></div>
+                <div class="field"><label>Date</label><input type="date" value="${item.date || ''}" oninput="update('paychecks', ${i}, 'date', this.value, true)"></div>
+                <div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('paychecks', ${i}, 'amount', this.value, true)"></div>
+                <div class="field"><label>Balance After</label><div class="running-bal">${money(item.balanceAfter)}</div></div>
+                <button class="btn-outline" onclick="removeItem('paychecks', ${i})">✕</button>
+            </div>
+        `).join('') || '<p class="muted">No paychecks added.</p>';
+    }
+
+    function renderExpenses(data, recTotal) {
+        let html = data.map((item, i) => `
+            <div class="row">
+                <div class="field"><label>Name</label><input value="${item.name}" oninput="update('expenses', ${i}, 'name', this.value, true)"></div>
+                <div class="field"><label>Category</label><input placeholder="e.g. Food" value="${item.category || ''}" oninput="update('expenses', ${i}, 'category', this.value, true)"></div>
+                <div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('expenses', ${i}, 'amount', this.value, true)"></div>
+                <button class="btn-outline" onclick="removeItem('expenses', ${i})">✕</button>
+            </div>
+        `).join('');
+
+        if (recTotal > 0) {
+            html += `<div style="padding: 12px; background: var(--surface2); border-radius: 12px; font-size: 0.85rem; color: var(--muted); border: 1px dashed var(--border);">
+                + Includes <strong>${money(recTotal)}</strong> in global recurring items.
+            </div>`;
+        }
+        document.getElementById('expenseContainer').innerHTML = html || '<p class="muted">No monthly expenses added.</p>';
+    }
+
+    function renderRecurringList() {
+        document.getElementById('recurringContainer').innerHTML = state.recurring.map((item, i) => `
+            <div class="row">
+                <div class="field"><label>Name</label><input value="${item.name}" oninput="updateRec(${i}, 'name', this.value, true)"></div>
+                <div class="field"><label>Category</label><input placeholder="e.g. Bill" value="${item.category || ''}" oninput="updateRec(${i}, 'category', this.value, true)"></div>
+                <div class="field"><label>Monthly Amount</label><input type="number" value="${item.amount}" oninput="updateRec(${i}, 'amount', this.value, true)"></div>
+                <button class="btn-outline" onclick="removeRec(${i})">✕</button>
+            </div>
+        `).join('') || '<p class="muted">No global recurring items.</p>';
+    }
+
+    function renderSummary(activeYear) {
+        document.getElementById('summaryBody').innerHTML = activeYear.months.map(m => {
+            const inc = m.paychecks.reduce((s,p)=>s+Number(p.amount||0), 0);
+            const exp = m.expenses.reduce((s,e)=>s+Number(e.amount||0), 0) + state.recurring.reduce((s,r)=>s+Number(r.amount||0), 0);
+            return `<tr><td>${m.name}</td><td>${money(m.startRollover)}</td><td>${money(inc)}</td><td>${money(exp)}</td><td><strong>${money(m.endRollover)}</strong></td></tr>`;
+        }).join('');
+    }
+
+    // Year Management
+    window.changeYear = (index) => {
+        state.activeYearIndex = parseInt(index);
+        render();
+    };
+
+    window.addNewYear = () => {
+        const lastYearValue = state.years.length > 0 ? parseInt(state.years[state.years.length - 1].year) : 2026;
+        const nextYear = prompt("Enter year name:", lastYearValue + 1);
+        if (nextYear) {
+            state.years.push(createNewYearData(nextYear));
+            state.activeYearIndex = state.years.length - 1;
+            render();
+        }
+    };
+
+    // Event Handlers
+    window.setActive = (i) => { state.years[state.activeYearIndex].activeMonth = i; render(); };
+    window.update = (type, i, key, val, soft = false) => { 
+        state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth][type][i][key] = val; 
+        if (soft) softUpdate(); else render(); 
+    };
+    window.updateRec = (i, key, val, soft = false) => { 
+        state.recurring[i][key] = val; 
+        if (soft) softUpdate(); else render(); 
+    };
+    window.addItem = (type) => { state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth][type].push({name: 'New Item', amount: 0, category: ''}); render(); };
+    window.addRecurring = () => { state.recurring.push({name: 'New Recurring', amount: 0, category: ''}); render(); };
+    window.removeItem = (type, i) => { state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth][type].splice(i, 1); render(); };
+    window.removeRec = (i) => { state.recurring.splice(i, 1); render(); };
+    window.money = (n) => '$' + Number(n||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    
+    window.saveData = () => {
+        localStorage.setItem('rollover_pro_v4', JSON.stringify(state));
+        const notification = document.createElement('div');
+        notification.style.cssText = 'position:fixed; bottom:20px; right:20px; background:var(--purple); color:white; padding:12px 24px; border-radius:12px; font-weight:600; box-shadow:var(--shadow); z-index:100;';
+        notification.textContent = 'Budget Saved';
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 3000);
+    };
+
+    window.switchView = (view) => {
+        render();
+        document.getElementById('homeView').style.display = view === 'home' ? 'block' : 'none';
+        document.getElementById('recurringView').style.display = view === 'recurring' ? 'block' : 'none';
+        document.getElementById('summaryView').style.display = view === 'summary' ? 'block' : 'none';
+        document.getElementById('navHome').classList.toggle('btn-active', view === 'home');
+        document.getElementById('navRecurring').classList.toggle('btn-active', view === 'recurring');
+        document.getElementById('navSummary').classList.toggle('btn-active', view === 'summary');
+    };
+
+    // Dark Mode
+    document.getElementById('themeToggle').onclick = () => {
+        const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = t;
+        localStorage.setItem('budget_theme', t);
+    };
+
+    // Init
+    document.documentElement.dataset.theme = localStorage.getItem('budget_theme') || 'light';
+    render();
 </script>
 </body>
 </html>
