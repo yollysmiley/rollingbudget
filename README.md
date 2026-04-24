@@ -8,7 +8,7 @@
 <h1>Rollover Budget Pro</h1>
 <p>A high-precision financial tracking application designed for multi-year planning. Unlike standard budgeting tools, <strong>Rollover Budget Pro</strong> focuses on "dynamic rollover" logic, helping you visualize how surplus funds move from one month to the next across multiple years.</p>
 
-<h2>🌟 Key Features</h2>
+<h2> Key Features</h2>
 
 <h3>1. Dynamic Rollover Engine</h3>
 <ul>
@@ -33,7 +33,7 @@
     <li><strong>Privacy First:</strong> Currently localized to your browser using <code>localStorage</code>.</li>
 </ul>
 
-<h2>🚀 Getting Started</h2>
+<h2> Getting Started</h2>
 
 <h3>Current Version (Local)</h3>
 <p>Since this is a single-file web application, no complex installation is required:</p>
@@ -42,8 +42,8 @@
     <li>Open it in any modern web browser (Chrome, Firefox, Safari, or Edge).</li>
 </ol>
 
-<h2>🏗️ Future Roadmap: Cloud Sync & Security</h2>
-<p>To support multi-device access and secure data persistence, the project is moving toward a <strong>Serverless Cloud Architecture</strong>.</p>
+<h2> Cloud Sync & Security</h2>
+<p>To support multi-device access and secure data persistence, the project is using a <strong>Serverless Cloud Architecture</strong>.</p>
 
 <h3>Supabase Integration</h3>
 <ul>
@@ -53,14 +53,14 @@
     <li><strong>Deployment:</strong> The frontend will be hosted on GitHub Pages, communicating with the Supabase API via the client-side SDK.</li>
 </ul>
 
-<h2>🛠 Technical Details</h2>
+<h2> Technical Details</h2>
 <ul>
     <li><strong>Frontend:</strong> HTML5, CSS3, JavaScript (ES6+).</li>
     <li><strong>Persistence:</strong> Current: Browser <code>localStorage</code> | Planned: Supabase (PostgreSQL).</li>
     <li><strong>Architecture:</strong> Procedural state management with a "Soft-Update" pattern to maintain DOM focus during input.</li>
 </ul>
 
-<h2>🔒 Safety & Privacy</h2>
+<h2> Safety & Privacy</h2>
 <ul>
     <li><strong>Offline Capable:</strong> Current version does not require an internet connection.</li>
     <li><strong>Identity Protection:</strong> Planned cloud version will use encrypted authentication tokens.</li>
