@@ -59,6 +59,8 @@
         .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
         .btn-active { background: var(--purple2); color: var(--purple); border-color: var(--purple); }
         .btn-ghost { background: transparent; color: var(--muted); }
+        .btn-green { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; font-size: 0.8rem; padding: 6px 12px; border-radius: 8px; }
+        [data-theme='dark'] .btn-green { background: #064e3b; color: #6ee7b7; border-color: #065f46; }
 
         /* Layout Views */
         .view-section { display: none; }
@@ -85,7 +87,7 @@
 
         .main-grid { display: grid; grid-template-columns: 280px 1fr; gap: 30px; }
         .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r2); padding: 24px; margin-bottom: 24px; box-shadow: var(--shadow); }
-        .panel h2 { font-size: 1.1rem; margin-top: 0; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .panel h2 { font-size: 1.1rem; margin-top: 0; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
 
         .month-list { display: flex; flex-direction: column; gap: 8px; }
         .month-item { padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface2); cursor: pointer; text-align: left; }
@@ -98,6 +100,25 @@
         .field label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--muted); }
         input { padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.9rem; width: 100%; }
         .running-bal { font-size: 0.85rem; font-weight: 700; color: var(--purple); background: var(--purple2); padding: 8px; border-radius: 8px; text-align: center; }
+
+        /* Recurring badge on expense rows */
+        .rec-badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: var(--purple2); color: var(--purple); padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
+
+        /* Add Recurring modal */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-overlay.open { display: flex; }
+        .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r2); padding: 28px; width: 100%; max-width: 480px; box-shadow: var(--shadow); }
+        .modal-box h3 { margin: 0 0 6px; font-size: 1.1rem; }
+        .modal-box p { color: var(--muted); font-size: 0.875rem; margin: 0 0 20px; }
+        .rec-select-list { display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; }
+        .rec-select-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface2); cursor: pointer; gap: 12px; transition: border-color 0.15s, background 0.15s; }
+        .rec-select-item:hover { border-color: var(--purple); background: var(--purple2); }
+        .rec-select-item-info { display: flex; flex-direction: column; gap: 2px; }
+        .rec-select-item-name { font-weight: 600; font-size: 0.9rem; }
+        .rec-select-item-meta { font-size: 0.75rem; color: var(--muted); }
+        .rec-select-item-amount { font-weight: 700; color: var(--purple); font-size: 0.95rem; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+        .empty-rec-note { color: var(--muted); font-size: 0.875rem; padding: 20px; text-align: center; }
 
         @media (max-width: 950px) {
             .hero, .main-grid { grid-template-columns: 1fr; }
@@ -161,7 +182,13 @@
                     <div id="paycheckContainer"></div>
                 </section>
                 <section class="panel">
-                    <h2>Monthly Expenses <button class="btn-ghost" onclick="addItem('expenses')">+ Add</button></h2>
+                    <h2>
+                        <span>Monthly Expenses</span>
+                        <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                            <button class="btn-green" onclick="openRecurringModal()">🔄 Add Recurring</button>
+                            <button class="btn-ghost" onclick="addItem('expenses')">+ Add</button>
+                        </span>
+                    </h2>
                     <div id="expenseContainer"></div>
                 </section>
             </main>
@@ -171,7 +198,7 @@
     <div id="recurringView" class="view-section">
         <section class="panel">
             <h2>Global Recurring Bills <button class="btn-ghost" onclick="addRecurring()">+ Add New Bill</button></h2>
-            <p class="muted" style="margin-top: -15px; margin-bottom: 25px; font-size: 0.9rem;">Items added here are automatically deducted from <strong>every single month</strong> in your calendar.</p>
+            <p class="muted" style="margin-top: -15px; margin-bottom: 25px; font-size: 0.9rem;">Items added here are automatically deducted from <strong>every single month</strong> in your calendar. You can also add a copy of any recurring bill to a specific month using the <strong>🔄 Add Recurring</strong> button on the Home tab.</p>
             <div id="recurringContainer"></div>
         </section>
     </div>
@@ -188,6 +215,18 @@
                 </table>
             </div>
         </section>
+    </div>
+</div>
+
+<!-- Add Recurring Modal -->
+<div class="modal-overlay" id="recurringModal">
+    <div class="modal-box">
+        <h3>Add Recurring to This Month</h3>
+        <p>Select a global recurring bill to add as a one-time expense for <strong id="modalMonthName"></strong>. You can edit the copy independently.</p>
+        <div class="rec-select-list" id="recSelectList"></div>
+        <div class="modal-footer">
+            <button class="btn-outline" onclick="closeRecurringModal()">Cancel</button>
+        </div>
     </div>
 </div>
 
@@ -251,7 +290,52 @@
         }
     }
 
-    // --- 4. CORE ENGINE ---
+    // --- 4. RECURRING MODAL ---
+    window.openRecurringModal = function() {
+        const activeYear = state.years[state.activeYearIndex];
+        const m = activeYear.months[activeYear.activeMonth];
+        document.getElementById('modalMonthName').textContent = m.name;
+
+        const list = document.getElementById('recSelectList');
+        if (!state.recurring || state.recurring.length === 0) {
+            list.innerHTML = '<div class="empty-rec-note">No global recurring bills set up yet.<br>Go to the 🔄 Recurring tab to add some.</div>';
+        } else {
+            list.innerHTML = state.recurring.map((r, i) => `
+                <div class="rec-select-item" onclick="addRecurringToMonth(${i})">
+                    <div class="rec-select-item-info">
+                        <span class="rec-select-item-name">${r.name || 'Unnamed'}</span>
+                        <span class="rec-select-item-meta">${r.category || 'No category'}</span>
+                    </div>
+                    <span class="rec-select-item-amount">${money(r.amount)}/mo</span>
+                </div>
+            `).join('');
+        }
+        document.getElementById('recurringModal').classList.add('open');
+    };
+
+    window.closeRecurringModal = function() {
+        document.getElementById('recurringModal').classList.remove('open');
+    };
+
+    document.getElementById('recurringModal').addEventListener('click', function(e) {
+        if (e.target === this) closeRecurringModal();
+    });
+
+    window.addRecurringToMonth = function(recurringIndex) {
+        const r = state.recurring[recurringIndex];
+        const activeYear = state.years[state.activeYearIndex];
+        const m = activeYear.months[activeYear.activeMonth];
+        m.expenses.push({
+            name: r.name,
+            amount: r.amount,
+            category: r.category || '',
+            fromRecurring: true
+        });
+        closeRecurringModal();
+        render();
+    };
+
+    // --- 5. CORE ENGINE ---
     function calculate() {
         state.years.forEach(yearData => {
             let runningYearlyRollover = 0;
@@ -271,7 +355,6 @@
         });
     }
 
-    // Smart Render: Only redraws UI when structural changes happen (add/remove/tab switch)
     function render(isTyping = false) {
         calculate();
         const activeYear = state.years[state.activeYearIndex];
@@ -281,7 +364,6 @@
         document.getElementById('kpiEnd').textContent = money(m.endRollover);
         
         if (isTyping) {
-            // If typing, only update the running balance numbers, don't recreate inputs
             m.paychecks.forEach((p, i) => {
                 const el = document.getElementById(`running-bal-${i}`);
                 if (el) el.textContent = money(p.balanceAfter);
@@ -325,7 +407,10 @@
     function renderExpenses(data) {
         document.getElementById('expenseContainer').innerHTML = data.map((item, i) => `
             <div class="row">
-                <div class="field"><label>Expense</label><input value="${item.name}" onchange="update('expenses', ${i}, 'name', this.value)"></div>
+                <div class="field">
+                    <label>Expense ${item.fromRecurring ? '<span class="rec-badge">🔄 recurring</span>' : ''}</label>
+                    <input value="${item.name}" onchange="update('expenses', ${i}, 'name', this.value)">
+                </div>
                 <div class="field"><label>Category</label><input value="${item.category || ''}" onchange="update('expenses', ${i}, 'category', this.value)"></div>
                 <div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('expenses', ${i}, 'amount', this.value, true)"></div>
                 <button class="btn-outline" onclick="removeItem('expenses', ${i})">✕</button>
@@ -352,11 +437,10 @@
         }).join('');
     }
 
-    // --- 5. HELPERS ---
+    // --- 6. HELPERS ---
     window.money = (n) => '$' + Number(n||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
     window.saveData = () => { localStorage.setItem('rollover_pro_v4', JSON.stringify(state)); alert('Data Saved!'); };
     
-    // update functions now accept a 'typing' flag to prevent structural redraw
     window.update = (type, i, key, val, isTyping = false) => { 
         state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth][type][i][key] = val; 
         render(isTyping); 
@@ -387,7 +471,7 @@
         document.getElementById('navSummary').classList.toggle('btn-active', v === 'summary');
     };
 
-    // --- 6. INITIALIZE ---
+    // --- 7. INITIALIZE ---
     if (supabaseClient) supabaseClient.auth.onAuthStateChange(() => { renderAuth(); });
     document.documentElement.dataset.theme = localStorage.getItem('budget_theme') || 'light';
     document.getElementById('themeToggle').onclick = () => {
