@@ -502,7 +502,7 @@
             yearData.months.forEach((m) => {
                 m.startRollover = runningYearlyRollover;
                 const incTotal = m.paychecks.reduce((s, p) => s + Number(p.amount || 0), 0);
-                const expTotal = m.expenses.reduce((s, e) => s + Number(e.amount || 0), 0) + recTotal;
+                const expTotal = m.expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
 
                 // Build per-paycheck bucket totals
                 m.paychecks.forEach((p, pi) => {
