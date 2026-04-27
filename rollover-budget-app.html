@@ -34,25 +34,16 @@
 
         * { box-sizing: border-box; transition: background 0.2s, color 0.2s; }
         body { margin: 0; background: var(--bg); color: var(--text); line-height: 1.5; min-height: 100vh; }
-        
         .shell { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        
-        /* Navigation */
         .topbar { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; margin-bottom: 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 15px; }
         .brand strong { font-size: 1.4rem; letter-spacing: -0.5px; }
         .nav-group { display: flex; gap: 8px; align-items: center; }
-
-        /* Auth */
         .auth-zone { display: flex; align-items: center; gap: 12px; }
         .user-pill { display: flex; align-items: center; gap: 8px; background: var(--surface2); padding: 4px 12px; border-radius: 50px; font-size: 0.85rem; border: 1px solid var(--border); }
         .user-pill img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
-
-        /* Year Selector */
         .year-controls { display: flex; align-items: center; gap: 10px; background: var(--surface); padding: 5px 15px; border-radius: 50px; border: 1px solid var(--border); }
         .year-controls select { border: none; background: transparent; color: var(--text); font-weight: 700; cursor: pointer; padding-right: 5px; }
         .year-controls select:focus { outline: none; }
-
-        /* UI Elements */
         button { border: none; border-radius: 12px; padding: 10px 20px; cursor: pointer; font-weight: 600; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
         .btn-primary { background: var(--purple); color: white; }
         .btn-github { background: #24292e; color: white; }
@@ -61,129 +52,87 @@
         .btn-ghost { background: transparent; color: var(--muted); }
         .btn-green { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; font-size: 0.8rem; padding: 6px 12px; border-radius: 8px; }
         [data-theme='dark'] .btn-green { background: #064e3b; color: #6ee7b7; border-color: #065f46; }
-
-        /* Layout Views */
         .view-section { display: none; }
         .view-active { display: block; }
-
-        .hero { 
-            display: grid; 
-            grid-template-columns: 1.2fr 1fr; 
-            gap: 40px; 
-            background: var(--surface); 
-            padding: 40px; 
-            border-radius: var(--r2); 
-            border: 1px solid var(--border);
-            box-shadow: var(--shadow);
-            margin-bottom: 30px;
-            align-items: center;
-        }
+        .hero { display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px; background: var(--surface); padding: 40px; border-radius: var(--r2); border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 30px; align-items: center; }
         .hero h1 { font-size: 2.2rem; margin: 10px 0; line-height: 1.1; }
-        
         .kpi-grid { display: flex; flex-direction: column; gap: 12px; }
         .kpi-card { background: var(--surface2); padding: 16px; border-radius: 16px; border: 1px solid var(--border); }
         .kpi-label { font-size: 0.7rem; text-transform: uppercase; color: var(--muted); font-weight: 700; letter-spacing: 0.05em; }
         .kpi-value { font-size: 1.4rem; font-weight: 800; color: var(--purple); }
-
+        .kpi-note { font-size: 0.82rem; color: var(--muted); margin-top: 6px; }
         .main-grid { display: grid; grid-template-columns: 280px 1fr; gap: 30px; }
         .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r2); padding: 24px; margin-bottom: 24px; box-shadow: var(--shadow); }
         .panel h2 { font-size: 1.1rem; margin-top: 0; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
-
+        .panel-subhead { color: var(--muted); font-size: 0.86rem; margin-top: -12px; margin-bottom: 18px; }
         .month-list { display: flex; flex-direction: column; gap: 8px; }
         .month-item { padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface2); cursor: pointer; text-align: left; }
         .month-item.active { border-color: var(--purple); background: var(--purple2); color: var(--purple); }
-        
-        /* Grid Form Rows */
         .row { display: grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap: 12px; margin-bottom: 12px; align-items: end; }
         .row-paycheck { grid-template-columns: 1.5fr 1fr 1fr 1fr auto; }
         .row-expense  { grid-template-columns: 1.5fr 1fr 1fr 0.65fr 1fr auto; }
         .row-recurring { grid-template-columns: 1.5fr 1fr 1fr 0.7fr auto; }
+        .row-excluded { grid-template-columns: 1.4fr 0.95fr 1fr 1.2fr auto; }
         .field { display: flex; flex-direction: column; gap: 4px; }
         .field label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--muted); }
         input, select.field-select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.9rem; width: 100%; }
         select.field-select { cursor: pointer; }
         .running-bal { font-size: 0.85rem; font-weight: 700; color: var(--purple); background: var(--purple2); padding: 8px; border-radius: 8px; text-align: center; }
-
-        /* Paycheck bucket pill on expense rows */
-        .bucket-pill { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #fef3c7; color: #92400e; padding: 2px 7px; border-radius: 6px; white-space: nowrap; margin-left: 4px; }
-        [data-theme='dark'] .bucket-pill { background: #451a03; color: #fbbf24; }
-
-        /* Recurring badge on expense rows */
         .rec-badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: var(--purple2); color: var(--purple); padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
-
-        /* Add Recurring modal */
+        .exclude-badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #fee2e2; color: #991b1b; padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
+        [data-theme='dark'] .exclude-badge { background: #3f1d1d; color: #fca5a5; }
+        .excluded-total { display: inline-flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); padding: 8px 12px; border-radius: 10px; font-size: 0.86rem; color: var(--muted); }
+        .excluded-total strong { color: var(--text); }
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; align-items: center; justify-content: center; }
         .modal-overlay.open { display: flex; }
         .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r2); padding: 28px; width: 100%; max-width: 500px; box-shadow: var(--shadow); }
         .modal-box h3 { margin: 0 0 6px; font-size: 1.1rem; }
         .modal-box p { color: var(--muted); font-size: 0.875rem; margin: 0 0 14px; }
-
-        /* Modal toolbar: select-all + count badge */
         .modal-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
         .modal-toolbar-left { display: flex; align-items: center; gap: 10px; }
         .select-all-btn { font-size: 0.8rem; padding: 5px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); color: var(--text); cursor: pointer; font-weight: 600; }
         .select-all-btn:hover { border-color: var(--purple); background: var(--purple2); color: var(--purple); }
         .selected-count { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
-
-        /* Selectable list items */
         .rec-select-list { display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; }
-        .rec-select-item {
-            display: flex; align-items: center; gap: 12px;
-            padding: 12px 14px; border-radius: 12px;
-            border: 2px solid var(--border); background: var(--surface2);
-            cursor: pointer; transition: border-color 0.15s, background 0.15s;
-            user-select: none;
-        }
+        .rec-select-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; border: 2px solid var(--border); background: var(--surface2); cursor: pointer; transition: border-color 0.15s, background 0.15s; user-select: none; }
         .rec-select-item:hover { border-color: var(--purple); }
         .rec-select-item.selected { border-color: var(--purple); background: var(--purple2); }
-        .rec-select-item input[type="checkbox"] {
-            width: 18px; height: 18px; flex-shrink: 0;
-            accent-color: var(--purple); cursor: pointer;
-        }
+        .rec-select-item input[type="checkbox"] { width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--purple); cursor: pointer; }
         .rec-select-item-info { display: flex; flex-direction: column; gap: 2px; flex: 1; }
         .rec-select-item-name { font-weight: 600; font-size: 0.9rem; }
         .rec-select-item-meta { font-size: 0.75rem; color: var(--muted); }
         .rec-select-item-amount { font-weight: 700; color: var(--purple); font-size: 0.95rem; flex-shrink: 0; }
-
         .modal-footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 20px; }
         .modal-footer-right { display: flex; gap: 8px; }
         .modal-total { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
         .modal-total strong { color: var(--purple); }
         .empty-rec-note { color: var(--muted); font-size: 0.875rem; padding: 20px; text-align: center; }
-
-        /* Confirm button disabled state */
         .btn-confirm:disabled { opacity: 0.45; cursor: not-allowed; }
-
-        /* Paycheck bucket summary under each paycheck row */
         .bucket-summary { font-size: 0.78rem; color: var(--muted); margin-top: -4px; margin-bottom: 10px; padding: 6px 10px; background: var(--surface2); border-radius: 8px; border: 1px solid var(--border); display: flex; gap: 16px; flex-wrap: wrap; }
         .bucket-summary span { white-space: nowrap; }
         .bucket-summary .bs-assigned { color: #b45309; font-weight: 700; }
         .bucket-summary .bs-remaining { color: #065f46; font-weight: 700; }
         [data-theme='dark'] .bucket-summary .bs-assigned { color: #fbbf24; }
         [data-theme='dark'] .bucket-summary .bs-remaining { color: #6ee7b7; }
-
         @media (max-width: 950px) {
             .hero, .main-grid { grid-template-columns: 1fr; }
-            .row, .row-paycheck, .row-expense, .row-recurring { grid-template-columns: 1fr 1fr; }
-            .row button, .row-paycheck button, .row-expense button, .row-recurring button { grid-column: span 2; }
+            .row, .row-paycheck, .row-expense, .row-recurring, .row-excluded { grid-template-columns: 1fr 1fr; }
+            .row button, .row-paycheck button, .row-expense button, .row-recurring button, .row-excluded button { grid-column: span 2; }
+            .modal-footer { flex-direction: column; align-items: stretch; }
+            .modal-footer-right { justify-content: flex-end; }
         }
     </style>
 </head>
 <body>
-
 <div class="shell">
     <header class="topbar">
         <div class="brand"><strong>Rollover Budget Pro</strong></div>
-        
         <div class="year-controls">
             <select id="yearSelector" onchange="changeYear(this.value)"></select>
             <button class="btn-ghost" style="padding: 2px 8px; font-size: 1.2rem;" onclick="addNewYear()">+</button>
         </div>
-
         <div class="nav-group">
-            <div id="authContainer" class="auth-zone">
-                <button class="btn-github" onclick="signInWithGitHub()">GitHub Login</button>
-            </div>
+            <div id="authContainer" class="auth-zone"><button class="btn-github" onclick="signInWithGitHub()">GitHub Login</button></div>
             <button class="btn-outline" id="navHome" onclick="switchView('home')">Home</button>
             <button class="btn-outline" id="navRecurring" onclick="switchView('recurring')">🔄 Recurring</button>
             <button class="btn-outline" id="navSummary" onclick="switchView('summary')">📊 Summary</button>
@@ -191,508 +140,95 @@
             <button class="btn-primary" onclick="saveData()">💾 Save</button>
         </div>
     </header>
-
     <div id="homeView" class="view-section view-active">
         <section class="hero">
             <div class="hero-content">
                 <div id="yearTag" style="background: var(--purple2); color: var(--purple); padding: 4px 12px; border-radius: 20px; display: inline-block; font-size: 0.75rem; font-weight: 700; margin-bottom: 12px;">ANNUAL TRACKING</div>
                 <h1>Plan your flow, <br>month by month.</h1>
-                <p class="muted">Check your monthly projection. Global recurring bills are subtracted automatically from every month.</p>
+                <p class="muted">Track the money that rolls forward, and separately track money you want to reserve outside rollover.</p>
             </div>
             <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Month Starting Rollover</div>
-                    <div class="kpi-value" id="kpiStart">$0.00</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Projected End Rollover</div>
-                    <div class="kpi-value" id="kpiEnd">$0.00</div>
-                </div>
+                <div class="kpi-card"><div class="kpi-label">Projected End Rollover</div><div class="kpi-value" id="kpiEnd">$0.00</div><div class="kpi-note">This is what carries into the next month.</div></div>
+                <div class="kpi-card"><div class="kpi-label">Available After Excluded Buckets</div><div class="kpi-value" id="kpiAvailable">$0.00</div><div class="kpi-note">Rollover minus non-rollover bucket reservations.</div></div>
             </div>
         </section>
-
         <div class="main-grid">
             <aside>
-                <div class="panel">
-                    <h2 id="historyTitle">History</h2>
-                    <div class="month-list" id="monthList"></div>
-                </div>
+                <div class="panel"><h2 id="historyTitle">History</h2><div class="month-list" id="monthList"></div></div>
             </aside>
             <main>
+                <section class="panel"><h2>Paychecks <button class="btn-ghost" onclick="addItem('paychecks')">+ Add</button></h2><div id="paycheckContainer"></div></section>
                 <section class="panel">
-                    <h2>Paychecks <button class="btn-ghost" onclick="addItem('paychecks')">+ Add</button></h2>
-                    <div id="paycheckContainer"></div>
+                    <h2><span>Excluded Buckets <span class="exclude-badge">No rollover</span></span><span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><span class="excluded-total">Reserved this month: <strong id="excludedTotal">$0.00</strong></span><button class="btn-ghost" onclick="addExcludedBucket()">+ Add Bucket</button></span></h2>
+                    <p class="panel-subhead">Use these for money you want to reserve this month without letting it roll into the next month.</p>
+                    <div id="excludedBucketContainer"></div>
                 </section>
                 <section class="panel">
-                    <h2>
-                        <span>Monthly Expenses</span>
-                        <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                            <button class="btn-green" onclick="openRecurringModal()">🔄 Add Recurring</button>
-                            <button class="btn-ghost" onclick="addItem('expenses')">+ Add</button>
-                        </span>
-                    </h2>
+                    <h2><span>Monthly Expenses</span><span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><button class="btn-green" onclick="openRecurringModal()">🔄 Add Recurring</button><button class="btn-ghost" onclick="addItem('expenses')">+ Add</button></span></h2>
                     <div id="expenseContainer"></div>
                 </section>
             </main>
         </div>
     </div>
-
     <div id="recurringView" class="view-section">
-        <section class="panel">
-            <h2>Global Recurring Bills <button class="btn-ghost" onclick="addRecurring()">+ Add New Bill</button></h2>
-            <p class="muted" style="margin-top: -15px; margin-bottom: 25px; font-size: 0.9rem;">Items added here are automatically deducted from <strong>every single month</strong> in your calendar. You can also add a copy of any recurring bill to a specific month using the <strong>🔄 Add Recurring</strong> button on the Home tab.</p>
-            <div id="recurringContainer"></div>
-        </section>
+        <section class="panel"><h2>Global Recurring Bills <button class="btn-ghost" onclick="addRecurring()">+ Add New Bill</button></h2><p class="muted" style="margin-top: -15px; margin-bottom: 25px; font-size: 0.9rem;">Items added here are stored as reusable recurring templates. Use the <strong>🔄 Add Recurring</strong> button on the Home tab to copy one or more of them into a month.</p><div id="recurringContainer"></div></section>
     </div>
-
     <div id="summaryView" class="view-section">
         <section class="panel">
             <h2 id="summaryTitle">Yearly Financial Summary</h2>
-            <div style="overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
-                    <thead><tr style="text-align: left; color: var(--muted); border-bottom: 1px solid var(--border);">
-                        <th style="padding: 12px;">Month</th><th>Start</th><th>Income</th><th>Expense</th><th>End</th>
-                    </tr></thead>
-                    <tbody id="summaryBody"></tbody>
-                </table>
-            </div>
+            <div style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;"><thead><tr style="text-align: left; color: var(--muted); border-bottom: 1px solid var(--border);"><th style="padding: 12px;">Month</th><th>Income</th><th>Expense</th><th>Excluded</th><th>End Rollover</th><th>Available</th></tr></thead><tbody id="summaryBody"></tbody></table></div>
         </section>
     </div>
 </div>
-
-<!-- Add Recurring Modal -->
-<div class="modal-overlay" id="recurringModal">
-    <div class="modal-box">
-        <h3>Add Recurring to This Month</h3>
-        <p>Select one or more recurring bills to add as expenses for <strong id="modalMonthName"></strong>. Each copy can be edited independently.</p>
-
-        <!-- Toolbar: Select All + count -->
-        <div class="modal-toolbar" id="modalToolbar" style="display:none;">
-            <div class="modal-toolbar-left">
-                <button class="select-all-btn" id="selectAllBtn" onclick="toggleSelectAll()">Select All</button>
-                <span class="selected-count" id="selectedCount">0 selected</span>
-            </div>
-            <span class="modal-total">Total: <strong id="modalSelTotal">$0.00</strong></span>
-        </div>
-
-        <div class="rec-select-list" id="recSelectList"></div>
-
-        <div class="modal-footer">
-            <div class="modal-total" id="modalFooterTotal" style="visibility:hidden;">
-                Adding <strong id="modalFooterCount">0</strong> expense(s) · <strong id="modalFooterSum">$0.00</strong>
-            </div>
-            <div class="modal-footer-right">
-                <button class="btn-outline" onclick="closeRecurringModal()">Cancel</button>
-                <button class="btn-primary btn-confirm" id="addSelectedBtn" onclick="addSelectedRecurring()" disabled>✚ Add Selected</button>
-            </div>
-        </div>
-    </div>
-</div>
-
+<div class="modal-overlay" id="recurringModal"><div class="modal-box"><h3>Add Recurring to This Month</h3><p>Select one or more recurring bills to add as expenses for <strong id="modalMonthName"></strong>. Each copy can be edited independently.</p><div class="modal-toolbar" id="modalToolbar" style="display:none;"><div class="modal-toolbar-left"><button class="select-all-btn" id="selectAllBtn" onclick="toggleSelectAll()">Select All</button><span class="selected-count" id="selectedCount">0 selected</span></div><span class="modal-total">Total: <strong id="modalSelTotal">$0.00</strong></span></div><div class="rec-select-list" id="recSelectList"></div><div class="modal-footer"><div class="modal-total" id="modalFooterTotal" style="visibility:hidden;">Adding <strong id="modalFooterCount">0</strong> expense(s) · <strong id="modalFooterSum">$0.00</strong></div><div class="modal-footer-right"><button class="btn-outline" onclick="closeRecurringModal()">Cancel</button><button class="btn-primary btn-confirm" id="addSelectedBtn" onclick="addSelectedRecurring()" disabled>✚ Add Selected</button></div></div></div></div>
 <script>
-    // --- 1. SUPABASE CONFIGURATION ---
-    const SUPABASE_URL = 'https://awalptqpsjflrahkrjzk.supabase.co'; 
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3YWxwdHFwc2pmbHJhaGtyanprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNzEyMDgsImV4cCI6MjA5MTg0NzIwOH0.Ls-OkgNeABakndkR4Omk5EKSRyU7X2BXDSDoXW4SL40'; 
-
-    let supabaseClient = null;
-    try {
-        if (!SUPABASE_URL.includes('your-project')) {
-            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        }
-    } catch(e) { console.error("Supabase Init Error", e); }
-
-    const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    
-    // --- 2. STATE MANAGEMENT ---
-    const createNewYearData = (yearName) => ({
-        year: yearName,
-        activeMonth: 0,
-        months: MONTHS.map(name => ({
-            name: name,
-            paychecks: [{name: 'Paycheck 1', amount: 2500, date: ''}],
-            expenses: []
-        }))
-    });
-
-    let state = JSON.parse(localStorage.getItem('rollover_pro_v4')) || {
-        activeYearIndex: 0,
-        recurring: [{name: 'Housing/Rent', amount: 1500, category: 'Housing', dueDay: 1}],
-        years: [createNewYearData('2026')]
-    };
-
-    // --- MODAL SELECTION STATE ---
-    let modalSelections = new Set(); // indices of selected recurring items
-
-    // --- UTILITY: Build ordinal day options ---
-    function buildDayOptions(selected) {
-        let opts = '<option value="">— Day —</option>';
-        for (let d = 1; d <= 31; d++) {
-            const suffix = d === 1 ? 'st' : d === 2 ? 'nd' : d === 3 ? 'rd' : 'th';
-            const sel = Number(selected) === d ? 'selected' : '';
-            opts += `<option value="${d}" ${sel}>${d}${suffix}</option>`;
-        }
-        return opts;
-    }
-
-    function ordinal(d) {
-        if (!d) return '';
-        const n = Number(d);
-        const s = n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th';
-        return n + s;
-    }
-
-    // --- 3. AUTH LOGIC ---
-    async function signInWithGitHub() {
-        if (!supabaseClient) return alert("Setup Supabase first!");
-        const siteUrl = window.location.origin + window.location.pathname;
-        await supabaseClient.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: siteUrl } });
-    }
-
-    async function signOut() {
-        if (supabaseClient) await supabaseClient.auth.signOut();
-        renderAuth();
-    }
-
-    async function renderAuth() {
-        const container = document.getElementById('authContainer');
-        if (!supabaseClient) return;
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        if (user) {
-            container.innerHTML = `
-                <div class="user-pill">
-                    <img src="${user.user_metadata.avatar_url || ''}" alt="U">
-                    <span>${user.user_metadata.full_name || user.email}</span>
-                </div>
-                <button class="btn-ghost" onclick="signOut()">Sign Out</button>
-            `;
-        } else {
-            container.innerHTML = `<button class="btn-github" onclick="signInWithGitHub()">GitHub Login</button>`;
-        }
-    }
-
-    // --- 4. RECURRING MODAL ---
-    function updateModalUI() {
-        const count = modalSelections.size;
-        const total = [...modalSelections].reduce((s, i) => s + Number(state.recurring[i].amount || 0), 0);
-        const allSelected = state.recurring.length > 0 && modalSelections.size === state.recurring.length;
-
-        // Count badge
-        document.getElementById('selectedCount').textContent = `${count} selected`;
-
-        // Running total in toolbar
-        document.getElementById('modalSelTotal').textContent = money(total);
-
-        // Select All button label
-        document.getElementById('selectAllBtn').textContent = allSelected ? 'Deselect All' : 'Select All';
-
-        // Confirm button
-        const addBtn = document.getElementById('addSelectedBtn');
-        addBtn.disabled = count === 0;
-        addBtn.textContent = count > 0 ? `✚ Add ${count} Expense${count > 1 ? 's' : ''}` : '✚ Add Selected';
-
-        // Footer summary
-        const footerTotal = document.getElementById('modalFooterTotal');
-        if (count > 0) {
-            footerTotal.style.visibility = 'visible';
-            document.getElementById('modalFooterCount').textContent = count;
-            document.getElementById('modalFooterSum').textContent = money(total);
-        } else {
-            footerTotal.style.visibility = 'hidden';
-        }
-
-        // Highlight items
-        document.querySelectorAll('.rec-select-item').forEach(el => {
-            const idx = parseInt(el.dataset.idx);
-            const cb = el.querySelector('input[type="checkbox"]');
-            if (modalSelections.has(idx)) {
-                el.classList.add('selected');
-                if (cb) cb.checked = true;
-            } else {
-                el.classList.remove('selected');
-                if (cb) cb.checked = false;
-            }
-        });
-    }
-
-    window.toggleRecurringItem = function(idx) {
-        if (modalSelections.has(idx)) {
-            modalSelections.delete(idx);
-        } else {
-            modalSelections.add(idx);
-        }
-        updateModalUI();
-    };
-
-    window.toggleSelectAll = function() {
-        const allSelected = modalSelections.size === state.recurring.length;
-        if (allSelected) {
-            modalSelections.clear();
-        } else {
-            state.recurring.forEach((_, i) => modalSelections.add(i));
-        }
-        updateModalUI();
-    };
-
-    window.openRecurringModal = function() {
-        const activeYear = state.years[state.activeYearIndex];
-        const m = activeYear.months[activeYear.activeMonth];
-        document.getElementById('modalMonthName').textContent = m.name;
-
-        modalSelections.clear();
-
-        const list = document.getElementById('recSelectList');
-        const toolbar = document.getElementById('modalToolbar');
-
-        if (!state.recurring || state.recurring.length === 0) {
-            list.innerHTML = '<div class="empty-rec-note">No global recurring bills set up yet.<br>Go to the 🔄 Recurring tab to add some.</div>';
-            toolbar.style.display = 'none';
-        } else {
-            toolbar.style.display = 'flex';
-            list.innerHTML = state.recurring.map((r, i) => `
-                <div class="rec-select-item" data-idx="${i}" onclick="toggleRecurringItem(${i})">
-                    <input type="checkbox" onclick="event.stopPropagation(); toggleRecurringItem(${i})">
-                    <div class="rec-select-item-info">
-                        <span class="rec-select-item-name">${r.name || 'Unnamed'}</span>
-                        <span class="rec-select-item-meta">${r.category || 'No category'}${r.dueDay ? ' · Due ' + ordinal(r.dueDay) : ''}</span>
-                    </div>
-                    <span class="rec-select-item-amount">${money(r.amount)}/mo</span>
-                </div>
-            `).join('');
-        }
-
-        updateModalUI();
-        document.getElementById('recurringModal').classList.add('open');
-    };
-
-    window.closeRecurringModal = function() {
-        document.getElementById('recurringModal').classList.remove('open');
-        modalSelections.clear();
-    };
-
-    document.getElementById('recurringModal').addEventListener('click', function(e) {
-        if (e.target === this) closeRecurringModal();
-    });
-
-    window.addSelectedRecurring = function() {
-        if (modalSelections.size === 0) return;
-        const activeYear = state.years[state.activeYearIndex];
-        const m = activeYear.months[activeYear.activeMonth];
-
-        [...modalSelections].sort((a, b) => a - b).forEach(i => {
-            const r = state.recurring[i];
-            m.expenses.push({
-                name: r.name,
-                amount: r.amount,
-                category: r.category || '',
-                dueDay: r.dueDay || null,
-                fromRecurring: true,
-                bucketIndex: null
-            });
-        });
-
-        closeRecurringModal();
-        render();
-    };
-
-    // --- 5. CORE ENGINE ---
-    function calculate() {
-        state.years.forEach(yearData => {
-            let runningYearlyRollover = 0;
-            const recTotal = state.recurring.reduce((s, r) => s + Number(r.amount || 0), 0);
-            yearData.months.forEach((m) => {
-                m.startRollover = runningYearlyRollover;
-                const incTotal = m.paychecks.reduce((s, p) => s + Number(p.amount || 0), 0);
-                const expTotal = m.expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
-
-                // Build per-paycheck bucket totals
-                m.paychecks.forEach((p, pi) => {
-                    p.bucketExpenses = m.expenses
-                        .filter(e => e.bucketIndex === pi)
-                        .reduce((s, e) => s + Number(e.amount || 0), 0);
-                });
-
-                // Running balance per paycheck (cumulative income minus bucket-assigned expenses)
-                let runningInMonth = m.startRollover;
-                m.paychecks.forEach(p => {
-                    runningInMonth += Number(p.amount || 0);
-                    runningInMonth -= p.bucketExpenses;
-                    p.balanceAfter = runningInMonth;
-                });
-
-                m.endRollover = m.startRollover + incTotal - expTotal;
-                runningYearlyRollover = m.endRollover;
-            });
-        });
-    }
-
-    function render(isTyping = false) {
-        calculate();
-        const activeYear = state.years[state.activeYearIndex];
-        const m = activeYear.months[activeYear.activeMonth];
-        
-        document.getElementById('kpiStart').textContent = money(m.startRollover);
-        document.getElementById('kpiEnd').textContent = money(m.endRollover);
-        
-        if (isTyping) {
-            m.paychecks.forEach((p, i) => {
-                const el = document.getElementById(`running-bal-${i}`);
-                if (el) el.textContent = money(p.balanceAfter);
-                const bs = document.getElementById(`bucket-summary-${i}`);
-                if (bs) {
-                    bs.querySelector('.bs-assigned').textContent = money(p.bucketExpenses);
-                    bs.querySelector('.bs-remaining').textContent = money(p.balanceAfter);
-                }
-            });
-            return;
-        }
-
-        document.getElementById('historyTitle').textContent = `${activeYear.year} History`;
-        document.getElementById('yearTag').textContent = `${activeYear.year} TRACKING`;
-
-        document.getElementById('monthList').innerHTML = activeYear.months.map((mm, i) => `
-            <div class="month-item ${i === activeYear.activeMonth ? 'active' : ''}" onclick="setActive(${i})">
-                <strong>${mm.name}</strong>
-                <small>End: ${money(mm.endRollover)}</small>
-            </div>
-        `).join('');
-
-        document.getElementById('yearSelector').innerHTML = state.years.map((y, i) => `
-            <option value="${i}" ${i === state.activeYearIndex ? 'selected' : ''}>${y.year}</option>
-        `).join('');
-
-        renderPaychecks(m.paychecks);
-        renderExpenses(m.expenses, m.paychecks);
-        renderRecurringList();
-        renderSummary(activeYear);
-        renderAuth();
-    }
-
-    function renderPaychecks(data) {
-        document.getElementById('paycheckContainer').innerHTML = data.map((item, i) => `
-            <div class="row row-paycheck">
-                <div class="field"><label>Label</label><input value="${item.name}" onchange="update('paychecks', ${i}, 'name', this.value)"></div>
-                <div class="field"><label>Date</label><input type="date" value="${item.date || ''}" onchange="update('paychecks', ${i}, 'date', this.value)"></div>
-                <div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('paychecks', ${i}, 'amount', this.value, true)"></div>
-                <div class="field"><label>Running</label><div class="running-bal" id="running-bal-${i}">${money(item.balanceAfter)}</div></div>
-                <button class="btn-outline" onclick="removeItem('paychecks', ${i})">✕</button>
-            </div>
-            <div class="bucket-summary" id="bucket-summary-${i}">
-                <span>💼 <strong>${item.name || 'Paycheck ' + (i+1)}</strong></span>
-                <span>Assigned expenses: <span class="bs-assigned">${money(item.bucketExpenses)}</span></span>
-                <span>Balance after bucket: <span class="bs-remaining">${money(item.balanceAfter)}</span></span>
-            </div>
-        `).join('');
-    }
-
-    function renderExpenses(data, paychecks) {
-        const bucketOptions = paychecks.map((p, i) =>
-            `<option value="${i}">${p.name || 'Paycheck ' + (i+1)}</option>`
-        ).join('');
-
-        document.getElementById('expenseContainer').innerHTML = data.length === 0
-            ? '<p style="color:var(--muted);font-size:0.9rem;">No expenses yet. Add one above.</p>'
-            : data.map((item, i) => {
-                const bucketVal = item.bucketIndex !== null && item.bucketIndex !== undefined ? item.bucketIndex : '';
-                return `
-                <div class="row row-expense">
-                    <div class="field">
-                        <label>Expense ${item.fromRecurring ? '<span class="rec-badge">🔄 recurring</span>' : ''}</label>
-                        <input value="${item.name}" onchange="update('expenses', ${i}, 'name', this.value)">
-                    </div>
-                    <div class="field"><label>Category</label><input value="${item.category || ''}" onchange="update('expenses', ${i}, 'category', this.value)"></div>
-                    <div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('expenses', ${i}, 'amount', this.value, true)"></div>
-                    <div class="field">
-                        <label>Due Day</label>
-                        <select class="field-select" onchange="update('expenses', ${i}, 'dueDay', this.value ? parseInt(this.value) : null, false)">
-                            ${buildDayOptions(item.dueDay)}
-                        </select>
-                    </div>
-                    <div class="field">
-                        <label>Bucket 💼</label>
-                        <select class="field-select" onchange="update('expenses', ${i}, 'bucketIndex', this.value === '' ? null : parseInt(this.value), true)">
-                            <option value="">— Unassigned —</option>
-                            ${bucketOptions.replace(`value="${bucketVal}"`, `value="${bucketVal}" selected`)}
-                        </select>
-                    </div>
-                    <button class="btn-outline" onclick="removeItem('expenses', ${i})">✕</button>
-                </div>
-            `}).join('');
-    }
-
-    function renderRecurringList() {
-        document.getElementById('recurringContainer').innerHTML = state.recurring.map((item, i) => `
-            <div class="row row-recurring">
-                <div class="field"><label>Bill Name</label><input value="${item.name}" onchange="updateRec(${i}, 'name', this.value)"></div>
-                <div class="field"><label>Category</label><input value="${item.category || ''}" onchange="updateRec(${i}, 'category', this.value)"></div>
-                <div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="updateRec(${i}, 'amount', this.value, true)"></div>
-                <div class="field">
-                    <label>Due Day</label>
-                    <select class="field-select" onchange="updateRec(${i}, 'dueDay', this.value ? parseInt(this.value) : null, false)">
-                        ${buildDayOptions(item.dueDay)}
-                    </select>
-                </div>
-                <button class="btn-outline" onclick="removeRec(${i})">✕</button>
-            </div>
-        `).join('') || '<p class="muted">No recurring bills set up.</p>';
-    }
-
-    function renderSummary(activeYear) {
-        document.getElementById('summaryBody').innerHTML = activeYear.months.map(m => {
-            const inc = m.paychecks.reduce((s,p)=>s+Number(p.amount||0), 0);
-            const exp = m.expenses.reduce((s,e)=>s+Number(e.amount||0), 0) + state.recurring.reduce((s,r)=>s+Number(r.amount||0), 0);
-            return `<tr style="border-bottom: 1px solid var(--border);"><td style="padding: 12px;">${m.name}</td><td>${money(m.startRollover)}</td><td>${money(inc)}</td><td>${money(exp)}</td><td><strong>${money(m.endRollover)}</strong></td></tr>`;
-        }).join('');
-    }
-
-    // --- 6. HELPERS ---
-    window.money = (n) => '$' + Number(n||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-    window.saveData = () => { localStorage.setItem('rollover_pro_v4', JSON.stringify(state)); alert('Data Saved!'); };
-    
-    window.update = (type, i, key, val, isTyping = false) => { 
-        state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth][type][i][key] = val; 
-        render(isTyping); 
-    };
-    window.updateRec = (i, key, val, isTyping = false) => { 
-        state.recurring[i][key] = val; 
-        render(isTyping); 
-    };
-
-    window.addItem = (type) => { 
-        const defaults = type === 'expenses'
-            ? {name: 'New Expense', amount: 0, category: '', dueDay: null, bucketIndex: null}
-            : {name: 'New', amount: 0};
-        state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth][type].push(defaults); 
-        render(); 
-    };
-    window.addRecurring = () => { state.recurring.push({name: 'New Recurring', amount: 0, dueDay: null}); render(); };
-    window.removeItem = (type, i) => { state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth][type].splice(i, 1); render(); };
-    window.removeRec = (i) => { state.recurring.splice(i, 1); render(); };
-    window.setActive = (i) => { state.years[state.activeYearIndex].activeMonth = i; render(); };
-    window.addNewYear = () => {
-        const lastYear = parseInt(state.years[state.years.length-1].year);
-        const name = prompt("Enter new year:", lastYear + 1);
-        if (name) { state.years.push(createNewYearData(name)); state.activeYearIndex = state.years.length - 1; render(); }
-    };
-    window.changeYear = (i) => { state.activeYearIndex = parseInt(i); render(); };
-
-    window.switchView = (v) => { 
-        document.querySelectorAll('.view-section').forEach(el => el.classList.remove('view-active'));
-        document.getElementById(v + 'View').classList.add('view-active');
-        
-        document.getElementById('navHome').classList.toggle('btn-active', v === 'home');
-        document.getElementById('navRecurring').classList.toggle('btn-active', v === 'recurring');
-        document.getElementById('navSummary').classList.toggle('btn-active', v === 'summary');
-    };
-
-    // --- 7. INITIALIZE ---
-    if (supabaseClient) supabaseClient.auth.onAuthStateChange(() => { renderAuth(); });
-    document.documentElement.dataset.theme = localStorage.getItem('budget_theme') || 'light';
-    document.getElementById('themeToggle').onclick = () => {
-        const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-        document.documentElement.dataset.theme = t;
-        localStorage.setItem('budget_theme', t);
-    };
-    render();
+const SUPABASE_URL = 'https://awalptqpsjflrahkrjzk.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3YWxwdHFwc2pmbHJhaGtyanprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNzEyMDgsImV4cCI6MjA5MTg0NzIwOH0.Ls-OkgNeABakndkR4Omk5EKSRyU7X2BXDSDoXW4SL40';
+let supabaseClient = null;
+try { if (!SUPABASE_URL.includes('your-project')) supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch(e) { console.error('Supabase Init Error', e); }
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const createNewYearData = (yearName) => ({ year: yearName, activeMonth: 0, months: MONTHS.map(name => ({ name, paychecks: [{name: 'Paycheck 1', amount: 2500, date: ''}], expenses: [], excludedBuckets: [] })) });
+function normalizeState(raw) { const base = raw || { activeYearIndex: 0, recurring: [{name: 'Housing/Rent', amount: 1500, category: 'Housing', dueDay: 1}], years: [createNewYearData('2026')] }; base.recurring = base.recurring || []; base.years = (base.years || []).map(y => ({ ...y, months: (y.months || []).map(m => ({ ...m, expenses: m.expenses || [], excludedBuckets: m.excludedBuckets || [] })) })); return base; }
+let state = normalizeState(JSON.parse(localStorage.getItem('rollover_pro_v5')) || JSON.parse(localStorage.getItem('rollover_pro_v4')));
+let modalSelections = new Set();
+function buildDayOptions(selected) { let opts = '<option value="">— Day —</option>'; for (let d = 1; d <= 31; d++) { const suffix = d === 1 ? 'st' : d === 2 ? 'nd' : d === 3 ? 'rd' : 'th'; const sel = Number(selected) === d ? 'selected' : ''; opts += `<option value="${d}" ${sel}>${d}${suffix}</option>`; } return opts; }
+function ordinal(d) { if (!d) return ''; const n = Number(d); const teen = n % 100; const s = (teen >= 11 && teen <= 13) ? 'th' : n % 10 === 1 ? 'st' : n % 10 === 2 ? 'nd' : n % 10 === 3 ? 'rd' : 'th'; return n + s; }
+async function signInWithGitHub() { if (!supabaseClient) return alert('Setup Supabase first!'); const siteUrl = window.location.origin + window.location.pathname; await supabaseClient.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: siteUrl } }); }
+async function signOut() { if (supabaseClient) await supabaseClient.auth.signOut(); renderAuth(); }
+async function renderAuth() { const container = document.getElementById('authContainer'); if (!supabaseClient) return; const { data: { user } } = await supabaseClient.auth.getUser(); if (user) { container.innerHTML = `<div class="user-pill"><img src="${user.user_metadata.avatar_url || ''}" alt="U"><span>${user.user_metadata.full_name || user.email}</span></div><button class="btn-ghost" onclick="signOut()">Sign Out</button>`; } else { container.innerHTML = `<button class="btn-github" onclick="signInWithGitHub()">GitHub Login</button>`; } }
+function updateModalUI() { const count = modalSelections.size; const total = [...modalSelections].reduce((s, i) => s + Number(state.recurring[i].amount || 0), 0); const allSelected = state.recurring.length > 0 && modalSelections.size === state.recurring.length; document.getElementById('selectedCount').textContent = `${count} selected`; document.getElementById('modalSelTotal').textContent = money(total); document.getElementById('selectAllBtn').textContent = allSelected ? 'Deselect All' : 'Select All'; const addBtn = document.getElementById('addSelectedBtn'); addBtn.disabled = count === 0; addBtn.textContent = count > 0 ? `✚ Add ${count} Expense${count > 1 ? 's' : ''}` : '✚ Add Selected'; const footerTotal = document.getElementById('modalFooterTotal'); if (count > 0) { footerTotal.style.visibility = 'visible'; document.getElementById('modalFooterCount').textContent = count; document.getElementById('modalFooterSum').textContent = money(total); } else { footerTotal.style.visibility = 'hidden'; } document.querySelectorAll('.rec-select-item').forEach(el => { const idx = parseInt(el.dataset.idx); const cb = el.querySelector('input[type="checkbox"]'); if (modalSelections.has(idx)) { el.classList.add('selected'); if (cb) cb.checked = true; } else { el.classList.remove('selected'); if (cb) cb.checked = false; } }); }
+window.toggleRecurringItem = function(idx) { if (modalSelections.has(idx)) modalSelections.delete(idx); else modalSelections.add(idx); updateModalUI(); };
+window.toggleSelectAll = function() { const allSelected = modalSelections.size === state.recurring.length; if (allSelected) modalSelections.clear(); else state.recurring.forEach((_, i) => modalSelections.add(i)); updateModalUI(); };
+window.openRecurringModal = function() { const activeYear = state.years[state.activeYearIndex]; const m = activeYear.months[activeYear.activeMonth]; document.getElementById('modalMonthName').textContent = m.name; modalSelections.clear(); const list = document.getElementById('recSelectList'); const toolbar = document.getElementById('modalToolbar'); if (!state.recurring || state.recurring.length === 0) { list.innerHTML = '<div class="empty-rec-note">No global recurring bills set up yet.<br>Go to the 🔄 Recurring tab to add some.</div>'; toolbar.style.display = 'none'; } else { toolbar.style.display = 'flex'; list.innerHTML = state.recurring.map((r, i) => `<div class="rec-select-item" data-idx="${i}" onclick="toggleRecurringItem(${i})"><input type="checkbox" onclick="event.stopPropagation(); toggleRecurringItem(${i})"><div class="rec-select-item-info"><span class="rec-select-item-name">${r.name || 'Unnamed'}</span><span class="rec-select-item-meta">${r.category || 'No category'}${r.dueDay ? ' · Due ' + ordinal(r.dueDay) : ''}</span></div><span class="rec-select-item-amount">${money(r.amount)}/mo</span></div>`).join(''); } updateModalUI(); document.getElementById('recurringModal').classList.add('open'); };
+window.closeRecurringModal = function() { document.getElementById('recurringModal').classList.remove('open'); modalSelections.clear(); };
+document.getElementById('recurringModal').addEventListener('click', function(e) { if (e.target === this) closeRecurringModal(); });
+window.addSelectedRecurring = function() { if (modalSelections.size === 0) return; const activeYear = state.years[state.activeYearIndex]; const m = activeYear.months[activeYear.activeMonth]; [...modalSelections].sort((a, b) => a - b).forEach(i => { const r = state.recurring[i]; m.expenses.push({ name: r.name, amount: r.amount, category: r.category || '', dueDay: r.dueDay || null, fromRecurring: true, bucketIndex: null }); }); closeRecurringModal(); render(); };
+function calculate() { state.years.forEach(yearData => { let runningYearlyRollover = 0; yearData.months.forEach((m) => { m.startRollover = runningYearlyRollover; const incTotal = m.paychecks.reduce((s, p) => s + Number(p.amount || 0), 0); const expTotal = m.expenses.reduce((s, e) => s + Number(e.amount || 0), 0); const excludedTotal = (m.excludedBuckets || []).reduce((s, b) => s + Number(b.amount || 0), 0); m.paychecks.forEach((p, pi) => { p.bucketExpenses = m.expenses.filter(e => e.bucketIndex === pi).reduce((s, e) => s + Number(e.amount || 0), 0); }); let runningInMonth = m.startRollover; m.paychecks.forEach(p => { runningInMonth += Number(p.amount || 0); runningInMonth -= p.bucketExpenses; p.balanceAfter = runningInMonth; }); m.monthIncome = incTotal; m.monthExpenses = expTotal; m.excludedTotal = excludedTotal; m.endRollover = m.startRollover + incTotal - expTotal; m.availableAfterExcluded = m.endRollover - excludedTotal; runningYearlyRollover = m.endRollover; }); }); }
+function render(isTyping = false) { calculate(); const activeYear = state.years[state.activeYearIndex]; const m = activeYear.months[activeYear.activeMonth]; document.getElementById('kpiEnd').textContent = money(m.endRollover); document.getElementById('kpiAvailable').textContent = money(m.availableAfterExcluded); document.getElementById('excludedTotal').textContent = money(m.excludedTotal); if (isTyping) { m.paychecks.forEach((p, i) => { const el = document.getElementById(`running-bal-${i}`); if (el) el.textContent = money(p.balanceAfter); const bs = document.getElementById(`bucket-summary-${i}`); if (bs) { bs.querySelector('.bs-assigned').textContent = money(p.bucketExpenses); bs.querySelector('.bs-remaining').textContent = money(p.balanceAfter); } }); return; } document.getElementById('historyTitle').textContent = `${activeYear.year} History`; document.getElementById('yearTag').textContent = `${activeYear.year} TRACKING`; document.getElementById('monthList').innerHTML = activeYear.months.map((mm, i) => `<div class="month-item ${i === activeYear.activeMonth ? 'active' : ''}" onclick="setActive(${i})"><strong>${mm.name}</strong><small>End: ${money(mm.endRollover)}</small></div>`).join(''); document.getElementById('yearSelector').innerHTML = state.years.map((y, i) => `<option value="${i}" ${i === state.activeYearIndex ? 'selected' : ''}>${y.year}</option>`).join(''); renderPaychecks(m.paychecks); renderExcludedBuckets(m.excludedBuckets || []); renderExpenses(m.expenses, m.paychecks); renderRecurringList(); renderSummary(activeYear); renderAuth(); }
+function renderPaychecks(data) { document.getElementById('paycheckContainer').innerHTML = data.map((item, i) => `<div class="row row-paycheck"><div class="field"><label>Label</label><input value="${item.name}" onchange="update('paychecks', ${i}, 'name', this.value)"></div><div class="field"><label>Date</label><input type="date" value="${item.date || ''}" onchange="update('paychecks', ${i}, 'date', this.value)"></div><div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('paychecks', ${i}, 'amount', this.value, true)"></div><div class="field"><label>Running</label><div class="running-bal" id="running-bal-${i}">${money(item.balanceAfter)}</div></div><button class="btn-outline" onclick="removeItem('paychecks', ${i})">✕</button></div><div class="bucket-summary" id="bucket-summary-${i}"><span>💼 <strong>${item.name || 'Paycheck ' + (i+1)}</strong></span><span>Assigned expenses: <span class="bs-assigned">${money(item.bucketExpenses)}</span></span><span>Balance after bucket: <span class="bs-remaining">${money(item.balanceAfter)}</span></span></div>`).join(''); }
+function renderExcludedBuckets(data) { document.getElementById('excludedBucketContainer').innerHTML = data.length === 0 ? '<p style="color:var(--muted);font-size:0.9rem;">No excluded buckets yet. Add one above.</p>' : data.map((item, i) => `<div class="row row-excluded"><div class="field"><label>Bucket Name</label><input value="${item.name || ''}" onchange="updateExcluded(${i}, 'name', this.value)"></div><div class="field"><label>Amount</label><input type="number" value="${item.amount || 0}" oninput="updateExcluded(${i}, 'amount', this.value)"></div><div class="field"><label>Reserve Date</label><input type="date" value="${item.date || ''}" onchange="updateExcluded(${i}, 'date', this.value)"></div><div class="field"><label>Note</label><input value="${item.note || ''}" onchange="updateExcluded(${i}, 'note', this.value)"></div><button class="btn-outline" onclick="removeExcluded(${i})">✕</button></div>`).join(''); }
+function renderExpenses(data, paychecks) { const bucketOptions = paychecks.map((p, i) => `<option value="${i}">${p.name || 'Paycheck ' + (i+1)}</option>`).join(''); document.getElementById('expenseContainer').innerHTML = data.length === 0 ? '<p style="color:var(--muted);font-size:0.9rem;">No expenses yet. Add one above.</p>' : data.map((item, i) => { const bucketVal = item.bucketIndex !== null && item.bucketIndex !== undefined ? item.bucketIndex : ''; return `<div class="row row-expense"><div class="field"><label>Expense ${item.fromRecurring ? '<span class="rec-badge">🔄 recurring</span>' : ''}</label><input value="${item.name}" onchange="update('expenses', ${i}, 'name', this.value)"></div><div class="field"><label>Category</label><input value="${item.category || ''}" onchange="update('expenses', ${i}, 'category', this.value)"></div><div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('expenses', ${i}, 'amount', this.value, true)"></div><div class="field"><label>Due Day</label><select class="field-select" onchange="update('expenses', ${i}, 'dueDay', this.value ? parseInt(this.value) : null, false)">${buildDayOptions(item.dueDay)}</select></div><div class="field"><label>Bucket 💼</label><select class="field-select" onchange="update('expenses', ${i}, 'bucketIndex', this.value === '' ? null : parseInt(this.value), true)"><option value="">— Unassigned —</option>${bucketOptions.replace(`value="${bucketVal}"`, `value="${bucketVal}" selected`)}</select></div><button class="btn-outline" onclick="removeItem('expenses', ${i})">✕</button></div>`; }).join(''); }
+function renderRecurringList() { document.getElementById('recurringContainer').innerHTML = state.recurring.map((item, i) => `<div class="row row-recurring"><div class="field"><label>Bill Name</label><input value="${item.name}" onchange="updateRec(${i}, 'name', this.value)"></div><div class="field"><label>Category</label><input value="${item.category || ''}" onchange="updateRec(${i}, 'category', this.value)"></div><div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="updateRec(${i}, 'amount', this.value, true)"></div><div class="field"><label>Due Day</label><select class="field-select" onchange="updateRec(${i}, 'dueDay', this.value ? parseInt(this.value) : null, false)">${buildDayOptions(item.dueDay)}</select></div><button class="btn-outline" onclick="removeRec(${i})">✕</button></div>`).join('') || '<p class="muted">No recurring bills set up.</p>'; }
+function renderSummary(activeYear) { document.getElementById('summaryBody').innerHTML = activeYear.months.map(m => `<tr style="border-bottom: 1px solid var(--border);"><td style="padding: 12px;">${m.name}</td><td>${money(m.monthIncome)}</td><td>${money(m.monthExpenses)}</td><td>${money(m.excludedTotal)}</td><td><strong>${money(m.endRollover)}</strong></td><td><strong>${money(m.availableAfterExcluded)}</strong></td></tr>`).join(''); }
+window.money = (n) => '$' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+window.saveData = () => { localStorage.setItem('rollover_pro_v5', JSON.stringify(state)); alert('Data Saved!'); };
+window.update = (type, i, key, val, isTyping = false) => { state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth][type][i][key] = val; render(isTyping); };
+window.updateRec = (i, key, val, isTyping = false) => { state.recurring[i][key] = val; render(isTyping); };
+window.updateExcluded = (i, key, val) => { state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth].excludedBuckets[i][key] = key === 'amount' ? Number(val || 0) : val; render(); };
+window.addItem = (type) => { const defaults = type === 'expenses' ? { name: 'New Expense', amount: 0, category: '', dueDay: null, bucketIndex: null } : { name: 'New', amount: 0, date: '' }; state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth][type].push(defaults); render(); };
+window.addExcludedBucket = () => { state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth].excludedBuckets.push({ name: 'Reserved Bucket', amount: 0, date: '', note: '' }); render(); };
+window.addRecurring = () => { state.recurring.push({ name: 'New Recurring', amount: 0, category: '', dueDay: null }); render(); };
+window.removeItem = (type, i) => { state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth][type].splice(i, 1); render(); };
+window.removeExcluded = (i) => { state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth].excludedBuckets.splice(i, 1); render(); };
+window.removeRec = (i) => { state.recurring.splice(i, 1); render(); };
+window.setActive = (i) => { state.years[state.activeYearIndex].activeMonth = i; render(); };
+window.addNewYear = () => { const lastYear = parseInt(state.years[state.years.length - 1].year); const name = prompt('Enter new year:', lastYear + 1); if (name) { state.years.push(createNewYearData(name)); state.activeYearIndex = state.years.length - 1; render(); } };
+window.changeYear = (i) => { state.activeYearIndex = parseInt(i); render(); };
+window.switchView = (v) => { document.querySelectorAll('.view-section').forEach(el => el.classList.remove('view-active')); document.getElementById(v + 'View').classList.add('view-active'); document.getElementById('navHome').classList.toggle('btn-active', v === 'home'); document.getElementById('navRecurring').classList.toggle('btn-active', v === 'recurring'); document.getElementById('navSummary').classList.toggle('btn-active', v === 'summary'); };
+if (supabaseClient) supabaseClient.auth.onAuthStateChange(() => { renderAuth(); });
+document.documentElement.dataset.theme = localStorage.getItem('budget_theme') || 'light';
+document.getElementById('themeToggle').onclick = () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = t; localStorage.setItem('budget_theme', t); };
+render();
 </script>
 </body>
 </html>
