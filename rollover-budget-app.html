@@ -211,7 +211,38 @@ function renderExpenses(data, paychecks) { const bucketOptions = paychecks.map((
 function renderRecurringList() { document.getElementById('recurringContainer').innerHTML = state.recurring.map((item, i) => `<div class="row row-recurring"><div class="field"><label>Bill Name</label><input value="${item.name}" onchange="updateRec(${i}, 'name', this.value)"></div><div class="field"><label>Category</label><input value="${item.category || ''}" onchange="updateRec(${i}, 'category', this.value)"></div><div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="updateRec(${i}, 'amount', this.value, true)"></div><div class="field"><label>Due Day</label><select class="field-select" onchange="updateRec(${i}, 'dueDay', this.value ? parseInt(this.value) : null, false)">${buildDayOptions(item.dueDay)}</select></div><button class="btn-outline" onclick="removeRec(${i})">✕</button></div>`).join('') || '<p class="muted">No recurring bills set up.</p>'; }
 function renderSummary(activeYear) { document.getElementById('summaryBody').innerHTML = activeYear.months.map(m => `<tr style="border-bottom: 1px solid var(--border);"><td style="padding: 12px;">${m.name}</td><td>${money(m.monthIncome)}</td><td>${money(m.monthExpenses)}</td><td>${money(m.excludedTotal)}</td><td><strong>${money(m.endRollover)}</strong></td><td><strong>${money(m.availableAfterExcluded)}</strong></td></tr>`).join(''); }
 window.money = (n) => '$' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-window.saveData = () => { localStorage.setItem('rollover_pro_v5', JSON.stringify(state)); alert('Data Saved!'); };
+
+// --- CROSS-DEVICE SYNC: Save to Supabase + localStorage ---
+window.saveData = async () => {
+  localStorage.setItem('rollover_pro_v5', JSON.stringify(state));
+  if (!supabaseClient) return alert('Data saved locally only.');
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  if (!user) return alert('Sign in with GitHub to sync across devices!');
+  const { error } = await supabaseClient
+    .from('budget_data')
+    .upsert({ user_id: user.id, state, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+  alert(error ? 'Cloud save failed: ' + error.message : '✅ Saved & synced!');
+};
+
+// --- CROSS-DEVICE SYNC: Load from Supabase on sign-in ---
+window.loadFromCloud = async () => {
+  if (!supabaseClient) return;
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  if (!user) return;
+  const { data, error } = await supabaseClient
+    .from('budget_data')
+    .select('state')
+    .eq('user_id', user.id)
+    .single();
+  if (error && error.code !== 'PGRST116') { console.error('Cloud load error:', error.message); return; }
+  if (data?.state) {
+    state = normalizeState(data.state);
+    localStorage.setItem('rollover_pro_v5', JSON.stringify(state));
+    render();
+    console.log('Loaded data from cloud ✅');
+  }
+};
+
 window.update = (type, i, key, val, isTyping = false) => { state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth][type][i][key] = val; render(isTyping); };
 window.updateRec = (i, key, val, isTyping = false) => { state.recurring[i][key] = val; render(isTyping); };
 window.updateExcluded = (i, key, val) => { state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth].excludedBuckets[i][key] = key === 'amount' ? Number(val || 0) : val; render(); };
@@ -225,7 +256,13 @@ window.setActive = (i) => { state.years[state.activeYearIndex].activeMonth = i; 
 window.addNewYear = () => { const lastYear = parseInt(state.years[state.years.length - 1].year); const name = prompt('Enter new year:', lastYear + 1); if (name) { state.years.push(createNewYearData(name)); state.activeYearIndex = state.years.length - 1; render(); } };
 window.changeYear = (i) => { state.activeYearIndex = parseInt(i); render(); };
 window.switchView = (v) => { document.querySelectorAll('.view-section').forEach(el => el.classList.remove('view-active')); document.getElementById(v + 'View').classList.add('view-active'); document.getElementById('navHome').classList.toggle('btn-active', v === 'home'); document.getElementById('navRecurring').classList.toggle('btn-active', v === 'recurring'); document.getElementById('navSummary').classList.toggle('btn-active', v === 'summary'); };
-if (supabaseClient) supabaseClient.auth.onAuthStateChange(() => { renderAuth(); });
+
+// --- CROSS-DEVICE SYNC: Pull cloud data automatically on sign-in ---
+if (supabaseClient) supabaseClient.auth.onAuthStateChange(async (event) => {
+  renderAuth();
+  if (event === 'SIGNED_IN') { await loadFromCloud(); }
+});
+
 document.documentElement.dataset.theme = localStorage.getItem('budget_theme') || 'light';
 document.getElementById('themeToggle').onclick = () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = t; localStorage.setItem('budget_theme', t); };
 render();
