@@ -96,10 +96,16 @@
         /* Grid Form Rows */
         .row { display: grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap: 12px; margin-bottom: 12px; align-items: end; }
         .row-paycheck { grid-template-columns: 1.5fr 1fr 1fr 1fr auto; }
+        .row-expense  { grid-template-columns: 1.5fr 1fr 1fr 1fr auto; }
         .field { display: flex; flex-direction: column; gap: 4px; }
         .field label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--muted); }
-        input { padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.9rem; width: 100%; }
+        input, select.field-select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.9rem; width: 100%; }
+        select.field-select { cursor: pointer; }
         .running-bal { font-size: 0.85rem; font-weight: 700; color: var(--purple); background: var(--purple2); padding: 8px; border-radius: 8px; text-align: center; }
+
+        /* Paycheck bucket pill on expense rows */
+        .bucket-pill { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #fef3c7; color: #92400e; padding: 2px 7px; border-radius: 6px; white-space: nowrap; margin-left: 4px; }
+        [data-theme='dark'] .bucket-pill { background: #451a03; color: #fbbf24; }
 
         /* Recurring badge on expense rows */
         .rec-badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: var(--purple2); color: var(--purple); padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
@@ -120,10 +126,18 @@
         .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
         .empty-rec-note { color: var(--muted); font-size: 0.875rem; padding: 20px; text-align: center; }
 
+        /* Paycheck bucket summary under each paycheck row */
+        .bucket-summary { font-size: 0.78rem; color: var(--muted); margin-top: -4px; margin-bottom: 10px; padding: 6px 10px; background: var(--surface2); border-radius: 8px; border: 1px solid var(--border); display: flex; gap: 16px; flex-wrap: wrap; }
+        .bucket-summary span { white-space: nowrap; }
+        .bucket-summary .bs-assigned { color: #b45309; font-weight: 700; }
+        .bucket-summary .bs-remaining { color: #065f46; font-weight: 700; }
+        [data-theme='dark'] .bucket-summary .bs-assigned { color: #fbbf24; }
+        [data-theme='dark'] .bucket-summary .bs-remaining { color: #6ee7b7; }
+
         @media (max-width: 950px) {
             .hero, .main-grid { grid-template-columns: 1fr; }
-            .row, .row-paycheck { grid-template-columns: 1fr 1fr; }
-            .row button { grid-column: span 2; }
+            .row, .row-paycheck, .row-expense { grid-template-columns: 1fr 1fr; }
+            .row button, .row-paycheck button, .row-expense button { grid-column: span 2; }
         }
     </style>
 </head>
@@ -329,7 +343,8 @@
             name: r.name,
             amount: r.amount,
             category: r.category || '',
-            fromRecurring: true
+            fromRecurring: true,
+            bucketIndex: null
         });
         closeRecurringModal();
         render();
@@ -344,11 +359,22 @@
                 m.startRollover = runningYearlyRollover;
                 const incTotal = m.paychecks.reduce((s, p) => s + Number(p.amount || 0), 0);
                 const expTotal = m.expenses.reduce((s, e) => s + Number(e.amount || 0), 0) + recTotal;
+
+                // Build per-paycheck bucket totals
+                m.paychecks.forEach((p, pi) => {
+                    p.bucketExpenses = m.expenses
+                        .filter(e => e.bucketIndex === pi)
+                        .reduce((s, e) => s + Number(e.amount || 0), 0);
+                });
+
+                // Running balance per paycheck (cumulative income minus bucket-assigned expenses)
                 let runningInMonth = m.startRollover;
                 m.paychecks.forEach(p => {
                     runningInMonth += Number(p.amount || 0);
+                    runningInMonth -= p.bucketExpenses;
                     p.balanceAfter = runningInMonth;
                 });
+
                 m.endRollover = m.startRollover + incTotal - expTotal;
                 runningYearlyRollover = m.endRollover;
             });
@@ -367,6 +393,11 @@
             m.paychecks.forEach((p, i) => {
                 const el = document.getElementById(`running-bal-${i}`);
                 if (el) el.textContent = money(p.balanceAfter);
+                const bs = document.getElementById(`bucket-summary-${i}`);
+                if (bs) {
+                    bs.querySelector('.bs-assigned').textContent = money(p.bucketExpenses);
+                    bs.querySelector('.bs-remaining').textContent = money(p.balanceAfter);
+                }
             });
             return;
         }
@@ -386,7 +417,7 @@
         `).join('');
 
         renderPaychecks(m.paychecks);
-        renderExpenses(m.expenses);
+        renderExpenses(m.expenses, m.paychecks);
         renderRecurringList();
         renderSummary(activeYear);
         renderAuth();
@@ -401,21 +432,41 @@
                 <div class="field"><label>Running</label><div class="running-bal" id="running-bal-${i}">${money(item.balanceAfter)}</div></div>
                 <button class="btn-outline" onclick="removeItem('paychecks', ${i})">✕</button>
             </div>
+            <div class="bucket-summary" id="bucket-summary-${i}">
+                <span>💼 <strong>${item.name || 'Paycheck ' + (i+1)}</strong></span>
+                <span>Assigned expenses: <span class="bs-assigned">${money(item.bucketExpenses)}</span></span>
+                <span>Balance after bucket: <span class="bs-remaining">${money(item.balanceAfter)}</span></span>
+            </div>
         `).join('');
     }
 
-    function renderExpenses(data) {
-        document.getElementById('expenseContainer').innerHTML = data.map((item, i) => `
-            <div class="row">
-                <div class="field">
-                    <label>Expense ${item.fromRecurring ? '<span class="rec-badge">🔄 recurring</span>' : ''}</label>
-                    <input value="${item.name}" onchange="update('expenses', ${i}, 'name', this.value)">
+    function renderExpenses(data, paychecks) {
+        const bucketOptions = paychecks.map((p, i) =>
+            `<option value="${i}">${p.name || 'Paycheck ' + (i+1)}</option>`
+        ).join('');
+
+        document.getElementById('expenseContainer').innerHTML = data.length === 0
+            ? '<p style="color:var(--muted);font-size:0.9rem;">No expenses yet. Add one above.</p>'
+            : data.map((item, i) => {
+                const bucketVal = item.bucketIndex !== null && item.bucketIndex !== undefined ? item.bucketIndex : '';
+                return `
+                <div class="row row-expense">
+                    <div class="field">
+                        <label>Expense ${item.fromRecurring ? '<span class="rec-badge">🔄 recurring</span>' : ''}</label>
+                        <input value="${item.name}" onchange="update('expenses', ${i}, 'name', this.value)">
+                    </div>
+                    <div class="field"><label>Category</label><input value="${item.category || ''}" onchange="update('expenses', ${i}, 'category', this.value)"></div>
+                    <div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('expenses', ${i}, 'amount', this.value, true)"></div>
+                    <div class="field">
+                        <label>Bucket 💼</label>
+                        <select class="field-select" onchange="update('expenses', ${i}, 'bucketIndex', this.value === '' ? null : parseInt(this.value), true)">
+                            <option value="">— Unassigned —</option>
+                            ${bucketOptions.replace(`value="${bucketVal}"`, `value="${bucketVal}" selected`)}
+                        </select>
+                    </div>
+                    <button class="btn-outline" onclick="removeItem('expenses', ${i})">✕</button>
                 </div>
-                <div class="field"><label>Category</label><input value="${item.category || ''}" onchange="update('expenses', ${i}, 'category', this.value)"></div>
-                <div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('expenses', ${i}, 'amount', this.value, true)"></div>
-                <button class="btn-outline" onclick="removeItem('expenses', ${i})">✕</button>
-            </div>
-        `).join('');
+            `}).join('');
     }
 
     function renderRecurringList() {
@@ -450,7 +501,13 @@
         render(isTyping); 
     };
 
-    window.addItem = (type) => { state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth][type].push({name: 'New', amount: 0}); render(); };
+    window.addItem = (type) => { 
+        const defaults = type === 'expenses'
+            ? {name: 'New Expense', amount: 0, category: '', bucketIndex: null}
+            : {name: 'New', amount: 0};
+        state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth][type].push(defaults); 
+        render(); 
+    };
     window.addRecurring = () => { state.recurring.push({name: 'New Recurring', amount: 0}); render(); };
     window.removeItem = (type, i) => { state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth][type].splice(i, 1); render(); };
     window.removeRec = (i) => { state.recurring.splice(i, 1); render(); };
