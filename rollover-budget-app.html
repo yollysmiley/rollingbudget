@@ -96,7 +96,8 @@
         /* Grid Form Rows */
         .row { display: grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap: 12px; margin-bottom: 12px; align-items: end; }
         .row-paycheck { grid-template-columns: 1.5fr 1fr 1fr 1fr auto; }
-        .row-expense  { grid-template-columns: 1.5fr 1fr 1fr 1fr auto; }
+        .row-expense  { grid-template-columns: 1.5fr 1fr 1fr 0.65fr 1fr auto; }
+        .row-recurring { grid-template-columns: 1.5fr 1fr 1fr 0.7fr auto; }
         .field { display: flex; flex-direction: column; gap: 4px; }
         .field label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--muted); }
         input, select.field-select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.9rem; width: 100%; }
@@ -136,8 +137,8 @@
 
         @media (max-width: 950px) {
             .hero, .main-grid { grid-template-columns: 1fr; }
-            .row, .row-paycheck, .row-expense { grid-template-columns: 1fr 1fr; }
-            .row button, .row-paycheck button, .row-expense button { grid-column: span 2; }
+            .row, .row-paycheck, .row-expense, .row-recurring { grid-template-columns: 1fr 1fr; }
+            .row button, .row-paycheck button, .row-expense button, .row-recurring button { grid-column: span 2; }
         }
     </style>
 </head>
@@ -271,9 +272,27 @@
 
     let state = JSON.parse(localStorage.getItem('rollover_pro_v4')) || {
         activeYearIndex: 0,
-        recurring: [{name: 'Housing/Rent', amount: 1500, category: 'Housing'}],
+        recurring: [{name: 'Housing/Rent', amount: 1500, category: 'Housing', dueDay: 1}],
         years: [createNewYearData('2026')]
     };
+
+    // --- UTILITY: Build ordinal day options ---
+    function buildDayOptions(selected) {
+        let opts = '<option value="">— Day —</option>';
+        for (let d = 1; d <= 31; d++) {
+            const suffix = d === 1 ? 'st' : d === 2 ? 'nd' : d === 3 ? 'rd' : 'th';
+            const sel = Number(selected) === d ? 'selected' : '';
+            opts += `<option value="${d}" ${sel}>${d}${suffix}</option>`;
+        }
+        return opts;
+    }
+
+    function ordinal(d) {
+        if (!d) return '';
+        const n = Number(d);
+        const s = n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th';
+        return n + s;
+    }
 
     // --- 3. AUTH LOGIC ---
     async function signInWithGitHub() {
@@ -318,7 +337,7 @@
                 <div class="rec-select-item" onclick="addRecurringToMonth(${i})">
                     <div class="rec-select-item-info">
                         <span class="rec-select-item-name">${r.name || 'Unnamed'}</span>
-                        <span class="rec-select-item-meta">${r.category || 'No category'}</span>
+                        <span class="rec-select-item-meta">${r.category || 'No category'}${r.dueDay ? ' · Due ' + ordinal(r.dueDay) : ''}</span>
                     </div>
                     <span class="rec-select-item-amount">${money(r.amount)}/mo</span>
                 </div>
@@ -343,6 +362,7 @@
             name: r.name,
             amount: r.amount,
             category: r.category || '',
+            dueDay: r.dueDay || null,
             fromRecurring: true,
             bucketIndex: null
         });
@@ -458,6 +478,12 @@
                     <div class="field"><label>Category</label><input value="${item.category || ''}" onchange="update('expenses', ${i}, 'category', this.value)"></div>
                     <div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('expenses', ${i}, 'amount', this.value, true)"></div>
                     <div class="field">
+                        <label>Due Day</label>
+                        <select class="field-select" onchange="update('expenses', ${i}, 'dueDay', this.value ? parseInt(this.value) : null, false)">
+                            ${buildDayOptions(item.dueDay)}
+                        </select>
+                    </div>
+                    <div class="field">
                         <label>Bucket 💼</label>
                         <select class="field-select" onchange="update('expenses', ${i}, 'bucketIndex', this.value === '' ? null : parseInt(this.value), true)">
                             <option value="">— Unassigned —</option>
@@ -471,10 +497,16 @@
 
     function renderRecurringList() {
         document.getElementById('recurringContainer').innerHTML = state.recurring.map((item, i) => `
-            <div class="row">
+            <div class="row row-recurring">
                 <div class="field"><label>Bill Name</label><input value="${item.name}" onchange="updateRec(${i}, 'name', this.value)"></div>
                 <div class="field"><label>Category</label><input value="${item.category || ''}" onchange="updateRec(${i}, 'category', this.value)"></div>
                 <div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="updateRec(${i}, 'amount', this.value, true)"></div>
+                <div class="field">
+                    <label>Due Day</label>
+                    <select class="field-select" onchange="updateRec(${i}, 'dueDay', this.value ? parseInt(this.value) : null, false)">
+                        ${buildDayOptions(item.dueDay)}
+                    </select>
+                </div>
                 <button class="btn-outline" onclick="removeRec(${i})">✕</button>
             </div>
         `).join('') || '<p class="muted">No recurring bills set up.</p>';
@@ -503,12 +535,12 @@
 
     window.addItem = (type) => { 
         const defaults = type === 'expenses'
-            ? {name: 'New Expense', amount: 0, category: '', bucketIndex: null}
+            ? {name: 'New Expense', amount: 0, category: '', dueDay: null, bucketIndex: null}
             : {name: 'New', amount: 0};
         state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth][type].push(defaults); 
         render(); 
     };
-    window.addRecurring = () => { state.recurring.push({name: 'New Recurring', amount: 0}); render(); };
+    window.addRecurring = () => { state.recurring.push({name: 'New Recurring', amount: 0, dueDay: null}); render(); };
     window.removeItem = (type, i) => { state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth][type].splice(i, 1); render(); };
     window.removeRec = (i) => { state.recurring.splice(i, 1); render(); };
     window.setActive = (i) => { state.years[state.activeYearIndex].activeMonth = i; render(); };
