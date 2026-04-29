@@ -20,7 +20,6 @@
             --r2: 22px;
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
         }
-
         [data-theme='dark'] {
             --bg: #171413;
             --surface: #201c1a;
@@ -31,19 +30,23 @@
             --purple: #a78bfa;
             --purple2: #2d2740;
         }
-
         * { box-sizing: border-box; transition: background 0.2s, color 0.2s; }
         body { margin: 0; background: var(--bg); color: var(--text); line-height: 1.5; min-height: 100vh; }
         .shell { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        .topbar { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; margin-bottom: 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 15px; }
+
+        /* ── TOPBAR ── */
+        .topbar { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; margin-bottom: 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 12px; }
         .brand strong { font-size: 1.4rem; letter-spacing: -0.5px; }
+        .topbar-right { display: flex; gap: 8px; align-items: center; }
         .nav-group { display: flex; gap: 8px; align-items: center; }
-        .auth-zone { display: flex; align-items: center; gap: 12px; }
+        .auth-zone { display: flex; align-items: center; gap: 10px; }
         .user-pill { display: flex; align-items: center; gap: 8px; background: var(--surface2); padding: 4px 12px; border-radius: 50px; font-size: 0.85rem; border: 1px solid var(--border); }
         .user-pill img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
         .year-controls { display: flex; align-items: center; gap: 10px; background: var(--surface); padding: 5px 15px; border-radius: 50px; border: 1px solid var(--border); }
         .year-controls select { border: none; background: transparent; color: var(--text); font-weight: 700; cursor: pointer; padding-right: 5px; }
         .year-controls select:focus { outline: none; }
+
+        /* ── BUTTONS ── */
         button { border: none; border-radius: 12px; padding: 10px 20px; cursor: pointer; font-weight: 600; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
         .btn-primary { background: var(--purple); color: white; }
         .btn-github { background: #24292e; color: white; }
@@ -52,8 +55,37 @@
         .btn-ghost { background: transparent; color: var(--muted); }
         .btn-green { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; font-size: 0.8rem; padding: 6px 12px; border-radius: 8px; }
         [data-theme='dark'] .btn-green { background: #064e3b; color: #6ee7b7; border-color: #065f46; }
+        .btn-icon { padding: 8px; border-radius: 10px; font-size: 1.1rem; min-width: 40px; min-height: 40px; justify-content: center; }
+
+        /* ── BOTTOM NAV (mobile only) ── */
+        .bottom-nav {
+            display: none;
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            padding: 6px 0 max(8px, env(safe-area-inset-bottom));
+            z-index: 500;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 -4px 16px rgba(0,0,0,0.06);
+        }
+        .bn-btn {
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
+            background: none; border: none; color: var(--muted);
+            font-size: 0.6rem; font-weight: 700; padding: 4px 12px;
+            border-radius: 10px; cursor: pointer; min-width: 56px;
+            text-transform: uppercase; letter-spacing: 0.04em;
+            transition: color 0.15s;
+        }
+        .bn-btn .bn-icon { font-size: 1.35rem; line-height: 1; }
+        .bn-btn.active { color: var(--purple); }
+        .bn-btn.bn-save { color: white; background: var(--purple); border-radius: 12px; padding: 6px 16px; }
+
+        /* ── VIEWS ── */
         .view-section { display: none; }
         .view-active { display: block; }
+
+        /* ── HERO ── */
         .hero { display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px; background: var(--surface); padding: 40px; border-radius: var(--r2); border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 30px; align-items: center; }
         .hero h1 { font-size: 2.2rem; margin: 10px 0; line-height: 1.1; }
         .kpi-grid { display: flex; flex-direction: column; gap: 12px; }
@@ -61,29 +93,36 @@
         .kpi-label { font-size: 0.7rem; text-transform: uppercase; color: var(--muted); font-weight: 700; letter-spacing: 0.05em; }
         .kpi-value { font-size: 1.4rem; font-weight: 800; color: var(--purple); }
         .kpi-note { font-size: 0.82rem; color: var(--muted); margin-top: 6px; }
+
+        /* ── LAYOUT ── */
         .main-grid { display: grid; grid-template-columns: 280px 1fr; gap: 30px; }
         .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r2); padding: 24px; margin-bottom: 24px; box-shadow: var(--shadow); }
         .panel h2 { font-size: 1.1rem; margin-top: 0; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
         .panel-subhead { color: var(--muted); font-size: 0.86rem; margin-top: -12px; margin-bottom: 18px; }
         .month-list { display: flex; flex-direction: column; gap: 8px; }
-        .month-item { padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface2); cursor: pointer; text-align: left; }
+        .month-item { padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface2); cursor: pointer; text-align: left; width: 100%; }
         .month-item.active { border-color: var(--purple); background: var(--purple2); color: var(--purple); }
-        .row { display: grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap: 12px; margin-bottom: 12px; align-items: end; }
+
+        /* ── FORM ROWS ── */
+        .row          { display: grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap: 12px; margin-bottom: 12px; align-items: end; }
         .row-paycheck { grid-template-columns: 1.5fr 1fr 1fr 1fr auto; }
         .row-expense  { grid-template-columns: 1.5fr 1fr 1fr 0.65fr 1fr auto; }
-        .row-recurring { grid-template-columns: 1.5fr 1fr 1fr 0.7fr auto; }
+        .row-recurring{ grid-template-columns: 1.5fr 1fr 1fr 0.7fr auto; }
         .row-excluded { grid-template-columns: 1.4fr 0.95fr 1fr 1.2fr auto; }
         .field { display: flex; flex-direction: column; gap: 4px; }
         .field label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--muted); }
         input, select.field-select { padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.9rem; width: 100%; }
         select.field-select { cursor: pointer; }
         .running-bal { font-size: 0.85rem; font-weight: 700; color: var(--purple); background: var(--purple2); padding: 8px; border-radius: 8px; text-align: center; }
+
+        /* ── BADGES ── */
         .rec-badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: var(--purple2); color: var(--purple); padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
         .exclude-badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: #fee2e2; color: #991b1b; padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
         [data-theme='dark'] .exclude-badge { background: #3f1d1d; color: #fca5a5; }
         .excluded-total { display: inline-flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); padding: 8px 12px; border-radius: 10px; font-size: 0.86rem; color: var(--muted); }
         .excluded-total strong { color: var(--text); }
-        /* Excluded bucket spend tracker */
+
+        /* ── BUCKET SUMMARIES ── */
         .bucket-spend { font-size: 0.78rem; color: var(--muted); margin-top: -4px; margin-bottom: 10px; padding: 6px 10px; background: #fff7ed; border-radius: 8px; border: 1px solid #fed7aa; display: flex; gap: 16px; flex-wrap: wrap; }
         [data-theme='dark'] .bucket-spend { background: #3b1f0a; border-color: #92400e; }
         .bucket-spend span { white-space: nowrap; }
@@ -93,6 +132,14 @@
         [data-theme='dark'] .bucket-spend .bs-left { color: #6ee7b7; }
         .bucket-spend .bs-left.negative { color: #991b1b; }
         [data-theme='dark'] .bucket-spend .bs-left.negative { color: #fca5a5; }
+        .bucket-summary { font-size: 0.78rem; color: var(--muted); margin-top: -4px; margin-bottom: 10px; padding: 6px 10px; background: var(--surface2); border-radius: 8px; border: 1px solid var(--border); display: flex; gap: 16px; flex-wrap: wrap; }
+        .bucket-summary span { white-space: nowrap; }
+        .bucket-summary .bs-assigned { color: #b45309; font-weight: 700; }
+        .bucket-summary .bs-remaining { color: #065f46; font-weight: 700; }
+        [data-theme='dark'] .bucket-summary .bs-assigned { color: #fbbf24; }
+        [data-theme='dark'] .bucket-summary .bs-remaining { color: #6ee7b7; }
+
+        /* ── MODAL ── */
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; align-items: center; justify-content: center; }
         .modal-overlay.open { display: flex; }
         .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r2); padding: 28px; width: 100%; max-width: 500px; box-shadow: var(--shadow); }
@@ -118,18 +165,101 @@
         .modal-total strong { color: var(--purple); }
         .empty-rec-note { color: var(--muted); font-size: 0.875rem; padding: 20px; text-align: center; }
         .btn-confirm:disabled { opacity: 0.45; cursor: not-allowed; }
-        .bucket-summary { font-size: 0.78rem; color: var(--muted); margin-top: -4px; margin-bottom: 10px; padding: 6px 10px; background: var(--surface2); border-radius: 8px; border: 1px solid var(--border); display: flex; gap: 16px; flex-wrap: wrap; }
-        .bucket-summary span { white-space: nowrap; }
-        .bucket-summary .bs-assigned { color: #b45309; font-weight: 700; }
-        .bucket-summary .bs-remaining { color: #065f46; font-weight: 700; }
-        [data-theme='dark'] .bucket-summary .bs-assigned { color: #fbbf24; }
-        [data-theme='dark'] .bucket-summary .bs-remaining { color: #6ee7b7; }
+
+        /* ── TABLET: 640–950px ── */
         @media (max-width: 950px) {
             .hero, .main-grid { grid-template-columns: 1fr; }
             .row, .row-paycheck, .row-expense, .row-recurring, .row-excluded { grid-template-columns: 1fr 1fr; }
             .row button, .row-paycheck button, .row-expense button, .row-recurring button, .row-excluded button { grid-column: span 2; }
             .modal-footer { flex-direction: column; align-items: stretch; }
             .modal-footer-right { justify-content: flex-end; }
+        }
+
+        /* ── MOBILE: <640px ── */
+        @media (max-width: 640px) {
+            /* Shell — extra bottom space for bottom nav */
+            .shell { padding: 12px 12px max(80px, calc(64px + env(safe-area-inset-bottom))); }
+
+            /* Topbar — compact, hide desktop nav buttons */
+            .topbar { padding: 12px 0; margin-bottom: 14px; gap: 8px; }
+            .brand strong { font-size: 1.15rem; }
+            .nav-group { display: none; }
+            /* Show auth + theme inline in topbar */
+            .topbar-mobile-actions { display: flex !important; gap: 6px; align-items: center; }
+
+            /* Bottom nav: show */
+            .bottom-nav { display: flex; }
+
+            /* Hero: compact */
+            .hero { padding: 18px; gap: 16px; margin-bottom: 16px; border-radius: 16px; }
+            .hero h1 { font-size: 1.45rem; }
+            .hero p { font-size: 0.85rem; }
+            #yearTag { font-size: 0.7rem; margin-bottom: 8px; }
+            .kpi-grid { flex-direction: row; gap: 8px; }
+            .kpi-card { flex: 1; padding: 12px; border-radius: 12px; }
+            .kpi-value { font-size: 1.15rem; }
+            .kpi-note { font-size: 0.75rem; }
+            .kpi-label { font-size: 0.62rem; }
+
+            /* Aside: horizontal scrollable chip strip */
+            .main-grid { grid-template-columns: 1fr; gap: 0; }
+            aside .panel { padding: 12px 14px; border-radius: 14px; margin-bottom: 12px; box-shadow: none; }
+            #historyTitle { font-size: 0.85rem; margin-bottom: 10px !important; }
+            .month-list { flex-direction: row; overflow-x: auto; gap: 6px; padding-bottom: 2px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+            .month-list::-webkit-scrollbar { display: none; }
+            .month-item { padding: 7px 14px; white-space: nowrap; flex-shrink: 0; width: auto; border-radius: 50px; font-size: 0.85rem; }
+            .month-item small { display: none; }
+
+            /* Panels: tighter */
+            .panel { padding: 14px; border-radius: 16px; margin-bottom: 14px; }
+            .panel h2 { font-size: 0.95rem; flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 14px; }
+            .panel-subhead { font-size: 0.8rem; margin-top: -8px; margin-bottom: 12px; }
+
+            /* Panel h2 button groups: full width row */
+            .panel h2 > span:last-child { width: 100%; }
+            .panel h2 > span:last-child > button, .panel h2 > span:last-child > span { flex: 1; justify-content: center; }
+
+            /* Form rows: single column */
+            .row, .row-paycheck, .row-expense, .row-recurring, .row-excluded {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            .row button, .row-paycheck button, .row-expense button,
+            .row-recurring button, .row-excluded button {
+                grid-column: 1;
+                width: 100%;
+                justify-content: center;
+                margin-top: 4px;
+            }
+
+            /* Inputs: 16px prevents iOS auto-zoom on focus */
+            input, select.field-select { font-size: 1rem; padding: 12px 10px; }
+            input[type="number"] { font-size: 1rem; }
+
+            /* Touch targets: ensure 44px min */
+            button { min-height: 44px; }
+            .btn-ghost { min-height: 36px; }
+
+            /* Bucket summary bars: wrap tighter */
+            .bucket-summary, .bucket-spend { gap: 8px; font-size: 0.75rem; }
+
+            /* Modal: full-width bottom sheet */
+            .modal-overlay { align-items: flex-end; padding: 0; }
+            .modal-box {
+                border-radius: 22px 22px 0 0;
+                max-height: 88vh;
+                overflow-y: auto;
+                padding: 20px 16px max(20px, env(safe-area-inset-bottom));
+                max-width: 100%;
+                border-bottom: none;
+            }
+            .rec-select-list { max-height: 45vh; }
+            .modal-footer { flex-direction: column; align-items: stretch; }
+            .modal-footer-right { flex-direction: column; gap: 8px; }
+            .modal-footer-right button { width: 100%; justify-content: center; }
+
+            /* Excluded-total pill: full width on mobile */
+            .excluded-total { width: 100%; justify-content: space-between; }
         }
     </style>
 </head>
@@ -141,56 +271,113 @@
             <select id="yearSelector" onchange="changeYear(this.value)"></select>
             <button class="btn-ghost" style="padding: 2px 8px; font-size: 1.2rem;" onclick="addNewYear()">+</button>
         </div>
+        <!-- Desktop nav -->
         <div class="nav-group">
             <div id="authContainer" class="auth-zone"><button class="btn-github" onclick="signInWithGitHub()">GitHub Login</button></div>
             <button class="btn-outline" id="navHome" onclick="switchView('home')">Home</button>
             <button class="btn-outline" id="navRecurring" onclick="switchView('recurring')">🔄 Recurring</button>
             <button class="btn-outline" id="navSummary" onclick="switchView('summary')">📊 Summary</button>
-            <button class="btn-outline" id="themeToggle">🌓</button>
+            <button class="btn-outline btn-icon" id="themeToggle">🌓</button>
             <button class="btn-primary" onclick="saveData()">💾 Save</button>
         </div>
+        <!-- Mobile topbar: auth + theme only (nav handled by bottom bar) -->
+        <div class="topbar-mobile-actions" style="display:none;">
+            <div id="authContainerMobile" class="auth-zone"></div>
+            <button class="btn-outline btn-icon" id="themeToggleMobile">🌓</button>
+        </div>
     </header>
+
     <div id="homeView" class="view-section view-active">
         <section class="hero">
             <div class="hero-content">
                 <div id="yearTag" style="background: var(--purple2); color: var(--purple); padding: 4px 12px; border-radius: 20px; display: inline-block; font-size: 0.75rem; font-weight: 700; margin-bottom: 12px;">ANNUAL TRACKING</div>
                 <h1>Plan your flow, <br>month by month.</h1>
-                <p class="muted">Track the money that rolls forward, and separately track money you want to reserve outside rollover.</p>
+                <p style="color:var(--muted);">Track the money that rolls forward, and separately track money you want to reserve outside rollover.</p>
             </div>
             <div class="kpi-grid">
-                <div class="kpi-card"><div class="kpi-label">Projected End Rollover</div><div class="kpi-value" id="kpiEnd">$0.00</div><div class="kpi-note">This is what carries into the next month.</div></div>
-                <div class="kpi-card"><div class="kpi-label">Available After Excluded Buckets</div><div class="kpi-value" id="kpiAvailable">$0.00</div><div class="kpi-note">Rollover minus non-rollover bucket reservations.</div></div>
+                <div class="kpi-card"><div class="kpi-label">Projected End Rollover</div><div class="kpi-value" id="kpiEnd">$0.00</div><div class="kpi-note">Carries into next month.</div></div>
+                <div class="kpi-card"><div class="kpi-label">Available After Excluded</div><div class="kpi-value" id="kpiAvailable">$0.00</div><div class="kpi-note">Rollover minus reservations.</div></div>
             </div>
         </section>
         <div class="main-grid">
             <aside>
-                <div class="panel"><h2 id="historyTitle">History</h2><div class="month-list" id="monthList"></div></div>
+                <div class="panel"><h2 id="historyTitle" style="margin-bottom:12px;">History</h2><div class="month-list" id="monthList"></div></div>
             </aside>
             <main>
                 <section class="panel"><h2>Paychecks <button class="btn-ghost" onclick="addItem('paychecks')">+ Add</button></h2><div id="paycheckContainer"></div></section>
                 <section class="panel">
-                    <h2><span>Excluded Buckets <span class="exclude-badge">No rollover</span></span><span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><span class="excluded-total">Reserved this month: <strong id="excludedTotal">$0.00</strong></span><button class="btn-ghost" onclick="addExcludedBucket()">+ Add Bucket</button></span></h2>
-                    <p class="panel-subhead">Use these for money you want to reserve this month without letting it roll into the next month. Assign expenses to a bucket below to track how much you've spent from it.</p>
+                    <h2>
+                        <span>Excluded Buckets <span class="exclude-badge">No rollover</span></span>
+                        <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                            <span class="excluded-total">Reserved: <strong id="excludedTotal">$0.00</strong></span>
+                            <button class="btn-ghost" onclick="addExcludedBucket()">+ Add Bucket</button>
+                        </span>
+                    </h2>
+                    <p class="panel-subhead">Reserve money this month without rolling it forward. Assign expenses below to track spend per bucket.</p>
                     <div id="excludedBucketContainer"></div>
                 </section>
                 <section class="panel">
-                    <h2><span>Monthly Expenses</span><span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><button class="btn-green" onclick="openRecurringModal()">🔄 Add Recurring</button><button class="btn-ghost" onclick="addItem('expenses')">+ Add</button></span></h2>
+                    <h2>
+                        <span>Monthly Expenses</span>
+                        <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                            <button class="btn-green" onclick="openRecurringModal()">🔄 Add Recurring</button>
+                            <button class="btn-ghost" onclick="addItem('expenses')">+ Add</button>
+                        </span>
+                    </h2>
                     <div id="expenseContainer"></div>
                 </section>
             </main>
         </div>
     </div>
+
     <div id="recurringView" class="view-section">
-        <section class="panel"><h2>Global Recurring Bills <button class="btn-ghost" onclick="addRecurring()">+ Add New Bill</button></h2><p class="muted" style="margin-top: -15px; margin-bottom: 25px; font-size: 0.9rem;">Items added here are stored as reusable recurring templates. Use the <strong>🔄 Add Recurring</strong> button on the Home tab to copy one or more of them into a month.</p><div id="recurringContainer"></div></section>
+        <section class="panel"><h2>Global Recurring Bills <button class="btn-ghost" onclick="addRecurring()">+ Add New Bill</button></h2><p style="color:var(--muted);margin-top:-15px;margin-bottom:25px;font-size:0.9rem;">Items added here are reusable templates. Use the <strong>🔄 Add Recurring</strong> button on Home to copy them into a month.</p><div id="recurringContainer"></div></section>
     </div>
+
     <div id="summaryView" class="view-section">
         <section class="panel">
             <h2 id="summaryTitle">Yearly Financial Summary</h2>
-            <div style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;"><thead><tr style="text-align: left; color: var(--muted); border-bottom: 1px solid var(--border);"><th style="padding: 12px;">Month</th><th>Income</th><th>Expense</th><th>Excluded</th><th>End Rollover</th><th>Available</th></tr></thead><tbody id="summaryBody"></tbody></table></div>
+            <div style="overflow-x: auto;"><table style="width:100%;border-collapse:collapse;font-size:0.9rem;"><thead><tr style="text-align:left;color:var(--muted);border-bottom:1px solid var(--border);"><th style="padding:12px;">Month</th><th>Income</th><th>Expense</th><th>Excluded</th><th>End Rollover</th><th>Available</th></tr></thead><tbody id="summaryBody"></tbody></table></div>
         </section>
     </div>
 </div>
-<div class="modal-overlay" id="recurringModal"><div class="modal-box"><h3>Add Recurring to This Month</h3><p>Select one or more recurring bills to add as expenses for <strong id="modalMonthName"></strong>. Each copy can be edited independently.</p><div class="modal-toolbar" id="modalToolbar" style="display:none;"><div class="modal-toolbar-left"><button class="select-all-btn" id="selectAllBtn" onclick="toggleSelectAll()">Select All</button><span class="selected-count" id="selectedCount">0 selected</span></div><span class="modal-total">Total: <strong id="modalSelTotal">$0.00</strong></span></div><div class="rec-select-list" id="recSelectList"></div><div class="modal-footer"><div class="modal-total" id="modalFooterTotal" style="visibility:hidden;">Adding <strong id="modalFooterCount">0</strong> expense(s) · <strong id="modalFooterSum">$0.00</strong></div><div class="modal-footer-right"><button class="btn-outline" onclick="closeRecurringModal()">Cancel</button><button class="btn-primary btn-confirm" id="addSelectedBtn" onclick="addSelectedRecurring()" disabled>✚ Add Selected</button></div></div></div></div>
+
+<!-- Bottom nav: mobile only -->
+<nav class="bottom-nav">
+    <button class="bn-btn active" id="bnHome" onclick="switchView('home')">
+        <span class="bn-icon">🏠</span>Home
+    </button>
+    <button class="bn-btn" id="bnRecurring" onclick="switchView('recurring')">
+        <span class="bn-icon">🔄</span>Recurring
+    </button>
+    <button class="bn-btn" id="bnSummary" onclick="switchView('summary')">
+        <span class="bn-icon">📊</span>Summary
+    </button>
+    <button class="bn-btn bn-save" onclick="saveData()">
+        <span class="bn-icon">💾</span>Save
+    </button>
+</nav>
+
+<!-- Recurring modal -->
+<div class="modal-overlay" id="recurringModal">
+    <div class="modal-box">
+        <h3>Add Recurring to This Month</h3>
+        <p>Select one or more recurring bills to add as expenses for <strong id="modalMonthName"></strong>. Each copy can be edited independently.</p>
+        <div class="modal-toolbar" id="modalToolbar" style="display:none;">
+            <div class="modal-toolbar-left"><button class="select-all-btn" id="selectAllBtn" onclick="toggleSelectAll()">Select All</button><span class="selected-count" id="selectedCount">0 selected</span></div>
+            <span class="modal-total">Total: <strong id="modalSelTotal">$0.00</strong></span>
+        </div>
+        <div class="rec-select-list" id="recSelectList"></div>
+        <div class="modal-footer">
+            <div class="modal-total" id="modalFooterTotal" style="visibility:hidden;">Adding <strong id="modalFooterCount">0</strong> expense(s) · <strong id="modalFooterSum">$0.00</strong></div>
+            <div class="modal-footer-right">
+                <button class="btn-outline" onclick="closeRecurringModal()">Cancel</button>
+                <button class="btn-primary btn-confirm" id="addSelectedBtn" onclick="addSelectedRecurring()" disabled>✚ Add Selected</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 const SUPABASE_URL = 'https://awalptqpsjflrahkrjzk.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3YWxwdHFwc2pmbHJhaGtyanprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNzEyMDgsImV4cCI6MjA5MTg0NzIwOH0.Ls-OkgNeABakndkR4Omk5EKSRyU7X2BXDSDoXW4SL40';
@@ -203,17 +390,30 @@ let state = normalizeState(JSON.parse(localStorage.getItem('rollover_pro_v5')) |
 let modalSelections = new Set();
 function buildDayOptions(selected) { let opts = '<option value="">— Day —</option>'; for (let d = 1; d <= 31; d++) { const suffix = d === 1 ? 'st' : d === 2 ? 'nd' : d === 3 ? 'rd' : 'th'; const sel = Number(selected) === d ? 'selected' : ''; opts += `<option value="${d}" ${sel}>${d}${suffix}</option>`; } return opts; }
 function ordinal(d) { if (!d) return ''; const n = Number(d); const teen = n % 100; const s = (teen >= 11 && teen <= 13) ? 'th' : n % 10 === 1 ? 'st' : n % 10 === 2 ? 'nd' : n % 10 === 3 ? 'rd' : 'th'; return n + s; }
-
-// bucketIndex encoding:
-//   null / undefined / ''  = Unassigned (no paycheck, no excluded bucket)
-//   0, 1, 2 ...            = paycheck index (existing behaviour)
-//   'excl_0', 'excl_1' ... = excluded bucket index (new)
 function isExclBucket(val) { return typeof val === 'string' && val.startsWith('excl_'); }
 function exclBucketIdx(val) { return parseInt(val.replace('excl_', ''), 10); }
 
 async function signInWithGitHub() { if (!supabaseClient) return alert('Setup Supabase first!'); const siteUrl = window.location.origin + window.location.pathname; await supabaseClient.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: siteUrl } }); }
 async function signOut() { if (supabaseClient) await supabaseClient.auth.signOut(); renderAuth(); }
-async function renderAuth() { const container = document.getElementById('authContainer'); if (!supabaseClient) return; const { data: { user } } = await supabaseClient.auth.getUser(); if (user) { container.innerHTML = `<div class="user-pill"><img src="${user.user_metadata.avatar_url || ''}" alt="U"><span>${user.user_metadata.full_name || user.email}</span></div><button class="btn-ghost" onclick="signOut()">Sign Out</button>`; } else { container.innerHTML = `<button class="btn-github" onclick="signInWithGitHub()">GitHub Login</button>`; } }
+async function renderAuth() {
+    const isMobile = window.innerWidth <= 640;
+    const containerId = isMobile ? 'authContainerMobile' : 'authContainer';
+    // Always update both so switching orientation doesn't break it
+    ['authContainer','authContainerMobile'].forEach(async (id) => {
+        const container = document.getElementById(id);
+        if (!container) return;
+        if (!supabaseClient) { if (id === 'authContainer') container.innerHTML = '<button class="btn-github" onclick="signInWithGitHub()">GitHub Login</button>'; return; }
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (user) {
+            container.innerHTML = id === 'authContainer'
+                ? `<div class="user-pill"><img src="${user.user_metadata.avatar_url || ''}" alt="U" width="24" height="24"><span>${user.user_metadata.full_name || user.email}</span></div><button class="btn-ghost" onclick="signOut()">Sign Out</button>`
+                : `<img src="${user.user_metadata.avatar_url || ''}" alt="U" width="28" height="28" style="border-radius:50%;border:1px solid var(--border);">`;
+        } else {
+            container.innerHTML = `<button class="btn-github" onclick="signInWithGitHub()">${id === 'authContainerMobile' ? '⬥ Login' : 'GitHub Login'}</button>`;
+        }
+    });
+}
+
 function updateModalUI() { const count = modalSelections.size; const total = [...modalSelections].reduce((s, i) => s + Number(state.recurring[i].amount || 0), 0); const allSelected = state.recurring.length > 0 && modalSelections.size === state.recurring.length; document.getElementById('selectedCount').textContent = `${count} selected`; document.getElementById('modalSelTotal').textContent = money(total); document.getElementById('selectAllBtn').textContent = allSelected ? 'Deselect All' : 'Select All'; const addBtn = document.getElementById('addSelectedBtn'); addBtn.disabled = count === 0; addBtn.textContent = count > 0 ? `✚ Add ${count} Expense${count > 1 ? 's' : ''}` : '✚ Add Selected'; const footerTotal = document.getElementById('modalFooterTotal'); if (count > 0) { footerTotal.style.visibility = 'visible'; document.getElementById('modalFooterCount').textContent = count; document.getElementById('modalFooterSum').textContent = money(total); } else { footerTotal.style.visibility = 'hidden'; } document.querySelectorAll('.rec-select-item').forEach(el => { const idx = parseInt(el.dataset.idx); const cb = el.querySelector('input[type="checkbox"]'); if (modalSelections.has(idx)) { el.classList.add('selected'); if (cb) cb.checked = true; } else { el.classList.remove('selected'); if (cb) cb.checked = false; } }); }
 window.toggleRecurringItem = function(idx) { if (modalSelections.has(idx)) modalSelections.delete(idx); else modalSelections.add(idx); updateModalUI(); };
 window.toggleSelectAll = function() { const allSelected = modalSelections.size === state.recurring.length; if (allSelected) modalSelections.clear(); else state.recurring.forEach((_, i) => modalSelections.add(i)); updateModalUI(); };
@@ -228,35 +428,16 @@ function calculate() {
         yearData.months.forEach((m) => {
             m.startRollover = runningYearlyRollover;
             const incTotal = m.paychecks.reduce((s, p) => s + Number(p.amount || 0), 0);
-
-            // Split expenses: those assigned to excluded buckets vs. regular
             const regularExpenses = m.expenses.filter(e => !isExclBucket(e.bucketIndex));
             const excludedBucketExpenses = m.expenses.filter(e => isExclBucket(e.bucketIndex));
-
             const expTotal = regularExpenses.reduce((s, e) => s + Number(e.amount || 0), 0);
             const excludedTotal = (m.excludedBuckets || []).reduce((s, b) => s + Number(b.amount || 0), 0);
-
-            // Paycheck bucket running balances (only regular expenses count here)
-            m.paychecks.forEach((p, pi) => {
-                p.bucketExpenses = regularExpenses.filter(e => e.bucketIndex === pi).reduce((s, e) => s + Number(e.amount || 0), 0);
-            });
+            m.paychecks.forEach((p, pi) => { p.bucketExpenses = regularExpenses.filter(e => e.bucketIndex === pi).reduce((s, e) => s + Number(e.amount || 0), 0); });
             let runningInMonth = m.startRollover;
-            m.paychecks.forEach(p => {
-                runningInMonth += Number(p.amount || 0);
-                runningInMonth -= p.bucketExpenses;
-                p.balanceAfter = runningInMonth;
-            });
-
-            // Per-excluded-bucket spend tracking
-            (m.excludedBuckets || []).forEach((b, bi) => {
-                b.spent = excludedBucketExpenses
-                    .filter(e => exclBucketIdx(e.bucketIndex) === bi)
-                    .reduce((s, e) => s + Number(e.amount || 0), 0);
-                b.remaining = Number(b.amount || 0) - b.spent;
-            });
-
+            m.paychecks.forEach(p => { runningInMonth += Number(p.amount || 0); runningInMonth -= p.bucketExpenses; p.balanceAfter = runningInMonth; });
+            (m.excludedBuckets || []).forEach((b, bi) => { b.spent = excludedBucketExpenses.filter(e => exclBucketIdx(e.bucketIndex) === bi).reduce((s, e) => s + Number(e.amount || 0), 0); b.remaining = Number(b.amount || 0) - b.spent; });
             m.monthIncome = incTotal;
-            m.monthExpenses = expTotal; // excludes bucket-assigned expenses from rollover calc
+            m.monthExpenses = expTotal;
             m.excludedTotal = excludedTotal;
             m.endRollover = m.startRollover + incTotal - expTotal;
             m.availableAfterExcluded = m.endRollover - excludedTotal;
@@ -279,21 +460,15 @@ function render(isTyping = false) {
             const bs = document.getElementById(`bucket-summary-${i}`);
             if (bs) { bs.querySelector('.bs-assigned').textContent = money(p.bucketExpenses); bs.querySelector('.bs-remaining').textContent = money(p.balanceAfter); }
         });
-        // Update excluded bucket spend trackers inline
         (m.excludedBuckets || []).forEach((b, bi) => {
             const el = document.getElementById(`excl-bucket-spend-${bi}`);
-            if (el) {
-                el.querySelector('.bs-spent').textContent = money(b.spent);
-                const leftEl = el.querySelector('.bs-left');
-                leftEl.textContent = money(b.remaining);
-                leftEl.classList.toggle('negative', b.remaining < 0);
-            }
+            if (el) { el.querySelector('.bs-spent').textContent = money(b.spent); const leftEl = el.querySelector('.bs-left'); leftEl.textContent = money(b.remaining); leftEl.classList.toggle('negative', b.remaining < 0); }
         });
         return;
     }
     document.getElementById('historyTitle').textContent = `${activeYear.year} History`;
     document.getElementById('yearTag').textContent = `${activeYear.year} TRACKING`;
-    document.getElementById('monthList').innerHTML = activeYear.months.map((mm, i) => `<div class="month-item ${i === activeYear.activeMonth ? 'active' : ''}" onclick="setActive(${i})"><strong>${mm.name}</strong><small>End: ${money(mm.endRollover)}</small></div>`).join('');
+    document.getElementById('monthList').innerHTML = activeYear.months.map((mm, i) => `<div class="month-item ${i === activeYear.activeMonth ? 'active' : ''}" onclick="setActive(${i})"><strong>${mm.name}</strong><small> · ${money(mm.endRollover)}</small></div>`).join('');
     document.getElementById('yearSelector').innerHTML = state.years.map((y, i) => `<option value="${i}" ${i === state.activeYearIndex ? 'selected' : ''}>${y.year}</option>`).join('');
     renderPaychecks(m.paychecks);
     renderExcludedBuckets(m.excludedBuckets || []);
@@ -301,108 +476,56 @@ function render(isTyping = false) {
     renderRecurringList();
     renderSummary(activeYear);
     renderAuth();
+    // Scroll active month chip into view on mobile
+    const activeChip = document.querySelector('.month-item.active');
+    if (activeChip) activeChip.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
 }
 
-function renderPaychecks(data) { document.getElementById('paycheckContainer').innerHTML = data.map((item, i) => `<div class="row row-paycheck"><div class="field"><label>Label</label><input value="${item.name}" onchange="update('paychecks', ${i}, 'name', this.value)"></div><div class="field"><label>Date</label><input type="date" value="${item.date || ''}" onchange="update('paychecks', ${i}, 'date', this.value)"></div><div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('paychecks', ${i}, 'amount', this.value, true)"></div><div class="field"><label>Running</label><div class="running-bal" id="running-bal-${i}">${money(item.balanceAfter)}</div></div><button class="btn-outline" onclick="removeItem('paychecks', ${i})">✕</button></div><div class="bucket-summary" id="bucket-summary-${i}"><span>💼 <strong>${item.name || 'Paycheck ' + (i+1)}</strong></span><span>Assigned expenses: <span class="bs-assigned">${money(item.bucketExpenses)}</span></span><span>Balance after bucket: <span class="bs-remaining">${money(item.balanceAfter)}</span></span></div>`).join(''); }
+function renderPaychecks(data) { document.getElementById('paycheckContainer').innerHTML = data.map((item, i) => `<div class="row row-paycheck"><div class="field"><label>Label</label><input value="${item.name}" onchange="update('paychecks', ${i}, 'name', this.value)"></div><div class="field"><label>Date</label><input type="date" value="${item.date || ''}" onchange="update('paychecks', ${i}, 'date', this.value)"></div><div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('paychecks', ${i}, 'amount', this.value, true)"></div><div class="field"><label>Running</label><div class="running-bal" id="running-bal-${i}">${money(item.balanceAfter)}</div></div><button class="btn-outline" onclick="removeItem('paychecks', ${i})">✕ Remove</button></div><div class="bucket-summary" id="bucket-summary-${i}"><span>💼 <strong>${item.name || 'Paycheck ' + (i+1)}</strong></span><span>Assigned: <span class="bs-assigned">${money(item.bucketExpenses)}</span></span><span>Balance: <span class="bs-remaining">${money(item.balanceAfter)}</span></span></div>`).join(''); }
 
 function renderExcludedBuckets(data) {
-    if (data.length === 0) {
-        document.getElementById('excludedBucketContainer').innerHTML = '<p style="color:var(--muted);font-size:0.9rem;">No excluded buckets yet. Add one above.</p>';
-        return;
-    }
+    if (data.length === 0) { document.getElementById('excludedBucketContainer').innerHTML = '<p style="color:var(--muted);font-size:0.9rem;">No excluded buckets yet. Add one above.</p>'; return; }
     document.getElementById('excludedBucketContainer').innerHTML = data.map((item, i) => {
         const spent = item.spent || 0;
         const remaining = item.remaining !== undefined ? item.remaining : Number(item.amount || 0);
         const negClass = remaining < 0 ? 'negative' : '';
-        return `<div class="row row-excluded">
-            <div class="field"><label>Bucket Name</label><input value="${item.name || ''}" onchange="updateExcluded(${i}, 'name', this.value)"></div>
-            <div class="field"><label>Amount</label><input type="number" value="${item.amount || 0}" oninput="updateExcluded(${i}, 'amount', this.value)"></div>
-            <div class="field"><label>Reserve Date</label><input type="date" value="${item.date || ''}" onchange="updateExcluded(${i}, 'date', this.value)"></div>
-            <div class="field"><label>Note</label><input value="${item.note || ''}" onchange="updateExcluded(${i}, 'note', this.value)"></div>
-            <button class="btn-outline" onclick="removeExcluded(${i})">✕</button>
-        </div>
-        <div class="bucket-spend" id="excl-bucket-spend-${i}">
-            <span>🔒 <strong>${item.name || 'Bucket ' + (i+1)}</strong></span>
-            <span>Expenses assigned: <span class="bs-spent">${money(spent)}</span></span>
-            <span>Remaining: <span class="bs-left ${negClass}">${money(remaining)}</span></span>
-        </div>`;
+        return `<div class="row row-excluded"><div class="field"><label>Bucket Name</label><input value="${item.name || ''}" onchange="updateExcluded(${i}, 'name', this.value)"></div><div class="field"><label>Amount</label><input type="number" value="${item.amount || 0}" oninput="updateExcluded(${i}, 'amount', this.value)"></div><div class="field"><label>Reserve Date</label><input type="date" value="${item.date || ''}" onchange="updateExcluded(${i}, 'date', this.value)"></div><div class="field"><label>Note</label><input value="${item.note || ''}" onchange="updateExcluded(${i}, 'note', this.value)"></div><button class="btn-outline" onclick="removeExcluded(${i})">✕ Remove</button></div><div class="bucket-spend" id="excl-bucket-spend-${i}"><span>🔒 <strong>${item.name || 'Bucket ' + (i+1)}</strong></span><span>Spent: <span class="bs-spent">${money(spent)}</span></span><span>Remaining: <span class="bs-left ${negClass}">${money(remaining)}</span></span></div>`;
     }).join('');
 }
 
 function renderExpenses(data, paychecks, excludedBuckets) {
-    // Build paycheck options
-    const paycheckOpts = paychecks.map((p, i) => `<option value="${i}">${p.name || 'Paycheck ' + (i+1)}</option>`).join('');
-    // Build excluded bucket options (value = 'excl_0', 'excl_1', ...)
-    const exclOpts = excludedBuckets.length > 0
-        ? '<optgroup label="🔒 Excluded Buckets">' +
-          excludedBuckets.map((b, i) => `<option value="excl_${i}">🔒 ${b.name || 'Bucket ' + (i+1)}</option>`).join('') +
-          '</optgroup>'
-        : '';
-
     document.getElementById('expenseContainer').innerHTML = data.length === 0
         ? '<p style="color:var(--muted);font-size:0.9rem;">No expenses yet. Add one above.</p>'
         : data.map((item, i) => {
             const bv = item.bucketIndex !== null && item.bucketIndex !== undefined ? item.bucketIndex : '';
-            // Build selected state for the combined dropdown
-            const paycheckOptsSelected = paychecks.map((p, pi) =>
-                `<option value="${pi}" ${bv === pi ? 'selected' : ''}>${p.name || 'Paycheck ' + (pi+1)}</option>`
-            ).join('');
+            const paycheckOptsSelected = paychecks.map((p, pi) => `<option value="${pi}" ${bv === pi ? 'selected' : ''}>${p.name || 'Paycheck ' + (pi+1)}</option>`).join('');
             const exclOptsSelected = excludedBuckets.length > 0
-                ? '<optgroup label="🔒 Excluded Buckets">' +
-                  excludedBuckets.map((b, bi) =>
-                      `<option value="excl_${bi}" ${bv === `excl_${bi}` ? 'selected' : ''}>🔒 ${b.name || 'Bucket ' + (bi+1)}</option>`
-                  ).join('') +
-                  '</optgroup>'
+                ? '<optgroup label="🔒 Excluded Buckets">' + excludedBuckets.map((b, bi) => `<option value="excl_${bi}" ${bv === `excl_${bi}` ? 'selected' : ''}>🔒 ${b.name || 'Bucket ' + (bi+1)}</option>`).join('') + '</optgroup>'
                 : '';
-
-            return `<div class="row row-expense">
-                <div class="field"><label>Expense ${item.fromRecurring ? '<span class="rec-badge">🔄 recurring</span>' : ''}</label><input value="${item.name}" onchange="update('expenses', ${i}, 'name', this.value)"></div>
-                <div class="field"><label>Category</label><input value="${item.category || ''}" onchange="update('expenses', ${i}, 'category', this.value)"></div>
-                <div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('expenses', ${i}, 'amount', this.value, true)"></div>
-                <div class="field"><label>Due Day</label><select class="field-select" onchange="update('expenses', ${i}, 'dueDay', this.value ? parseInt(this.value) : null, false)">${buildDayOptions(item.dueDay)}</select></div>
-                <div class="field"><label>Bucket 💼</label><select class="field-select" onchange="update('expenses', ${i}, 'bucketIndex', this.value === '' ? null : (isNaN(this.value) ? this.value : parseInt(this.value)), true)">
-                    <option value="">— Unassigned —</option>
-                    ${paycheckOptsSelected}
-                    ${exclOptsSelected}
-                </select></div>
-                <button class="btn-outline" onclick="removeItem('expenses', ${i})">✕</button>
-            </div>`;
+            return `<div class="row row-expense"><div class="field"><label>Expense ${item.fromRecurring ? '<span class="rec-badge">🔄 recurring</span>' : ''}</label><input value="${item.name}" onchange="update('expenses', ${i}, 'name', this.value)"></div><div class="field"><label>Category</label><input value="${item.category || ''}" onchange="update('expenses', ${i}, 'category', this.value)"></div><div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('expenses', ${i}, 'amount', this.value, true)"></div><div class="field"><label>Due Day</label><select class="field-select" onchange="update('expenses', ${i}, 'dueDay', this.value ? parseInt(this.value) : null, false)">${buildDayOptions(item.dueDay)}</select></div><div class="field"><label>Bucket 💼</label><select class="field-select" onchange="update('expenses', ${i}, 'bucketIndex', this.value === '' ? null : (isNaN(this.value) ? this.value : parseInt(this.value)), true)"><option value="">— Unassigned —</option>${paycheckOptsSelected}${exclOptsSelected}</select></div><button class="btn-outline" onclick="removeItem('expenses', ${i})">✕ Remove</button></div>`;
         }).join('');
 }
 
-function renderRecurringList() { document.getElementById('recurringContainer').innerHTML = state.recurring.map((item, i) => `<div class="row row-recurring"><div class="field"><label>Bill Name</label><input value="${item.name}" onchange="updateRec(${i}, 'name', this.value)"></div><div class="field"><label>Category</label><input value="${item.category || ''}" onchange="updateRec(${i}, 'category', this.value)"></div><div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="updateRec(${i}, 'amount', this.value, true)"></div><div class="field"><label>Due Day</label><select class="field-select" onchange="updateRec(${i}, 'dueDay', this.value ? parseInt(this.value) : null, false)">${buildDayOptions(item.dueDay)}</select></div><button class="btn-outline" onclick="removeRec(${i})">✕</button></div>`).join('') || '<p class="muted">No recurring bills set up.</p>'; }
-function renderSummary(activeYear) { document.getElementById('summaryBody').innerHTML = activeYear.months.map(m => `<tr style="border-bottom: 1px solid var(--border);"><td style="padding: 12px;">${m.name}</td><td>${money(m.monthIncome)}</td><td>${money(m.monthExpenses)}</td><td>${money(m.excludedTotal)}</td><td><strong>${money(m.endRollover)}</strong></td><td><strong>${money(m.availableAfterExcluded)}</strong></td></tr>`).join(''); }
+function renderRecurringList() { document.getElementById('recurringContainer').innerHTML = state.recurring.map((item, i) => `<div class="row row-recurring"><div class="field"><label>Bill Name</label><input value="${item.name}" onchange="updateRec(${i}, 'name', this.value)"></div><div class="field"><label>Category</label><input value="${item.category || ''}" onchange="updateRec(${i}, 'category', this.value)"></div><div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="updateRec(${i}, 'amount', this.value, true)"></div><div class="field"><label>Due Day</label><select class="field-select" onchange="updateRec(${i}, 'dueDay', this.value ? parseInt(this.value) : null, false)">${buildDayOptions(item.dueDay)}</select></div><button class="btn-outline" onclick="removeRec(${i})">✕ Remove</button></div>`).join('') || '<p style="color:var(--muted);">No recurring bills set up.</p>'; }
+function renderSummary(activeYear) { document.getElementById('summaryBody').innerHTML = activeYear.months.map(m => `<tr style="border-bottom:1px solid var(--border);"><td style="padding:12px;">${m.name}</td><td>${money(m.monthIncome)}</td><td>${money(m.monthExpenses)}</td><td>${money(m.excludedTotal)}</td><td><strong>${money(m.endRollover)}</strong></td><td><strong>${money(m.availableAfterExcluded)}</strong></td></tr>`).join(''); }
 window.money = (n) => '$' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-// --- CROSS-DEVICE SYNC: Save to Supabase + localStorage ---
 window.saveData = async () => {
-  localStorage.setItem('rollover_pro_v5', JSON.stringify(state));
-  if (!supabaseClient) return alert('Data saved locally only.');
-  const { data: { user } } = await supabaseClient.auth.getUser();
-  if (!user) return alert('Sign in with GitHub to sync across devices!');
-  const { error } = await supabaseClient
-    .from('budget_data')
-    .upsert({ user_id: user.id, state, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
-  alert(error ? 'Cloud save failed: ' + error.message : '✅ Saved & synced!');
+    localStorage.setItem('rollover_pro_v5', JSON.stringify(state));
+    if (!supabaseClient) return alert('Data saved locally only.');
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return alert('Sign in with GitHub to sync across devices!');
+    const { error } = await supabaseClient.from('budget_data').upsert({ user_id: user.id, state, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+    alert(error ? 'Cloud save failed: ' + error.message : '✅ Saved & synced!');
 };
 
-// --- CROSS-DEVICE SYNC: Load from Supabase on sign-in ---
 window.loadFromCloud = async () => {
-  if (!supabaseClient) return;
-  const { data: { user } } = await supabaseClient.auth.getUser();
-  if (!user) return;
-  const { data, error } = await supabaseClient
-    .from('budget_data')
-    .select('state')
-    .eq('user_id', user.id)
-    .single();
-  if (error && error.code !== 'PGRST116') { console.error('Cloud load error:', error.message); return; }
-  if (data?.state) {
-    state = normalizeState(data.state);
-    localStorage.setItem('rollover_pro_v5', JSON.stringify(state));
-    render();
-    console.log('Loaded data from cloud ✅');
-  }
+    if (!supabaseClient) return;
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return;
+    const { data, error } = await supabaseClient.from('budget_data').select('state').eq('user_id', user.id).single();
+    if (error && error.code !== 'PGRST116') { console.error('Cloud load error:', error.message); return; }
+    if (data?.state) { state = normalizeState(data.state); localStorage.setItem('rollover_pro_v5', JSON.stringify(state)); render(); console.log('Loaded data from cloud ✅'); }
 };
 
 window.update = (type, i, key, val, isTyping = false) => { state.years[state.activeYearIndex].months[state.years[state.activeYearIndex].activeMonth][type][i][key] = val; render(isTyping); };
@@ -417,16 +540,31 @@ window.removeRec = (i) => { state.recurring.splice(i, 1); render(); };
 window.setActive = (i) => { state.years[state.activeYearIndex].activeMonth = i; render(); };
 window.addNewYear = () => { const lastYear = parseInt(state.years[state.years.length - 1].year); const name = prompt('Enter new year:', lastYear + 1); if (name) { state.years.push(createNewYearData(name)); state.activeYearIndex = state.years.length - 1; render(); } };
 window.changeYear = (i) => { state.activeYearIndex = parseInt(i); render(); };
-window.switchView = (v) => { document.querySelectorAll('.view-section').forEach(el => el.classList.remove('view-active')); document.getElementById(v + 'View').classList.add('view-active'); document.getElementById('navHome').classList.toggle('btn-active', v === 'home'); document.getElementById('navRecurring').classList.toggle('btn-active', v === 'recurring'); document.getElementById('navSummary').classList.toggle('btn-active', v === 'summary'); };
 
-// --- CROSS-DEVICE SYNC: Pull cloud data automatically on sign-in ---
+window.switchView = (v) => {
+    document.querySelectorAll('.view-section').forEach(el => el.classList.remove('view-active'));
+    document.getElementById(v + 'View').classList.add('view-active');
+    // Desktop nav
+    ['navHome','navRecurring','navSummary'].forEach(id => document.getElementById(id).classList.remove('btn-active'));
+    const map = { home: 'navHome', recurring: 'navRecurring', summary: 'navSummary' };
+    if (map[v]) document.getElementById(map[v]).classList.add('btn-active');
+    // Bottom nav
+    ['bnHome','bnRecurring','bnSummary'].forEach(id => document.getElementById(id).classList.remove('active'));
+    const bnMap = { home: 'bnHome', recurring: 'bnRecurring', summary: 'bnSummary' };
+    if (bnMap[v]) document.getElementById(bnMap[v]).classList.add('active');
+};
+
+// Theme toggles (desktop + mobile)
+function applyTheme(t) { document.documentElement.dataset.theme = t; localStorage.setItem('budget_theme', t); }
+document.documentElement.dataset.theme = localStorage.getItem('budget_theme') || 'light';
+document.getElementById('themeToggle').onclick = () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+document.getElementById('themeToggleMobile').onclick = () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+
 if (supabaseClient) supabaseClient.auth.onAuthStateChange(async (event) => {
-  renderAuth();
-  if (event === 'SIGNED_IN') { await loadFromCloud(); }
+    renderAuth();
+    if (event === 'SIGNED_IN') { await loadFromCloud(); }
 });
 
-document.documentElement.dataset.theme = localStorage.getItem('budget_theme') || 'light';
-document.getElementById('themeToggle').onclick = () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = t; localStorage.setItem('budget_theme', t); };
 render();
 </script>
 </body>
