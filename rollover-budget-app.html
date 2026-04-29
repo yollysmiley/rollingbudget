@@ -37,7 +37,6 @@
         /* ── TOPBAR ── */
         .topbar { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; margin-bottom: 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 12px; }
         .brand strong { font-size: 1.4rem; letter-spacing: -0.5px; }
-        .topbar-right { display: flex; gap: 8px; align-items: center; }
         .nav-group { display: flex; gap: 8px; align-items: center; }
         .auth-zone { display: flex; align-items: center; gap: 10px; }
         .user-pill { display: flex; align-items: center; gap: 8px; background: var(--surface2); padding: 4px 12px; border-radius: 50px; font-size: 0.85rem; border: 1px solid var(--border); }
@@ -56,6 +55,8 @@
         .btn-green { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; font-size: 0.8rem; padding: 6px 12px; border-radius: 8px; }
         [data-theme='dark'] .btn-green { background: #064e3b; color: #6ee7b7; border-color: #065f46; }
         .btn-icon { padding: 8px; border-radius: 10px; font-size: 1.1rem; min-width: 40px; min-height: 40px; justify-content: center; }
+        /* Remove button text: hidden on mobile, shown on desktop */
+        .remove-text { display: inline; }
 
         /* ── BOTTOM NAV (mobile only) ── */
         .bottom-nav {
@@ -102,6 +103,9 @@
         .month-list { display: flex; flex-direction: column; gap: 8px; }
         .month-item { padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface2); cursor: pointer; text-align: left; width: 100%; }
         .month-item.active { border-color: var(--purple); background: var(--purple2); color: var(--purple); }
+        /* Month name display — full on desktop, short (3-letter) on mobile */
+        .month-short { display: none; }
+        .month-full { display: inline; }
 
         /* ── FORM ROWS ── */
         .row          { display: grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap: 12px; margin-bottom: 12px; align-items: end; }
@@ -139,6 +143,14 @@
         [data-theme='dark'] .bucket-summary .bs-assigned { color: #fbbf24; }
         [data-theme='dark'] .bucket-summary .bs-remaining { color: #6ee7b7; }
 
+        /* ── SUMMARY TABLE ── */
+        .summary-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .summary-table th { padding: 12px; text-align: left; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+        .summary-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+        /* Column label variants */
+        .col-short { display: none; }
+        .col-full { display: inline; }
+
         /* ── MODAL ── */
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; align-items: center; justify-content: center; }
         .modal-overlay.open { display: flex; }
@@ -166,84 +178,127 @@
         .empty-rec-note { color: var(--muted); font-size: 0.875rem; padding: 20px; text-align: center; }
         .btn-confirm:disabled { opacity: 0.45; cursor: not-allowed; }
 
-        /* ── TABLET: 640–950px ── */
-        @media (max-width: 950px) {
-            .hero, .main-grid { grid-template-columns: 1fr; }
+        /* ── TABLET: 640–1000px ── */
+        @media (max-width: 1000px) {
+            .hero { grid-template-columns: 1fr; gap: 24px; }
+            .kpi-grid { flex-direction: row; }
+            .kpi-card { flex: 1; }
+            .main-grid { grid-template-columns: 1fr; }
             .row, .row-paycheck, .row-expense, .row-recurring, .row-excluded { grid-template-columns: 1fr 1fr; }
-            .row button, .row-paycheck button, .row-expense button, .row-recurring button, .row-excluded button { grid-column: span 2; }
+            .row button, .row-paycheck button, .row-expense button, .row-recurring button, .row-excluded button { grid-column: span 2; width: auto; }
             .modal-footer { flex-direction: column; align-items: stretch; }
             .modal-footer-right { justify-content: flex-end; }
         }
 
         /* ── MOBILE: <640px ── */
         @media (max-width: 640px) {
-            /* Shell — extra bottom space for bottom nav */
+            /* Shell */
             .shell { padding: 12px 12px max(80px, calc(64px + env(safe-area-inset-bottom))); }
 
-            /* Topbar — compact, hide desktop nav buttons */
+            /* Topbar */
             .topbar { padding: 12px 0; margin-bottom: 14px; gap: 8px; }
             .brand strong { font-size: 1.15rem; }
             .nav-group { display: none; }
-            /* Show auth + theme inline in topbar */
             .topbar-mobile-actions { display: flex !important; gap: 6px; align-items: center; }
 
-            /* Bottom nav: show */
+            /* Bottom nav */
             .bottom-nav { display: flex; }
 
-            /* Hero: compact */
-            .hero { padding: 18px; gap: 16px; margin-bottom: 16px; border-radius: 16px; }
-            .hero h1 { font-size: 1.45rem; }
-            .hero p { font-size: 0.85rem; }
+            /* Hero */
+            .hero { padding: 16px; gap: 14px; margin-bottom: 14px; border-radius: 16px; }
+            .hero h1 { font-size: 1.4rem; }
+            .hero p { font-size: 0.83rem; }
             #yearTag { font-size: 0.7rem; margin-bottom: 8px; }
-            .kpi-grid { flex-direction: row; gap: 8px; }
-            .kpi-card { flex: 1; padding: 12px; border-radius: 12px; }
-            .kpi-value { font-size: 1.15rem; }
-            .kpi-note { font-size: 0.75rem; }
-            .kpi-label { font-size: 0.62rem; }
+            .kpi-card { padding: 10px 12px; border-radius: 12px; }
+            .kpi-value { font-size: 1.1rem; }
+            .kpi-note { font-size: 0.72rem; }
+            .kpi-label { font-size: 0.6rem; }
 
-            /* Aside: horizontal scrollable chip strip */
+            /* Month list → compact horizontal chip strip */
             .main-grid { grid-template-columns: 1fr; gap: 0; }
-            aside .panel { padding: 12px 14px; border-radius: 14px; margin-bottom: 12px; box-shadow: none; }
-            #historyTitle { font-size: 0.85rem; margin-bottom: 10px !important; }
-            .month-list { flex-direction: row; overflow-x: auto; gap: 6px; padding-bottom: 2px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+            aside .panel { padding: 10px 12px; border-radius: 14px; margin-bottom: 10px; box-shadow: none; }
+            #historyTitle { font-size: 0.8rem; margin-bottom: 8px !important; }
+            .month-list { flex-direction: row; overflow-x: auto; gap: 5px; padding-bottom: 2px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
             .month-list::-webkit-scrollbar { display: none; }
-            .month-item { padding: 7px 14px; white-space: nowrap; flex-shrink: 0; width: auto; border-radius: 50px; font-size: 0.85rem; }
+            /* Abbreviated month names on mobile */
+            .month-full { display: none; }
+            .month-short { display: inline; }
+            .month-item { padding: 6px 12px; white-space: nowrap; flex-shrink: 0; width: auto; border-radius: 50px; font-size: 0.82rem; }
             .month-item small { display: none; }
 
-            /* Panels: tighter */
-            .panel { padding: 14px; border-radius: 16px; margin-bottom: 14px; }
-            .panel h2 { font-size: 0.95rem; flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 14px; }
-            .panel-subhead { font-size: 0.8rem; margin-top: -8px; margin-bottom: 12px; }
+            /* Panels */
+            .panel { padding: 14px; border-radius: 16px; margin-bottom: 12px; }
+            .panel h2 { font-size: 0.95rem; flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 12px; }
+            .panel-subhead { font-size: 0.8rem; margin-top: -6px; margin-bottom: 10px; }
+            .panel h2 > span:last-child { width: 100%; display: flex; flex-wrap: wrap; gap: 6px; }
+            .panel h2 > span:last-child > button { flex: 1 1 auto; justify-content: center; }
 
-            /* Panel h2 button groups: full width row */
-            .panel h2 > span:last-child { width: 100%; }
-            .panel h2 > span:last-child > button, .panel h2 > span:last-child > span { flex: 1; justify-content: center; }
-
-            /* Form rows: single column */
+            /* Form rows → single column */
             .row, .row-paycheck, .row-expense, .row-recurring, .row-excluded {
-                grid-template-columns: 1fr;
-                gap: 10px;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
             }
+            /* Most fields take 1 col, remove button is a circle at end */
             .row button, .row-paycheck button, .row-expense button,
             .row-recurring button, .row-excluded button {
-                grid-column: 1;
+                grid-column: 1 / -1;
                 width: 100%;
                 justify-content: center;
-                margin-top: 4px;
+                margin-top: 2px;
+            }
+            /* Make the first field (name/label) full-width */
+            .row .field:first-child,
+            .row-paycheck .field:first-child,
+            .row-expense .field:first-child,
+            .row-recurring .field:first-child,
+            .row-excluded .field:first-child { grid-column: 1 / -1; }
+
+            /* Compact remove button — icon only */
+            .remove-text { display: none; }
+            .btn-remove {
+                grid-column: 1 / -1;
+                width: 100% !important;
+                border-radius: 10px !important;
+                padding: 10px !important;
+                font-size: 0.85rem !important;
+                color: var(--muted) !important;
+                justify-content: center;
             }
 
-            /* Inputs: 16px prevents iOS auto-zoom on focus */
-            input, select.field-select { font-size: 1rem; padding: 12px 10px; }
-            input[type="number"] { font-size: 1rem; }
+            /* Inputs: 16px prevents iOS zoom */
+            input, select.field-select { font-size: 1rem !important; padding: 11px 10px; }
 
-            /* Touch targets: ensure 44px min */
+            /* Touch targets */
             button { min-height: 44px; }
-            .btn-ghost { min-height: 36px; }
+            .btn-ghost { min-height: 38px; }
 
-            /* Bucket summary bars: wrap tighter */
-            .bucket-summary, .bucket-spend { gap: 8px; font-size: 0.75rem; }
+            /* Bucket summary bars → 2-col grid */
+            .bucket-summary, .bucket-spend {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 4px 10px;
+                font-size: 0.74rem;
+            }
+            .bucket-summary span:first-child,
+            .bucket-spend span:first-child { grid-column: 1 / -1; }
 
-            /* Modal: full-width bottom sheet */
+            /* Summary table: compact + sticky first col + abbreviated headers */
+            .col-full { display: none; }
+            .col-short { display: inline; }
+            .summary-table { font-size: 0.78rem; }
+            .summary-table th { padding: 8px 6px; }
+            .summary-table td { padding: 8px 6px; }
+            .summary-table th:first-child,
+            .summary-table td:first-child {
+                position: sticky;
+                left: 0;
+                background: var(--surface);
+                z-index: 2;
+                padding-right: 10px;
+                box-shadow: 2px 0 4px rgba(0,0,0,0.04);
+            }
+
+            /* Modal → bottom sheet */
             .modal-overlay { align-items: flex-end; padding: 0; }
             .modal-box {
                 border-radius: 22px 22px 0 0;
@@ -258,7 +313,7 @@
             .modal-footer-right { flex-direction: column; gap: 8px; }
             .modal-footer-right button { width: 100%; justify-content: center; }
 
-            /* Excluded-total pill: full width on mobile */
+            /* Excluded-total pill */
             .excluded-total { width: 100%; justify-content: space-between; }
         }
     </style>
@@ -280,7 +335,7 @@
             <button class="btn-outline btn-icon" id="themeToggle">🌓</button>
             <button class="btn-primary" onclick="saveData()">💾 Save</button>
         </div>
-        <!-- Mobile topbar: auth + theme only (nav handled by bottom bar) -->
+        <!-- Mobile topbar: auth + theme only -->
         <div class="topbar-mobile-actions" style="display:none;">
             <div id="authContainerMobile" class="auth-zone"></div>
             <button class="btn-outline btn-icon" id="themeToggleMobile">🌓</button>
@@ -337,7 +392,21 @@
     <div id="summaryView" class="view-section">
         <section class="panel">
             <h2 id="summaryTitle">Yearly Financial Summary</h2>
-            <div style="overflow-x: auto;"><table style="width:100%;border-collapse:collapse;font-size:0.9rem;"><thead><tr style="text-align:left;color:var(--muted);border-bottom:1px solid var(--border);"><th style="padding:12px;">Month</th><th>Income</th><th>Expense</th><th>Excluded</th><th>End Rollover</th><th>Available</th></tr></thead><tbody id="summaryBody"></tbody></table></div>
+            <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                <table class="summary-table">
+                    <thead>
+                        <tr style="text-align:left;color:var(--muted);border-bottom:1px solid var(--border);">
+                            <th>Month</th>
+                            <th><span class="col-full">Income</span><span class="col-short">Inc</span></th>
+                            <th><span class="col-full">Expense</span><span class="col-short">Exp</span></th>
+                            <th><span class="col-full">Excluded</span><span class="col-short">Excl</span></th>
+                            <th><span class="col-full">End Rollover</span><span class="col-short">Rollover</span></th>
+                            <th><span class="col-full">Available</span><span class="col-short">Avail</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="summaryBody"></tbody>
+                </table>
+            </div>
         </section>
     </div>
 </div>
@@ -396,9 +465,6 @@ function exclBucketIdx(val) { return parseInt(val.replace('excl_', ''), 10); }
 async function signInWithGitHub() { if (!supabaseClient) return alert('Setup Supabase first!'); const siteUrl = window.location.origin + window.location.pathname; await supabaseClient.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: siteUrl } }); }
 async function signOut() { if (supabaseClient) await supabaseClient.auth.signOut(); renderAuth(); }
 async function renderAuth() {
-    const isMobile = window.innerWidth <= 640;
-    const containerId = isMobile ? 'authContainerMobile' : 'authContainer';
-    // Always update both so switching orientation doesn't break it
     ['authContainer','authContainerMobile'].forEach(async (id) => {
         const container = document.getElementById(id);
         if (!container) return;
@@ -468,7 +534,12 @@ function render(isTyping = false) {
     }
     document.getElementById('historyTitle').textContent = `${activeYear.year} History`;
     document.getElementById('yearTag').textContent = `${activeYear.year} TRACKING`;
-    document.getElementById('monthList').innerHTML = activeYear.months.map((mm, i) => `<div class="month-item ${i === activeYear.activeMonth ? 'active' : ''}" onclick="setActive(${i})"><strong>${mm.name}</strong><small> · ${money(mm.endRollover)}</small></div>`).join('');
+    // Month chips: full name on desktop, 3-letter abbreviation on mobile
+    document.getElementById('monthList').innerHTML = activeYear.months.map((mm, i) =>
+        `<div class="month-item ${i === activeYear.activeMonth ? 'active' : ''}" onclick="setActive(${i})">
+            <strong class="month-full">${mm.name}</strong><strong class="month-short">${mm.name.slice(0,3)}</strong>
+            <small class="month-balance"> · ${money(mm.endRollover)}</small>
+        </div>`).join('');
     document.getElementById('yearSelector').innerHTML = state.years.map((y, i) => `<option value="${i}" ${i === state.activeYearIndex ? 'selected' : ''}>${y.year}</option>`).join('');
     renderPaychecks(m.paychecks);
     renderExcludedBuckets(m.excludedBuckets || []);
@@ -476,12 +547,29 @@ function render(isTyping = false) {
     renderRecurringList();
     renderSummary(activeYear);
     renderAuth();
-    // Scroll active month chip into view on mobile
     const activeChip = document.querySelector('.month-item.active');
     if (activeChip) activeChip.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
 }
 
-function renderPaychecks(data) { document.getElementById('paycheckContainer').innerHTML = data.map((item, i) => `<div class="row row-paycheck"><div class="field"><label>Label</label><input value="${item.name}" onchange="update('paychecks', ${i}, 'name', this.value)"></div><div class="field"><label>Date</label><input type="date" value="${item.date || ''}" onchange="update('paychecks', ${i}, 'date', this.value)"></div><div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('paychecks', ${i}, 'amount', this.value, true)"></div><div class="field"><label>Running</label><div class="running-bal" id="running-bal-${i}">${money(item.balanceAfter)}</div></div><button class="btn-outline" onclick="removeItem('paychecks', ${i})">✕ Remove</button></div><div class="bucket-summary" id="bucket-summary-${i}"><span>💼 <strong>${item.name || 'Paycheck ' + (i+1)}</strong></span><span>Assigned: <span class="bs-assigned">${money(item.bucketExpenses)}</span></span><span>Balance: <span class="bs-remaining">${money(item.balanceAfter)}</span></span></div>`).join(''); }
+function rmBtn(type, i) { return `<button class="btn-outline btn-remove" onclick="removeItem('${type}', ${i})">✕<span class="remove-text"> Remove</span></button>`; }
+function rmBtnExcl(i) { return `<button class="btn-outline btn-remove" onclick="removeExcluded(${i})">✕<span class="remove-text"> Remove</span></button>`; }
+function rmBtnRec(i) { return `<button class="btn-outline btn-remove" onclick="removeRec(${i})">✕<span class="remove-text"> Remove</span></button>`; }
+
+function renderPaychecks(data) {
+    document.getElementById('paycheckContainer').innerHTML = data.map((item, i) =>
+        `<div class="row row-paycheck">
+            <div class="field"><label>Label</label><input value="${item.name}" onchange="update('paychecks', ${i}, 'name', this.value)"></div>
+            <div class="field"><label>Date</label><input type="date" value="${item.date || ''}" onchange="update('paychecks', ${i}, 'date', this.value)"></div>
+            <div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('paychecks', ${i}, 'amount', this.value, true)"></div>
+            <div class="field"><label>Running</label><div class="running-bal" id="running-bal-${i}">${money(item.balanceAfter)}</div></div>
+            ${rmBtn('paychecks', i)}
+        </div>
+        <div class="bucket-summary" id="bucket-summary-${i}">
+            <span>💼 <strong>${item.name || 'Paycheck ' + (i+1)}</strong></span>
+            <span>Assigned: <span class="bs-assigned">${money(item.bucketExpenses)}</span></span>
+            <span>Balance: <span class="bs-remaining">${money(item.balanceAfter)}</span></span>
+        </div>`).join('');
+}
 
 function renderExcludedBuckets(data) {
     if (data.length === 0) { document.getElementById('excludedBucketContainer').innerHTML = '<p style="color:var(--muted);font-size:0.9rem;">No excluded buckets yet. Add one above.</p>'; return; }
@@ -489,7 +577,18 @@ function renderExcludedBuckets(data) {
         const spent = item.spent || 0;
         const remaining = item.remaining !== undefined ? item.remaining : Number(item.amount || 0);
         const negClass = remaining < 0 ? 'negative' : '';
-        return `<div class="row row-excluded"><div class="field"><label>Bucket Name</label><input value="${item.name || ''}" onchange="updateExcluded(${i}, 'name', this.value)"></div><div class="field"><label>Amount</label><input type="number" value="${item.amount || 0}" oninput="updateExcluded(${i}, 'amount', this.value)"></div><div class="field"><label>Reserve Date</label><input type="date" value="${item.date || ''}" onchange="updateExcluded(${i}, 'date', this.value)"></div><div class="field"><label>Note</label><input value="${item.note || ''}" onchange="updateExcluded(${i}, 'note', this.value)"></div><button class="btn-outline" onclick="removeExcluded(${i})">✕ Remove</button></div><div class="bucket-spend" id="excl-bucket-spend-${i}"><span>🔒 <strong>${item.name || 'Bucket ' + (i+1)}</strong></span><span>Spent: <span class="bs-spent">${money(spent)}</span></span><span>Remaining: <span class="bs-left ${negClass}">${money(remaining)}</span></span></div>`;
+        return `<div class="row row-excluded">
+            <div class="field"><label>Bucket Name</label><input value="${item.name || ''}" onchange="updateExcluded(${i}, 'name', this.value)"></div>
+            <div class="field"><label>Amount</label><input type="number" value="${item.amount || 0}" oninput="updateExcluded(${i}, 'amount', this.value)"></div>
+            <div class="field"><label>Reserve Date</label><input type="date" value="${item.date || ''}" onchange="updateExcluded(${i}, 'date', this.value)"></div>
+            <div class="field"><label>Note</label><input value="${item.note || ''}" onchange="updateExcluded(${i}, 'note', this.value)"></div>
+            ${rmBtnExcl(i)}
+        </div>
+        <div class="bucket-spend" id="excl-bucket-spend-${i}">
+            <span>🔒 <strong>${item.name || 'Bucket ' + (i+1)}</strong></span>
+            <span>Spent: <span class="bs-spent">${money(spent)}</span></span>
+            <span>Remaining: <span class="bs-left ${negClass}">${money(remaining)}</span></span>
+        </div>`;
     }).join('');
 }
 
@@ -502,12 +601,40 @@ function renderExpenses(data, paychecks, excludedBuckets) {
             const exclOptsSelected = excludedBuckets.length > 0
                 ? '<optgroup label="🔒 Excluded Buckets">' + excludedBuckets.map((b, bi) => `<option value="excl_${bi}" ${bv === `excl_${bi}` ? 'selected' : ''}>🔒 ${b.name || 'Bucket ' + (bi+1)}</option>`).join('') + '</optgroup>'
                 : '';
-            return `<div class="row row-expense"><div class="field"><label>Expense ${item.fromRecurring ? '<span class="rec-badge">🔄 recurring</span>' : ''}</label><input value="${item.name}" onchange="update('expenses', ${i}, 'name', this.value)"></div><div class="field"><label>Category</label><input value="${item.category || ''}" onchange="update('expenses', ${i}, 'category', this.value)"></div><div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('expenses', ${i}, 'amount', this.value, true)"></div><div class="field"><label>Due Day</label><select class="field-select" onchange="update('expenses', ${i}, 'dueDay', this.value ? parseInt(this.value) : null, false)">${buildDayOptions(item.dueDay)}</select></div><div class="field"><label>Bucket 💼</label><select class="field-select" onchange="update('expenses', ${i}, 'bucketIndex', this.value === '' ? null : (isNaN(this.value) ? this.value : parseInt(this.value)), true)"><option value="">— Unassigned —</option>${paycheckOptsSelected}${exclOptsSelected}</select></div><button class="btn-outline" onclick="removeItem('expenses', ${i})">✕ Remove</button></div>`;
+            return `<div class="row row-expense">
+                <div class="field"><label>Expense ${item.fromRecurring ? '<span class="rec-badge">🔄 recurring</span>' : ''}</label><input value="${item.name}" onchange="update('expenses', ${i}, 'name', this.value)"></div>
+                <div class="field"><label>Category</label><input value="${item.category || ''}" onchange="update('expenses', ${i}, 'category', this.value)"></div>
+                <div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('expenses', ${i}, 'amount', this.value, true)"></div>
+                <div class="field"><label>Due Day</label><select class="field-select" onchange="update('expenses', ${i}, 'dueDay', this.value ? parseInt(this.value) : null, false)">${buildDayOptions(item.dueDay)}</select></div>
+                <div class="field"><label>Bucket 💼</label><select class="field-select" onchange="update('expenses', ${i}, 'bucketIndex', this.value === '' ? null : (isNaN(this.value) ? this.value : parseInt(this.value)), true)"><option value="">— Unassigned —</option>${paycheckOptsSelected}${exclOptsSelected}</select></div>
+                ${rmBtn('expenses', i)}
+            </div>`;
         }).join('');
 }
 
-function renderRecurringList() { document.getElementById('recurringContainer').innerHTML = state.recurring.map((item, i) => `<div class="row row-recurring"><div class="field"><label>Bill Name</label><input value="${item.name}" onchange="updateRec(${i}, 'name', this.value)"></div><div class="field"><label>Category</label><input value="${item.category || ''}" onchange="updateRec(${i}, 'category', this.value)"></div><div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="updateRec(${i}, 'amount', this.value, true)"></div><div class="field"><label>Due Day</label><select class="field-select" onchange="updateRec(${i}, 'dueDay', this.value ? parseInt(this.value) : null, false)">${buildDayOptions(item.dueDay)}</select></div><button class="btn-outline" onclick="removeRec(${i})">✕ Remove</button></div>`).join('') || '<p style="color:var(--muted);">No recurring bills set up.</p>'; }
-function renderSummary(activeYear) { document.getElementById('summaryBody').innerHTML = activeYear.months.map(m => `<tr style="border-bottom:1px solid var(--border);"><td style="padding:12px;">${m.name}</td><td>${money(m.monthIncome)}</td><td>${money(m.monthExpenses)}</td><td>${money(m.excludedTotal)}</td><td><strong>${money(m.endRollover)}</strong></td><td><strong>${money(m.availableAfterExcluded)}</strong></td></tr>`).join(''); }
+function renderRecurringList() {
+    document.getElementById('recurringContainer').innerHTML = state.recurring.map((item, i) =>
+        `<div class="row row-recurring">
+            <div class="field"><label>Bill Name</label><input value="${item.name}" onchange="updateRec(${i}, 'name', this.value)"></div>
+            <div class="field"><label>Category</label><input value="${item.category || ''}" onchange="updateRec(${i}, 'category', this.value)"></div>
+            <div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="updateRec(${i}, 'amount', this.value, true)"></div>
+            <div class="field"><label>Due Day</label><select class="field-select" onchange="updateRec(${i}, 'dueDay', this.value ? parseInt(this.value) : null, false)">${buildDayOptions(item.dueDay)}</select></div>
+            ${rmBtnRec(i)}
+        </div>`).join('') || '<p style="color:var(--muted);">No recurring bills set up.</p>';
+}
+
+function renderSummary(activeYear) {
+    document.getElementById('summaryBody').innerHTML = activeYear.months.map(m =>
+        `<tr style="border-bottom:1px solid var(--border);">
+            <td>${m.name.slice(0,3)}<span class="col-full">${m.name.slice(3)}</span></td>
+            <td>${money(m.monthIncome)}</td>
+            <td>${money(m.monthExpenses)}</td>
+            <td>${money(m.excludedTotal)}</td>
+            <td><strong>${money(m.endRollover)}</strong></td>
+            <td><strong>${money(m.availableAfterExcluded)}</strong></td>
+        </tr>`).join('');
+}
+
 window.money = (n) => '$' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 window.saveData = async () => {
@@ -544,17 +671,14 @@ window.changeYear = (i) => { state.activeYearIndex = parseInt(i); render(); };
 window.switchView = (v) => {
     document.querySelectorAll('.view-section').forEach(el => el.classList.remove('view-active'));
     document.getElementById(v + 'View').classList.add('view-active');
-    // Desktop nav
     ['navHome','navRecurring','navSummary'].forEach(id => document.getElementById(id).classList.remove('btn-active'));
     const map = { home: 'navHome', recurring: 'navRecurring', summary: 'navSummary' };
     if (map[v]) document.getElementById(map[v]).classList.add('btn-active');
-    // Bottom nav
     ['bnHome','bnRecurring','bnSummary'].forEach(id => document.getElementById(id).classList.remove('active'));
     const bnMap = { home: 'bnHome', recurring: 'bnRecurring', summary: 'bnSummary' };
     if (bnMap[v]) document.getElementById(bnMap[v]).classList.add('active');
 };
 
-// Theme toggles (desktop + mobile)
 function applyTheme(t) { document.documentElement.dataset.theme = t; localStorage.setItem('budget_theme', t); }
 document.documentElement.dataset.theme = localStorage.getItem('budget_theme') || 'light';
 document.getElementById('themeToggle').onclick = () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
