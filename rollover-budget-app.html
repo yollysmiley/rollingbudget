@@ -83,6 +83,16 @@
         [data-theme='dark'] .exclude-badge { background: #3f1d1d; color: #fca5a5; }
         .excluded-total { display: inline-flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); padding: 8px 12px; border-radius: 10px; font-size: 0.86rem; color: var(--muted); }
         .excluded-total strong { color: var(--text); }
+        /* Excluded bucket spend tracker */
+        .bucket-spend { font-size: 0.78rem; color: var(--muted); margin-top: -4px; margin-bottom: 10px; padding: 6px 10px; background: #fff7ed; border-radius: 8px; border: 1px solid #fed7aa; display: flex; gap: 16px; flex-wrap: wrap; }
+        [data-theme='dark'] .bucket-spend { background: #3b1f0a; border-color: #92400e; }
+        .bucket-spend span { white-space: nowrap; }
+        .bucket-spend .bs-spent { color: #92400e; font-weight: 700; }
+        .bucket-spend .bs-left { color: #065f46; font-weight: 700; }
+        [data-theme='dark'] .bucket-spend .bs-spent { color: #fdba74; }
+        [data-theme='dark'] .bucket-spend .bs-left { color: #6ee7b7; }
+        .bucket-spend .bs-left.negative { color: #991b1b; }
+        [data-theme='dark'] .bucket-spend .bs-left.negative { color: #fca5a5; }
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; align-items: center; justify-content: center; }
         .modal-overlay.open { display: flex; }
         .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r2); padding: 28px; width: 100%; max-width: 500px; box-shadow: var(--shadow); }
@@ -160,7 +170,7 @@
                 <section class="panel"><h2>Paychecks <button class="btn-ghost" onclick="addItem('paychecks')">+ Add</button></h2><div id="paycheckContainer"></div></section>
                 <section class="panel">
                     <h2><span>Excluded Buckets <span class="exclude-badge">No rollover</span></span><span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><span class="excluded-total">Reserved this month: <strong id="excludedTotal">$0.00</strong></span><button class="btn-ghost" onclick="addExcludedBucket()">+ Add Bucket</button></span></h2>
-                    <p class="panel-subhead">Use these for money you want to reserve this month without letting it roll into the next month.</p>
+                    <p class="panel-subhead">Use these for money you want to reserve this month without letting it roll into the next month. Assign expenses to a bucket below to track how much you've spent from it.</p>
                     <div id="excludedBucketContainer"></div>
                 </section>
                 <section class="panel">
@@ -193,6 +203,14 @@ let state = normalizeState(JSON.parse(localStorage.getItem('rollover_pro_v5')) |
 let modalSelections = new Set();
 function buildDayOptions(selected) { let opts = '<option value="">— Day —</option>'; for (let d = 1; d <= 31; d++) { const suffix = d === 1 ? 'st' : d === 2 ? 'nd' : d === 3 ? 'rd' : 'th'; const sel = Number(selected) === d ? 'selected' : ''; opts += `<option value="${d}" ${sel}>${d}${suffix}</option>`; } return opts; }
 function ordinal(d) { if (!d) return ''; const n = Number(d); const teen = n % 100; const s = (teen >= 11 && teen <= 13) ? 'th' : n % 10 === 1 ? 'st' : n % 10 === 2 ? 'nd' : n % 10 === 3 ? 'rd' : 'th'; return n + s; }
+
+// bucketIndex encoding:
+//   null / undefined / ''  = Unassigned (no paycheck, no excluded bucket)
+//   0, 1, 2 ...            = paycheck index (existing behaviour)
+//   'excl_0', 'excl_1' ... = excluded bucket index (new)
+function isExclBucket(val) { return typeof val === 'string' && val.startsWith('excl_'); }
+function exclBucketIdx(val) { return parseInt(val.replace('excl_', ''), 10); }
+
 async function signInWithGitHub() { if (!supabaseClient) return alert('Setup Supabase first!'); const siteUrl = window.location.origin + window.location.pathname; await supabaseClient.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: siteUrl } }); }
 async function signOut() { if (supabaseClient) await supabaseClient.auth.signOut(); renderAuth(); }
 async function renderAuth() { const container = document.getElementById('authContainer'); if (!supabaseClient) return; const { data: { user } } = await supabaseClient.auth.getUser(); if (user) { container.innerHTML = `<div class="user-pill"><img src="${user.user_metadata.avatar_url || ''}" alt="U"><span>${user.user_metadata.full_name || user.email}</span></div><button class="btn-ghost" onclick="signOut()">Sign Out</button>`; } else { container.innerHTML = `<button class="btn-github" onclick="signInWithGitHub()">GitHub Login</button>`; } }
@@ -203,11 +221,155 @@ window.openRecurringModal = function() { const activeYear = state.years[state.ac
 window.closeRecurringModal = function() { document.getElementById('recurringModal').classList.remove('open'); modalSelections.clear(); };
 document.getElementById('recurringModal').addEventListener('click', function(e) { if (e.target === this) closeRecurringModal(); });
 window.addSelectedRecurring = function() { if (modalSelections.size === 0) return; const activeYear = state.years[state.activeYearIndex]; const m = activeYear.months[activeYear.activeMonth]; [...modalSelections].sort((a, b) => a - b).forEach(i => { const r = state.recurring[i]; m.expenses.push({ name: r.name, amount: r.amount, category: r.category || '', dueDay: r.dueDay || null, fromRecurring: true, bucketIndex: null }); }); closeRecurringModal(); render(); };
-function calculate() { state.years.forEach(yearData => { let runningYearlyRollover = 0; yearData.months.forEach((m) => { m.startRollover = runningYearlyRollover; const incTotal = m.paychecks.reduce((s, p) => s + Number(p.amount || 0), 0); const expTotal = m.expenses.reduce((s, e) => s + Number(e.amount || 0), 0); const excludedTotal = (m.excludedBuckets || []).reduce((s, b) => s + Number(b.amount || 0), 0); m.paychecks.forEach((p, pi) => { p.bucketExpenses = m.expenses.filter(e => e.bucketIndex === pi).reduce((s, e) => s + Number(e.amount || 0), 0); }); let runningInMonth = m.startRollover; m.paychecks.forEach(p => { runningInMonth += Number(p.amount || 0); runningInMonth -= p.bucketExpenses; p.balanceAfter = runningInMonth; }); m.monthIncome = incTotal; m.monthExpenses = expTotal; m.excludedTotal = excludedTotal; m.endRollover = m.startRollover + incTotal - expTotal; m.availableAfterExcluded = m.endRollover - excludedTotal; runningYearlyRollover = m.endRollover; }); }); }
-function render(isTyping = false) { calculate(); const activeYear = state.years[state.activeYearIndex]; const m = activeYear.months[activeYear.activeMonth]; document.getElementById('kpiEnd').textContent = money(m.endRollover); document.getElementById('kpiAvailable').textContent = money(m.availableAfterExcluded); document.getElementById('excludedTotal').textContent = money(m.excludedTotal); if (isTyping) { m.paychecks.forEach((p, i) => { const el = document.getElementById(`running-bal-${i}`); if (el) el.textContent = money(p.balanceAfter); const bs = document.getElementById(`bucket-summary-${i}`); if (bs) { bs.querySelector('.bs-assigned').textContent = money(p.bucketExpenses); bs.querySelector('.bs-remaining').textContent = money(p.balanceAfter); } }); return; } document.getElementById('historyTitle').textContent = `${activeYear.year} History`; document.getElementById('yearTag').textContent = `${activeYear.year} TRACKING`; document.getElementById('monthList').innerHTML = activeYear.months.map((mm, i) => `<div class="month-item ${i === activeYear.activeMonth ? 'active' : ''}" onclick="setActive(${i})"><strong>${mm.name}</strong><small>End: ${money(mm.endRollover)}</small></div>`).join(''); document.getElementById('yearSelector').innerHTML = state.years.map((y, i) => `<option value="${i}" ${i === state.activeYearIndex ? 'selected' : ''}>${y.year}</option>`).join(''); renderPaychecks(m.paychecks); renderExcludedBuckets(m.excludedBuckets || []); renderExpenses(m.expenses, m.paychecks); renderRecurringList(); renderSummary(activeYear); renderAuth(); }
+
+function calculate() {
+    state.years.forEach(yearData => {
+        let runningYearlyRollover = 0;
+        yearData.months.forEach((m) => {
+            m.startRollover = runningYearlyRollover;
+            const incTotal = m.paychecks.reduce((s, p) => s + Number(p.amount || 0), 0);
+
+            // Split expenses: those assigned to excluded buckets vs. regular
+            const regularExpenses = m.expenses.filter(e => !isExclBucket(e.bucketIndex));
+            const excludedBucketExpenses = m.expenses.filter(e => isExclBucket(e.bucketIndex));
+
+            const expTotal = regularExpenses.reduce((s, e) => s + Number(e.amount || 0), 0);
+            const excludedTotal = (m.excludedBuckets || []).reduce((s, b) => s + Number(b.amount || 0), 0);
+
+            // Paycheck bucket running balances (only regular expenses count here)
+            m.paychecks.forEach((p, pi) => {
+                p.bucketExpenses = regularExpenses.filter(e => e.bucketIndex === pi).reduce((s, e) => s + Number(e.amount || 0), 0);
+            });
+            let runningInMonth = m.startRollover;
+            m.paychecks.forEach(p => {
+                runningInMonth += Number(p.amount || 0);
+                runningInMonth -= p.bucketExpenses;
+                p.balanceAfter = runningInMonth;
+            });
+
+            // Per-excluded-bucket spend tracking
+            (m.excludedBuckets || []).forEach((b, bi) => {
+                b.spent = excludedBucketExpenses
+                    .filter(e => exclBucketIdx(e.bucketIndex) === bi)
+                    .reduce((s, e) => s + Number(e.amount || 0), 0);
+                b.remaining = Number(b.amount || 0) - b.spent;
+            });
+
+            m.monthIncome = incTotal;
+            m.monthExpenses = expTotal; // excludes bucket-assigned expenses from rollover calc
+            m.excludedTotal = excludedTotal;
+            m.endRollover = m.startRollover + incTotal - expTotal;
+            m.availableAfterExcluded = m.endRollover - excludedTotal;
+            runningYearlyRollover = m.endRollover;
+        });
+    });
+}
+
+function render(isTyping = false) {
+    calculate();
+    const activeYear = state.years[state.activeYearIndex];
+    const m = activeYear.months[activeYear.activeMonth];
+    document.getElementById('kpiEnd').textContent = money(m.endRollover);
+    document.getElementById('kpiAvailable').textContent = money(m.availableAfterExcluded);
+    document.getElementById('excludedTotal').textContent = money(m.excludedTotal);
+    if (isTyping) {
+        m.paychecks.forEach((p, i) => {
+            const el = document.getElementById(`running-bal-${i}`);
+            if (el) el.textContent = money(p.balanceAfter);
+            const bs = document.getElementById(`bucket-summary-${i}`);
+            if (bs) { bs.querySelector('.bs-assigned').textContent = money(p.bucketExpenses); bs.querySelector('.bs-remaining').textContent = money(p.balanceAfter); }
+        });
+        // Update excluded bucket spend trackers inline
+        (m.excludedBuckets || []).forEach((b, bi) => {
+            const el = document.getElementById(`excl-bucket-spend-${bi}`);
+            if (el) {
+                el.querySelector('.bs-spent').textContent = money(b.spent);
+                const leftEl = el.querySelector('.bs-left');
+                leftEl.textContent = money(b.remaining);
+                leftEl.classList.toggle('negative', b.remaining < 0);
+            }
+        });
+        return;
+    }
+    document.getElementById('historyTitle').textContent = `${activeYear.year} History`;
+    document.getElementById('yearTag').textContent = `${activeYear.year} TRACKING`;
+    document.getElementById('monthList').innerHTML = activeYear.months.map((mm, i) => `<div class="month-item ${i === activeYear.activeMonth ? 'active' : ''}" onclick="setActive(${i})"><strong>${mm.name}</strong><small>End: ${money(mm.endRollover)}</small></div>`).join('');
+    document.getElementById('yearSelector').innerHTML = state.years.map((y, i) => `<option value="${i}" ${i === state.activeYearIndex ? 'selected' : ''}>${y.year}</option>`).join('');
+    renderPaychecks(m.paychecks);
+    renderExcludedBuckets(m.excludedBuckets || []);
+    renderExpenses(m.expenses, m.paychecks, m.excludedBuckets || []);
+    renderRecurringList();
+    renderSummary(activeYear);
+    renderAuth();
+}
+
 function renderPaychecks(data) { document.getElementById('paycheckContainer').innerHTML = data.map((item, i) => `<div class="row row-paycheck"><div class="field"><label>Label</label><input value="${item.name}" onchange="update('paychecks', ${i}, 'name', this.value)"></div><div class="field"><label>Date</label><input type="date" value="${item.date || ''}" onchange="update('paychecks', ${i}, 'date', this.value)"></div><div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('paychecks', ${i}, 'amount', this.value, true)"></div><div class="field"><label>Running</label><div class="running-bal" id="running-bal-${i}">${money(item.balanceAfter)}</div></div><button class="btn-outline" onclick="removeItem('paychecks', ${i})">✕</button></div><div class="bucket-summary" id="bucket-summary-${i}"><span>💼 <strong>${item.name || 'Paycheck ' + (i+1)}</strong></span><span>Assigned expenses: <span class="bs-assigned">${money(item.bucketExpenses)}</span></span><span>Balance after bucket: <span class="bs-remaining">${money(item.balanceAfter)}</span></span></div>`).join(''); }
-function renderExcludedBuckets(data) { document.getElementById('excludedBucketContainer').innerHTML = data.length === 0 ? '<p style="color:var(--muted);font-size:0.9rem;">No excluded buckets yet. Add one above.</p>' : data.map((item, i) => `<div class="row row-excluded"><div class="field"><label>Bucket Name</label><input value="${item.name || ''}" onchange="updateExcluded(${i}, 'name', this.value)"></div><div class="field"><label>Amount</label><input type="number" value="${item.amount || 0}" oninput="updateExcluded(${i}, 'amount', this.value)"></div><div class="field"><label>Reserve Date</label><input type="date" value="${item.date || ''}" onchange="updateExcluded(${i}, 'date', this.value)"></div><div class="field"><label>Note</label><input value="${item.note || ''}" onchange="updateExcluded(${i}, 'note', this.value)"></div><button class="btn-outline" onclick="removeExcluded(${i})">✕</button></div>`).join(''); }
-function renderExpenses(data, paychecks) { const bucketOptions = paychecks.map((p, i) => `<option value="${i}">${p.name || 'Paycheck ' + (i+1)}</option>`).join(''); document.getElementById('expenseContainer').innerHTML = data.length === 0 ? '<p style="color:var(--muted);font-size:0.9rem;">No expenses yet. Add one above.</p>' : data.map((item, i) => { const bucketVal = item.bucketIndex !== null && item.bucketIndex !== undefined ? item.bucketIndex : ''; return `<div class="row row-expense"><div class="field"><label>Expense ${item.fromRecurring ? '<span class="rec-badge">🔄 recurring</span>' : ''}</label><input value="${item.name}" onchange="update('expenses', ${i}, 'name', this.value)"></div><div class="field"><label>Category</label><input value="${item.category || ''}" onchange="update('expenses', ${i}, 'category', this.value)"></div><div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('expenses', ${i}, 'amount', this.value, true)"></div><div class="field"><label>Due Day</label><select class="field-select" onchange="update('expenses', ${i}, 'dueDay', this.value ? parseInt(this.value) : null, false)">${buildDayOptions(item.dueDay)}</select></div><div class="field"><label>Bucket 💼</label><select class="field-select" onchange="update('expenses', ${i}, 'bucketIndex', this.value === '' ? null : parseInt(this.value), true)"><option value="">— Unassigned —</option>${bucketOptions.replace(`value="${bucketVal}"`, `value="${bucketVal}" selected`)}</select></div><button class="btn-outline" onclick="removeItem('expenses', ${i})">✕</button></div>`; }).join(''); }
+
+function renderExcludedBuckets(data) {
+    if (data.length === 0) {
+        document.getElementById('excludedBucketContainer').innerHTML = '<p style="color:var(--muted);font-size:0.9rem;">No excluded buckets yet. Add one above.</p>';
+        return;
+    }
+    document.getElementById('excludedBucketContainer').innerHTML = data.map((item, i) => {
+        const spent = item.spent || 0;
+        const remaining = item.remaining !== undefined ? item.remaining : Number(item.amount || 0);
+        const negClass = remaining < 0 ? 'negative' : '';
+        return `<div class="row row-excluded">
+            <div class="field"><label>Bucket Name</label><input value="${item.name || ''}" onchange="updateExcluded(${i}, 'name', this.value)"></div>
+            <div class="field"><label>Amount</label><input type="number" value="${item.amount || 0}" oninput="updateExcluded(${i}, 'amount', this.value)"></div>
+            <div class="field"><label>Reserve Date</label><input type="date" value="${item.date || ''}" onchange="updateExcluded(${i}, 'date', this.value)"></div>
+            <div class="field"><label>Note</label><input value="${item.note || ''}" onchange="updateExcluded(${i}, 'note', this.value)"></div>
+            <button class="btn-outline" onclick="removeExcluded(${i})">✕</button>
+        </div>
+        <div class="bucket-spend" id="excl-bucket-spend-${i}">
+            <span>🔒 <strong>${item.name || 'Bucket ' + (i+1)}</strong></span>
+            <span>Expenses assigned: <span class="bs-spent">${money(spent)}</span></span>
+            <span>Remaining: <span class="bs-left ${negClass}">${money(remaining)}</span></span>
+        </div>`;
+    }).join('');
+}
+
+function renderExpenses(data, paychecks, excludedBuckets) {
+    // Build paycheck options
+    const paycheckOpts = paychecks.map((p, i) => `<option value="${i}">${p.name || 'Paycheck ' + (i+1)}</option>`).join('');
+    // Build excluded bucket options (value = 'excl_0', 'excl_1', ...)
+    const exclOpts = excludedBuckets.length > 0
+        ? '<optgroup label="🔒 Excluded Buckets">' +
+          excludedBuckets.map((b, i) => `<option value="excl_${i}">🔒 ${b.name || 'Bucket ' + (i+1)}</option>`).join('') +
+          '</optgroup>'
+        : '';
+
+    document.getElementById('expenseContainer').innerHTML = data.length === 0
+        ? '<p style="color:var(--muted);font-size:0.9rem;">No expenses yet. Add one above.</p>'
+        : data.map((item, i) => {
+            const bv = item.bucketIndex !== null && item.bucketIndex !== undefined ? item.bucketIndex : '';
+            // Build selected state for the combined dropdown
+            const paycheckOptsSelected = paychecks.map((p, pi) =>
+                `<option value="${pi}" ${bv === pi ? 'selected' : ''}>${p.name || 'Paycheck ' + (pi+1)}</option>`
+            ).join('');
+            const exclOptsSelected = excludedBuckets.length > 0
+                ? '<optgroup label="🔒 Excluded Buckets">' +
+                  excludedBuckets.map((b, bi) =>
+                      `<option value="excl_${bi}" ${bv === `excl_${bi}` ? 'selected' : ''}>🔒 ${b.name || 'Bucket ' + (bi+1)}</option>`
+                  ).join('') +
+                  '</optgroup>'
+                : '';
+
+            return `<div class="row row-expense">
+                <div class="field"><label>Expense ${item.fromRecurring ? '<span class="rec-badge">🔄 recurring</span>' : ''}</label><input value="${item.name}" onchange="update('expenses', ${i}, 'name', this.value)"></div>
+                <div class="field"><label>Category</label><input value="${item.category || ''}" onchange="update('expenses', ${i}, 'category', this.value)"></div>
+                <div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('expenses', ${i}, 'amount', this.value, true)"></div>
+                <div class="field"><label>Due Day</label><select class="field-select" onchange="update('expenses', ${i}, 'dueDay', this.value ? parseInt(this.value) : null, false)">${buildDayOptions(item.dueDay)}</select></div>
+                <div class="field"><label>Bucket 💼</label><select class="field-select" onchange="update('expenses', ${i}, 'bucketIndex', this.value === '' ? null : (isNaN(this.value) ? this.value : parseInt(this.value)), true)">
+                    <option value="">— Unassigned —</option>
+                    ${paycheckOptsSelected}
+                    ${exclOptsSelected}
+                </select></div>
+                <button class="btn-outline" onclick="removeItem('expenses', ${i})">✕</button>
+            </div>`;
+        }).join('');
+}
+
 function renderRecurringList() { document.getElementById('recurringContainer').innerHTML = state.recurring.map((item, i) => `<div class="row row-recurring"><div class="field"><label>Bill Name</label><input value="${item.name}" onchange="updateRec(${i}, 'name', this.value)"></div><div class="field"><label>Category</label><input value="${item.category || ''}" onchange="updateRec(${i}, 'category', this.value)"></div><div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="updateRec(${i}, 'amount', this.value, true)"></div><div class="field"><label>Due Day</label><select class="field-select" onchange="updateRec(${i}, 'dueDay', this.value ? parseInt(this.value) : null, false)">${buildDayOptions(item.dueDay)}</select></div><button class="btn-outline" onclick="removeRec(${i})">✕</button></div>`).join('') || '<p class="muted">No recurring bills set up.</p>'; }
 function renderSummary(activeYear) { document.getElementById('summaryBody').innerHTML = activeYear.months.map(m => `<tr style="border-bottom: 1px solid var(--border);"><td style="padding: 12px;">${m.name}</td><td>${money(m.monthIncome)}</td><td>${money(m.monthExpenses)}</td><td>${money(m.excludedTotal)}</td><td><strong>${money(m.endRollover)}</strong></td><td><strong>${money(m.availableAfterExcluded)}</strong></td></tr>`).join(''); }
 window.money = (n) => '$' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
