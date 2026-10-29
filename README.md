@@ -6,6 +6,7 @@
 </head>
 <body>
 <h1>Rollover Budget Pro</h1>
+<p><a href="https://github.com/yollysmiley/rollingbudget/actions/workflows/initialization-tests.yml?query=branch%3Apreparation%2Fdeployment-foundation"><img src="https://github.com/yollysmiley/rollingbudget/actions/workflows/initialization-tests.yml/badge.svg?branch=preparation%2Fdeployment-foundation" alt="Initialization tests — preparation/deployment-foundation"></a></p>
 <p>A high-precision financial tracking application designed for multi-year planning. Unlike standard budgeting tools, <strong>Rollover Budget Pro</strong> focuses on "dynamic rollover" logic, helping you visualize how surplus funds move from one month to the next across multiple years.</p>
 
 <h2> Key Features</h2>
