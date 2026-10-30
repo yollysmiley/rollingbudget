@@ -19,7 +19,9 @@ A Git branch preserves source code, not database records, browser storage, or un
 - [x] Create isolated staging with synthetic data and separate test accounts.
 - [x] Demonstrate recovery in an isolated environment (local PostgreSQL 16 restore from the exported backup; see evidence below).
 - [x] Establish executable regression tests and CI.
-- [ ] Approve preparation completion before Release 1.
+- [x] Approve preparation completion before Release 1.
+
+Preparation completion approved by the user on 2026-10-30. Release 1 production rollout may begin under its separately reviewed plan.
 
 ## Preparation evidence (2026-10-29/30)
 
