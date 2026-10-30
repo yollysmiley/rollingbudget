@@ -457,33 +457,18 @@ const createNewYearData = (yearName) => ({ year: yearName, activeMonth: 0, month
 function normalizeState(raw) { const base = raw || { activeYearIndex: 0, recurring: [{name: 'Housing/Rent', amount: 1500, category: 'Housing', dueDay: 1}], years: [createNewYearData('2026')] }; base.recurring = base.recurring || []; base.years = (base.years || []).map(y => ({ ...y, months: (y.months || []).map(m => ({ ...m, expenses: m.expenses || [], excludedBuckets: m.excludedBuckets || [] })) })); return base; }
 let state = normalizeState(JSON.parse(localStorage.getItem('rollover_pro_v5')) || JSON.parse(localStorage.getItem('rollover_pro_v4')));
 let modalSelections = new Set();
-function buildDayOptions(selected) { let opts = '<option value="">— Day —</option>'; for (let d = 1; d <= 31; d++) { const suffix = d === 1 ? 'st' : d === 2 ? 'nd' : d === 3 ? 'rd' : 'th'; const sel = Number(selected) === d ? 'selected' : ''; opts += `<option value="${d}" ${sel}>${d}${suffix}</option>`; } return opts; }
+
 function ordinal(d) { if (!d) return ''; const n = Number(d); const teen = n % 100; const s = (teen >= 11 && teen <= 13) ? 'th' : n % 10 === 1 ? 'st' : n % 10 === 2 ? 'nd' : n % 10 === 3 ? 'rd' : 'th'; return n + s; }
 function isExclBucket(val) { return typeof val === 'string' && val.startsWith('excl_'); }
 function exclBucketIdx(val) { return parseInt(val.replace('excl_', ''), 10); }
 
 async function signInWithGitHub() { if (!supabaseClient) return alert('Setup Supabase first!'); const siteUrl = window.location.origin + window.location.pathname; await supabaseClient.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: siteUrl } }); }
 async function signOut() { if (supabaseClient) await supabaseClient.auth.signOut(); renderAuth(); }
-async function renderAuth() {
-    ['authContainer','authContainerMobile'].forEach(async (id) => {
-        const container = document.getElementById(id);
-        if (!container) return;
-        if (!supabaseClient) { if (id === 'authContainer') container.innerHTML = '<button class="btn-github" onclick="signInWithGitHub()">GitHub Login</button>'; return; }
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        if (user) {
-            container.innerHTML = id === 'authContainer'
-                ? `<div class="user-pill"><img src="${user.user_metadata.avatar_url || ''}" alt="U" width="24" height="24"><span>${user.user_metadata.full_name || user.email}</span></div><button class="btn-ghost" onclick="signOut()">Sign Out</button>`
-                : `<img src="${user.user_metadata.avatar_url || ''}" alt="U" width="28" height="28" style="border-radius:50%;border:1px solid var(--border);">`;
-        } else {
-            container.innerHTML = `<button class="btn-github" onclick="signInWithGitHub()">${id === 'authContainerMobile' ? '⬥ Login' : 'GitHub Login'}</button>`;
-        }
-    });
-}
 
 function updateModalUI() { const count = modalSelections.size; const total = [...modalSelections].reduce((s, i) => s + Number(state.recurring[i].amount || 0), 0); const allSelected = state.recurring.length > 0 && modalSelections.size === state.recurring.length; document.getElementById('selectedCount').textContent = `${count} selected`; document.getElementById('modalSelTotal').textContent = money(total); document.getElementById('selectAllBtn').textContent = allSelected ? 'Deselect All' : 'Select All'; const addBtn = document.getElementById('addSelectedBtn'); addBtn.disabled = count === 0; addBtn.textContent = count > 0 ? `✚ Add ${count} Expense${count > 1 ? 's' : ''}` : '✚ Add Selected'; const footerTotal = document.getElementById('modalFooterTotal'); if (count > 0) { footerTotal.style.visibility = 'visible'; document.getElementById('modalFooterCount').textContent = count; document.getElementById('modalFooterSum').textContent = money(total); } else { footerTotal.style.visibility = 'hidden'; } document.querySelectorAll('.rec-select-item').forEach(el => { const idx = parseInt(el.dataset.idx); const cb = el.querySelector('input[type="checkbox"]'); if (modalSelections.has(idx)) { el.classList.add('selected'); if (cb) cb.checked = true; } else { el.classList.remove('selected'); if (cb) cb.checked = false; } }); }
 window.toggleRecurringItem = function(idx) { if (modalSelections.has(idx)) modalSelections.delete(idx); else modalSelections.add(idx); updateModalUI(); };
 window.toggleSelectAll = function() { const allSelected = modalSelections.size === state.recurring.length; if (allSelected) modalSelections.clear(); else state.recurring.forEach((_, i) => modalSelections.add(i)); updateModalUI(); };
-window.openRecurringModal = function() { const activeYear = state.years[state.activeYearIndex]; const m = activeYear.months[activeYear.activeMonth]; document.getElementById('modalMonthName').textContent = m.name; modalSelections.clear(); const list = document.getElementById('recSelectList'); const toolbar = document.getElementById('modalToolbar'); if (!state.recurring || state.recurring.length === 0) { list.innerHTML = '<div class="empty-rec-note">No global recurring bills set up yet.<br>Go to the 🔄 Recurring tab to add some.</div>'; toolbar.style.display = 'none'; } else { toolbar.style.display = 'flex'; list.innerHTML = state.recurring.map((r, i) => `<div class="rec-select-item" data-idx="${i}" onclick="toggleRecurringItem(${i})"><input type="checkbox" onclick="event.stopPropagation(); toggleRecurringItem(${i})"><div class="rec-select-item-info"><span class="rec-select-item-name">${r.name || 'Unnamed'}</span><span class="rec-select-item-meta">${r.category || 'No category'}${r.dueDay ? ' · Due ' + ordinal(r.dueDay) : ''}</span></div><span class="rec-select-item-amount">${money(r.amount)}/mo</span></div>`).join(''); } updateModalUI(); document.getElementById('recurringModal').classList.add('open'); };
+window.openRecurringModal = rbOpenRecurringModal;
 window.closeRecurringModal = function() { document.getElementById('recurringModal').classList.remove('open'); modalSelections.clear(); };
 document.getElementById('recurringModal').addEventListener('click', function(e) { if (e.target === this) closeRecurringModal(); });
 window.addSelectedRecurring = function() { if (modalSelections.size === 0) return; const activeYear = state.years[state.activeYearIndex]; const m = activeYear.months[activeYear.activeMonth]; [...modalSelections].sort((a, b) => a - b).forEach(i => { const r = state.recurring[i]; m.expenses.push({ name: r.name, amount: r.amount, category: r.category || '', dueDay: r.dueDay || null, fromRecurring: true, bucketIndex: null }); }); closeRecurringModal(); render(); };
@@ -534,13 +519,7 @@ function render(isTyping = false) {
     }
     document.getElementById('historyTitle').textContent = `${activeYear.year} History`;
     document.getElementById('yearTag').textContent = `${activeYear.year} TRACKING`;
-    // Month chips: full name on desktop, 3-letter abbreviation on mobile
-    document.getElementById('monthList').innerHTML = activeYear.months.map((mm, i) =>
-        `<div class="month-item ${i === activeYear.activeMonth ? 'active' : ''}" onclick="setActive(${i})">
-            <strong class="month-full">${mm.name}</strong><strong class="month-short">${mm.name.slice(0,3)}</strong>
-            <small class="month-balance"> · ${money(mm.endRollover)}</small>
-        </div>`).join('');
-    document.getElementById('yearSelector').innerHTML = state.years.map((y, i) => `<option value="${i}" ${i === state.activeYearIndex ? 'selected' : ''}>${y.year}</option>`).join('');
+    rbNavigation(activeYear);
     renderPaychecks(m.paychecks);
     renderExcludedBuckets(m.excludedBuckets || []);
     renderExpenses(m.expenses, m.paychecks, m.excludedBuckets || []);
@@ -551,88 +530,214 @@ function render(isTyping = false) {
     if (activeChip) activeChip.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
 }
 
-function rmBtn(type, i) { return `<button class="btn-outline btn-remove" onclick="removeItem('${type}', ${i})">✕<span class="remove-text"> Remove</span></button>`; }
-function rmBtnExcl(i) { return `<button class="btn-outline btn-remove" onclick="removeExcluded(${i})">✕<span class="remove-text"> Remove</span></button>`; }
-function rmBtnRec(i) { return `<button class="btn-outline btn-remove" onclick="removeRec(${i})">✕<span class="remove-text"> Remove</span></button>`; }
-
+function rbEl(tag, cls, text) {
+    const el = document.createElement(tag);
+    if (cls) el.className = cls;
+    if (text !== undefined) el.textContent = String(text ?? '');
+    return el;
+}
+function rbButton(action) {
+    const el = rbEl('button', 'btn-outline btn-remove', '✕');
+    el.append(rbEl('span', 'remove-text', ' Remove'));
+    el.addEventListener('click', action);
+    return el;
+}
+function rbField(label, control) {
+    const el = rbEl('div', 'field');
+    el.append(rbEl('label', '', label), control);
+    return el;
+}
+function rbInput(value, type, event, action) {
+    const el = rbEl('input');
+    el.type = type;
+    el.value = String(value ?? '');
+    el.addEventListener(event, () => action(el.value));
+    return el;
+}
+function rbOption(value, text, selected) {
+    const el = rbEl('option', '', text);
+    el.value = String(value);
+    el.selected = Boolean(selected);
+    return el;
+}
+function rbDay(selected, action) {
+    const el = rbEl('select', 'field-select');
+    el.append(rbOption('', '— Day —', !selected));
+    for (let day = 1; day <= 31; day++) el.append(rbOption(day, ordinal(day), Number(selected) === day));
+    el.addEventListener('change', () => action(el.value ? Number(el.value) : null));
+    return el;
+}
+function rbNote(text) {
+    const el = rbEl('p', '', text);
+    el.style.color = 'var(--muted)';
+    el.style.fontSize = '0.9rem';
+    return el;
+}
+function rbSummaryPart(label, cls, value) {
+    const el = rbEl('span', '', label);
+    el.append(rbEl('span', cls, money(value)));
+    return el;
+}
+function rbAvatarUrl(value) {
+    if (typeof value !== 'string' || !value.trim()) return null;
+    try {
+        const url = new URL(value);
+        if (url.protocol !== 'https:' || url.username || url.password) return null;
+        return url.href;
+    } catch { return null; }
+}
+function rbAvatar(user, mobile) {
+    const url = rbAvatarUrl(user.user_metadata?.avatar_url);
+    if (!url) return rbEl('span', 'avatar-fallback', '👤');
+    const img = rbEl('img');
+    img.alt = 'User avatar';
+    img.width = img.height = mobile ? 28 : 24;
+    img.style.borderRadius = '50%';
+    img.referrerPolicy = 'no-referrer';
+    img.addEventListener('error', () => img.replaceWith(rbEl('span', 'avatar-fallback', '👤')), { once: true });
+    img.src = url;
+    return img;
+}
+let rbAuthGeneration = 0;
+async function renderAuth() {
+    const generation = ++rbAuthGeneration;
+    let user = null;
+    try {
+        if (supabaseClient) {
+            const result = await supabaseClient.auth.getUser();
+            if (!result.error) user = result.data?.user ?? null;
+        }
+    } catch (error) { console.error('Auth display failed', error); }
+    if (generation !== rbAuthGeneration) return;
+    for (const id of ['authContainer', 'authContainerMobile']) {
+        const container = document.getElementById(id);
+        if (!container) continue;
+        const mobile = id === 'authContainerMobile';
+        container.replaceChildren();
+        if (user) {
+            if (mobile) container.append(rbAvatar(user, true));
+            else {
+                const pill = rbEl('div', 'user-pill');
+                pill.append(rbAvatar(user, false), rbEl('span', '', user.user_metadata?.full_name || user.email || 'Signed in'));
+                const logout = rbEl('button', 'btn-ghost', 'Sign Out');
+                logout.addEventListener('click', signOut);
+                container.append(pill, logout);
+            }
+        } else {
+            const login = rbEl('button', 'btn-github', mobile ? '⬥ Login' : 'GitHub Login');
+            login.addEventListener('click', signInWithGitHub);
+            container.append(login);
+        }
+    }
+}
+function rbNavigation(activeYear) {
+    document.getElementById('monthList').replaceChildren(...activeYear.months.map((month, i) => {
+        const chip = rbEl('div', 'month-item' + (i === activeYear.activeMonth ? ' active' : ''));
+        const name = String(month.name ?? '');
+        chip.append(rbEl('strong', 'month-full', name), rbEl('strong', 'month-short', name.slice(0, 3)), rbEl('small', 'month-balance', ' · ' + money(month.endRollover)));
+        chip.addEventListener('click', () => setActive(i));
+        return chip;
+    }));
+    document.getElementById('yearSelector').replaceChildren(...state.years.map((year, i) => rbOption(i, year.year, i === state.activeYearIndex)));
+}
+function rbOpenRecurringModal() {
+    const activeYear = state.years[state.activeYearIndex];
+    document.getElementById('modalMonthName').textContent = activeYear.months[activeYear.activeMonth].name;
+    modalSelections.clear();
+    const list = document.getElementById('recSelectList');
+    list.replaceChildren();
+    document.getElementById('modalToolbar').style.display = state.recurring.length ? 'flex' : 'none';
+    if (!state.recurring.length) list.append(rbEl('div', 'empty-rec-note', 'No global recurring bills set up yet. Go to the Recurring tab to add some.'));
+    state.recurring.forEach((item, i) => {
+        const row = rbEl('div', 'rec-select-item');
+        row.dataset.idx = String(i);
+        row.addEventListener('click', () => toggleRecurringItem(i));
+        const checkbox = rbEl('input');
+        checkbox.type = 'checkbox';
+        checkbox.addEventListener('click', event => { event.stopPropagation(); toggleRecurringItem(i); });
+        const info = rbEl('div', 'rec-select-item-info');
+        info.append(rbEl('span', 'rec-select-item-name', item.name || 'Unnamed'), rbEl('span', 'rec-select-item-meta', (item.category || 'No category') + (item.dueDay ? ' · Due ' + ordinal(item.dueDay) : '')));
+        row.append(checkbox, info, rbEl('span', 'rec-select-item-amount', money(item.amount) + '/mo'));
+        list.append(row);
+    });
+    updateModalUI();
+    document.getElementById('recurringModal').classList.add('open');
+}
 function renderPaychecks(data) {
-    document.getElementById('paycheckContainer').innerHTML = data.map((item, i) =>
-        `<div class="row row-paycheck">
-            <div class="field"><label>Label</label><input value="${item.name}" onchange="update('paychecks', ${i}, 'name', this.value)"></div>
-            <div class="field"><label>Date</label><input type="date" value="${item.date || ''}" onchange="update('paychecks', ${i}, 'date', this.value)"></div>
-            <div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('paychecks', ${i}, 'amount', this.value, true)"></div>
-            <div class="field"><label>Running</label><div class="running-bal" id="running-bal-${i}">${money(item.balanceAfter)}</div></div>
-            ${rmBtn('paychecks', i)}
-        </div>
-        <div class="bucket-summary" id="bucket-summary-${i}">
-            <span>💼 <strong>${item.name || 'Paycheck ' + (i+1)}</strong></span>
-            <span>Assigned: <span class="bs-assigned">${money(item.bucketExpenses)}</span></span>
-            <span>Balance: <span class="bs-remaining">${money(item.balanceAfter)}</span></span>
-        </div>`).join('');
+    const nodes = [];
+    data.forEach((item, i) => {
+        const row = rbEl('div', 'row row-paycheck');
+        const running = rbEl('div', 'running-bal', money(item.balanceAfter));
+        running.id = 'running-bal-' + i;
+        row.append(rbField('Label', rbInput(item.name, 'text', 'change', value => update('paychecks', i, 'name', value))), rbField('Date', rbInput(item.date, 'date', 'change', value => update('paychecks', i, 'date', value))), rbField('Amount', rbInput(item.amount, 'number', 'input', value => update('paychecks', i, 'amount', value, true))), rbField('Running', running), rbButton(() => removeItem('paychecks', i)));
+        const summary = rbEl('div', 'bucket-summary');
+        summary.id = 'bucket-summary-' + i;
+        const title = rbEl('span', '', '💼 ');
+        title.append(rbEl('strong', '', item.name || 'Paycheck ' + (i + 1)));
+        summary.append(title, rbSummaryPart('Assigned: ', 'bs-assigned', item.bucketExpenses), rbSummaryPart('Balance: ', 'bs-remaining', item.balanceAfter));
+        nodes.push(row, summary);
+    });
+    document.getElementById('paycheckContainer').replaceChildren(...nodes);
 }
-
 function renderExcludedBuckets(data) {
-    if (data.length === 0) { document.getElementById('excludedBucketContainer').innerHTML = '<p style="color:var(--muted);font-size:0.9rem;">No excluded buckets yet. Add one above.</p>'; return; }
-    document.getElementById('excludedBucketContainer').innerHTML = data.map((item, i) => {
-        const spent = item.spent || 0;
-        const remaining = item.remaining !== undefined ? item.remaining : Number(item.amount || 0);
-        const negClass = remaining < 0 ? 'negative' : '';
-        return `<div class="row row-excluded">
-            <div class="field"><label>Bucket Name</label><input value="${item.name || ''}" onchange="updateExcluded(${i}, 'name', this.value)"></div>
-            <div class="field"><label>Amount</label><input type="number" value="${item.amount || 0}" oninput="updateExcluded(${i}, 'amount', this.value)"></div>
-            <div class="field"><label>Reserve Date</label><input type="date" value="${item.date || ''}" onchange="updateExcluded(${i}, 'date', this.value)"></div>
-            <div class="field"><label>Note</label><input value="${item.note || ''}" onchange="updateExcluded(${i}, 'note', this.value)"></div>
-            ${rmBtnExcl(i)}
-        </div>
-        <div class="bucket-spend" id="excl-bucket-spend-${i}">
-            <span>🔒 <strong>${item.name || 'Bucket ' + (i+1)}</strong></span>
-            <span>Spent: <span class="bs-spent">${money(spent)}</span></span>
-            <span>Remaining: <span class="bs-left ${negClass}">${money(remaining)}</span></span>
-        </div>`;
-    }).join('');
+    const nodes = [];
+    data.forEach((item, i) => {
+        const row = rbEl('div', 'row row-excluded');
+        row.append(rbField('Bucket Name', rbInput(item.name, 'text', 'change', value => updateExcluded(i, 'name', value))), rbField('Amount', rbInput(item.amount || 0, 'number', 'change', value => updateExcluded(i, 'amount', value))), rbField('Reserve Date', rbInput(item.date, 'date', 'change', value => updateExcluded(i, 'date', value))), rbField('Note', rbInput(item.note, 'text', 'change', value => updateExcluded(i, 'note', value))), rbButton(() => removeExcluded(i)));
+        const summary = rbEl('div', 'bucket-spend');
+        summary.id = 'excl-bucket-spend-' + i;
+        const remaining = item.remaining ?? Number(item.amount || 0);
+        const title = rbEl('span', '', '🔒 ');
+        title.append(rbEl('strong', '', item.name || 'Bucket ' + (i + 1)));
+        summary.append(title, rbSummaryPart('Spent: ', 'bs-spent', item.spent), rbSummaryPart('Remaining: ', 'bs-left' + (remaining < 0 ? ' negative' : ''), remaining));
+        nodes.push(row, summary);
+    });
+    document.getElementById('excludedBucketContainer').replaceChildren(...(nodes.length ? nodes : [rbNote('No excluded buckets yet. Add one above.')]));
 }
-
 function renderExpenses(data, paychecks, excludedBuckets) {
-    document.getElementById('expenseContainer').innerHTML = data.length === 0
-        ? '<p style="color:var(--muted);font-size:0.9rem;">No expenses yet. Add one above.</p>'
-        : data.map((item, i) => {
-            const bv = item.bucketIndex !== null && item.bucketIndex !== undefined ? item.bucketIndex : '';
-            const paycheckOptsSelected = paychecks.map((p, pi) => `<option value="${pi}" ${bv === pi ? 'selected' : ''}>${p.name || 'Paycheck ' + (pi+1)}</option>`).join('');
-            const exclOptsSelected = excludedBuckets.length > 0
-                ? '<optgroup label="🔒 Excluded Buckets">' + excludedBuckets.map((b, bi) => `<option value="excl_${bi}" ${bv === `excl_${bi}` ? 'selected' : ''}>🔒 ${b.name || 'Bucket ' + (bi+1)}</option>`).join('') + '</optgroup>'
-                : '';
-            return `<div class="row row-expense">
-                <div class="field"><label>Expense ${item.fromRecurring ? '<span class="rec-badge">🔄 recurring</span>' : ''}</label><input value="${item.name}" onchange="update('expenses', ${i}, 'name', this.value)"></div>
-                <div class="field"><label>Category</label><input value="${item.category || ''}" onchange="update('expenses', ${i}, 'category', this.value)"></div>
-                <div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="update('expenses', ${i}, 'amount', this.value, true)"></div>
-                <div class="field"><label>Due Day</label><select class="field-select" onchange="update('expenses', ${i}, 'dueDay', this.value ? parseInt(this.value) : null, false)">${buildDayOptions(item.dueDay)}</select></div>
-                <div class="field"><label>Bucket 💼</label><select class="field-select" onchange="update('expenses', ${i}, 'bucketIndex', this.value === '' ? null : (isNaN(this.value) ? this.value : parseInt(this.value)), true)"><option value="">— Unassigned —</option>${paycheckOptsSelected}${exclOptsSelected}</select></div>
-                ${rmBtn('expenses', i)}
-            </div>`;
-        }).join('');
+    const nodes = data.map((item, i) => {
+        const row = rbEl('div', 'row row-expense');
+        const name = rbField('Expense', rbInput(item.name, 'text', 'change', value => update('expenses', i, 'name', value)));
+        if (item.fromRecurring) name.firstChild.append(rbEl('span', 'rec-badge', '🔄 recurring'));
+        const bucket = rbEl('select', 'field-select');
+        const selected = item.bucketIndex ?? '';
+        bucket.append(rbOption('', '— Unassigned —', selected === ''));
+        paychecks.forEach((p, pi) => bucket.append(rbOption(pi, p.name || 'Paycheck ' + (pi + 1), selected === pi)));
+        if (excludedBuckets.length) {
+            const group = rbEl('optgroup');
+            group.label = '🔒 Excluded Buckets';
+            excludedBuckets.forEach((b, bi) => group.append(rbOption('excl_' + bi, '🔒 ' + (b.name || 'Bucket ' + (bi + 1)), selected === 'excl_' + bi)));
+            bucket.append(group);
+        }
+        bucket.addEventListener('change', () => update('expenses', i, 'bucketIndex', bucket.value === '' ? null : (isNaN(bucket.value) ? bucket.value : parseInt(bucket.value, 10)), true));
+        row.append(name, rbField('Category', rbInput(item.category, 'text', 'change', value => update('expenses', i, 'category', value))), rbField('Amount', rbInput(item.amount, 'number', 'input', value => update('expenses', i, 'amount', value, true))), rbField('Due Day', rbDay(item.dueDay, value => update('expenses', i, 'dueDay', value))), rbField('Bucket 💼', bucket), rbButton(() => removeItem('expenses', i)));
+        return row;
+    });
+    document.getElementById('expenseContainer').replaceChildren(...(nodes.length ? nodes : [rbNote('No expenses yet. Add one above.')]));
 }
-
 function renderRecurringList() {
-    document.getElementById('recurringContainer').innerHTML = state.recurring.map((item, i) =>
-        `<div class="row row-recurring">
-            <div class="field"><label>Bill Name</label><input value="${item.name}" onchange="updateRec(${i}, 'name', this.value)"></div>
-            <div class="field"><label>Category</label><input value="${item.category || ''}" onchange="updateRec(${i}, 'category', this.value)"></div>
-            <div class="field"><label>Amount</label><input type="number" value="${item.amount}" oninput="updateRec(${i}, 'amount', this.value, true)"></div>
-            <div class="field"><label>Due Day</label><select class="field-select" onchange="updateRec(${i}, 'dueDay', this.value ? parseInt(this.value) : null, false)">${buildDayOptions(item.dueDay)}</select></div>
-            ${rmBtnRec(i)}
-        </div>`).join('') || '<p style="color:var(--muted);">No recurring bills set up.</p>';
+    const nodes = state.recurring.map((item, i) => {
+        const row = rbEl('div', 'row row-recurring');
+        row.append(rbField('Bill Name', rbInput(item.name, 'text', 'change', value => updateRec(i, 'name', value))), rbField('Category', rbInput(item.category, 'text', 'change', value => updateRec(i, 'category', value))), rbField('Amount', rbInput(item.amount, 'number', 'input', value => updateRec(i, 'amount', value, true))), rbField('Due Day', rbDay(item.dueDay, value => updateRec(i, 'dueDay', value))), rbButton(() => removeRec(i)));
+        return row;
+    });
+    document.getElementById('recurringContainer').replaceChildren(...(nodes.length ? nodes : [rbNote('No recurring bills set up.')]));
 }
-
 function renderSummary(activeYear) {
-    document.getElementById('summaryBody').innerHTML = activeYear.months.map(m =>
-        `<tr style="border-bottom:1px solid var(--border);">
-            <td>${m.name.slice(0,3)}<span class="col-full">${m.name.slice(3)}</span></td>
-            <td>${money(m.monthIncome)}</td>
-            <td>${money(m.monthExpenses)}</td>
-            <td>${money(m.excludedTotal)}</td>
-            <td><strong>${money(m.endRollover)}</strong></td>
-            <td><strong>${money(m.availableAfterExcluded)}</strong></td>
-        </tr>`).join('');
+    document.getElementById('summaryBody').replaceChildren(...activeYear.months.map(month => {
+        const row = rbEl('tr');
+        const name = String(month.name ?? '');
+        const cell = rbEl('td', '', name.slice(0, 3));
+        cell.append(rbEl('span', 'col-full', name.slice(3)));
+        row.append(cell);
+        for (const key of ['monthIncome', 'monthExpenses', 'excludedTotal', 'endRollover', 'availableAfterExcluded']) {
+            const value = rbEl('td');
+            if (key === 'endRollover' || key === 'availableAfterExcluded') value.append(rbEl('strong', '', money(month[key])));
+            else value.textContent = money(month[key]);
+            row.append(value);
+        }
+        return row;
+    }));
 }
 
 window.money = (n) => '$' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
