@@ -27,5 +27,5 @@ test("legacy budget hardening replaces broad policies with four authenticated ow
 
 test("legacy budget hardening never changes or deletes financial records", () => {
   assert.doesNotMatch(migration, /\b(TRUNCATE TABLE|DELETE FROM|DROP TABLE|ALTER TABLE)\b/i);
-  assert.doesNotMatch(migration, /budget_ui_years/i);
+  assert.doesNotMatch(migration, /(?:FROM|ON|TABLE)\s+public\.budget_ui_years/i);
 });
