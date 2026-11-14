@@ -1,74 +1,46 @@
-<!DOCTYPE html>
+# Rolling Budget
 
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-</head>
-<body>
-<h1>Rollover Budget Pro</h1>
-<p>A high-precision financial tracking application designed for multi-year planning. Unlike standard budgeting tools, <strong>Rollover Budget Pro</strong> focuses on "dynamic rollover" logic, helping you visualize how surplus funds move from one month to the next across multiple years.</p>
+A responsive, multi-year budgeting application with separate desktop and mobile experiences.
 
-<h2> Key Features</h2>
+## Features
+- Monthly income, fixed expenses, variable expenses, credit-card payments, and loan payments.
+- Rolling balances and automatic month-to-month cascade.
+- Year-by-year cloud storage with Supabase.
+- Email/password account creation, sign-in, and password recovery.
+- Owner-scoped Row Level Security for cloud budget records.
+- Responsive desktop and mobile interfaces.
 
-<h3>1. Dynamic Rollover Engine</h3>
-<ul>
-    <li><strong>Starting Balance:</strong> Automatically inherits the previous month's ending balance.</li>
-    <li><strong>Paycheck Tracking:</strong> Log individual income entries with specific dates.</li>
-    <li><strong>Running Balances:</strong> See a "Balance After" for each paycheck to prevent mid-month deficits.</li>
-    <li><strong>Monthly Expenses:</strong> Track one-time costs for specific months.</li>
-    <li><strong>Global Recurring Items:</strong> Define fixed costs (like rent or subscriptions) once, and they apply to every month automatically.</li>
-</ul>
+## Production data model
+The redesigned application stores one row per user and budget year in `public.budget_ui_years`. Each row contains a validated 12-month budget document. The table uses `(user_id, year)` as its primary key and RLS policies restrict access to the owning authenticated user.
 
-<h3>2. Multi-Year Planning</h3>
-<ul>
-    <li><strong>Continuous Timeline:</strong> Add future or past years to see long-term financial health.</li>
-    <li><strong>Yearly Summary:</strong> A high-level overview of income, expenses, and savings progress in a clean table format.</li>
-</ul>
+The old `public.budget_data` table was migrated into the year-by-year structure. The migration verified the 12-month shape, all 17 paycheck records, all 209 expense records, and all 18 recurring rules before removing the legacy row. User accounts and authentication identities were not deleted.
 
-<h3>3. Modern User Experience</h3>
-<ul>
-    <li><strong>Soft-Update Logic:</strong> Type smoothly without losing cursor focus.</li>
-    <li><strong>Dual-Mode UI:</strong> Supports both Light and Dark themes.</li>
-    <li><strong>Responsive Design:</strong> Optimized for both desktop and mobile devices.</li>
-    <li><strong>Privacy First:</strong> Currently localized to your browser using <code>localStorage</code>.</li>
-</ul>
+Legacy source fields and records that do not have a direct field in the new UI are retained under `legacyMetadata`, `legacyPaycheck`, `legacyExpense`, and `legacyRecurring` in the destination JSON so historical details are not discarded.
 
-<h2> Getting Started</h2>
+## Development and tests
+The application is a static HTML/JavaScript project. A single GitHub Actions workflow, **Production CI**, runs on pull requests targeting `main`, pushes to `main`, and manual dispatch. It has two jobs:
 
-<h3>Current Version (Local)</h3>
-<p>Since this is a single-file web application, no complex installation is required:</p>
-<ol>
-    <li>Download the <code>rollover-budget-app.html</code> file.</li>
-    <li>Open it in any modern web browser (Chrome, Firefox, Safari, or Edge).</li>
-</ol>
+- **Unit, syntax, and security contracts:** validates JavaScript syntax and runs migration regression, application contract, and Supabase RLS policy tests.
+- **Desktop and mobile browser smoke tests:** installs the pinned Playwright version and Chromium, then checks the application at desktop and mobile viewport sizes.
 
-<h2> Cloud Sync & Security</h2>
-<p>To support multi-device access and secure data persistence, the project is using a <strong>Serverless Cloud Architecture</strong>.</p>
+The separate legacy security workflow has been retired because its checks are included in the primary CI workflow. CI uses read-only repository permissions, requires no production credentials, and does not deploy.
 
-<h3>Supabase Integration</h3>
-<ul>
-    <li><strong>Authentication:</strong> Secure user login/signup using Supabase Auth.</li>
-    <li><strong>Remote Database:</strong> Migrating <code>localStorage</code> to PostgreSQL tables.</li>
-    <li><strong>Row Level Security (RLS):</strong> Policies will be implemented so that a <code>user_id</code> check is performed on every query, ensuring users can only read/write their own budget rows.</li>
-    <li><strong>Deployment:</strong> The frontend will be hosted on GitHub Pages, communicating with the Supabase API via the client-side SDK.</li>
-</ul>
+Run the Node.js regression and contract tests locally:
 
-<h2> Technical Details</h2>
-<ul>
-    <li><strong>Frontend:</strong> HTML5, CSS3, JavaScript (ES6+).</li>
-    <li><strong>Persistence:</strong> Current: Browser <code>localStorage</code> | Planned: Supabase (PostgreSQL).</li>
-    <li><strong>Architecture:</strong> Procedural state management with a "Soft-Update" pattern to maintain DOM focus during input.</li>
-</ul>
+```sh
+node --check scripts/legacy-budget-migration.js
+node --check tests/legacy-budget-migration.test.js
+node --check tests/ci-contract.test.js
+node --test tests/*.test.js
+```
 
-<h2> Safety & Privacy</h2>
-<ul>
-    <li><strong>Offline Capable:</strong> Current version does not require an internet connection.</li>
-    <li><strong>Identity Protection:</strong> Planned cloud version will use encrypted authentication tokens.</li>
-    <li><strong>Data Ownership:</strong> Your financial information remains private and secure under your own account.</li>
-</ul>
+Run the browser smoke tests after installing Playwright and Chromium:
 
-<p><em>Created for healthy financial habits and smart planning.</em></p>
+```sh
+npm install --no-save --no-package-lock playwright@1.56.1
+npx playwright install chromium
+node --test tests/browser-smoke.test.mjs
+```
 
-
-</body>
-</html>
+## Supabase setup
+Apply the migration in `supabase/migrations/20261114010000_create_budget_ui_years.sql` to provision the year-based table and owner-scoped RLS policies in a new environment. Production already has this migration applied.

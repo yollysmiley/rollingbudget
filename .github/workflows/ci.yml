@@ -1,0 +1,53 @@
+name: Production CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-and-contract:
+    name: Unit, syntax, and security contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate JavaScript syntax
+        run: |
+          node --check scripts/legacy-budget-migration.js
+          node --check tests/legacy-budget-migration.test.js
+          node --check tests/ci-contract.test.js
+      - name: Run unit, regression, and security contract tests
+        run: node --test tests/*.test.js
+
+  browser-smoke:
+    name: Desktop and mobile browser smoke tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install pinned browser test dependency
+        run: npm install --no-save --no-package-lock playwright@1.56.1
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run desktop and mobile browser smoke tests
+        run: node --test tests/browser-smoke.test.mjs
