@@ -18,11 +18,23 @@ The old `public.budget_data` table was migrated into the year-by-year structure.
 Legacy source fields and records that do not have a direct field in the new UI are retained under `legacyMetadata`, `legacyPaycheck`, `legacyExpense`, and `legacyRecurring` in the destination JSON so historical details are not discarded.
 
 ## Development and tests
-The application is primarily a static HTML/JavaScript project. The legacy conversion regression tests use Node's built-in test runner:
+The application is a static HTML/JavaScript project. CI validates the legacy-data converter, production authentication and database-policy contracts, and desktop/mobile browser rendering.
+
+Run the Node.js regression and contract tests locally:
 
 ```sh
-node --test tests/legacy-budget-migration.test.js
+node --test tests/*.test.js
 ```
+
+Run the browser smoke tests after installing Playwright and Chromium:
+
+```sh
+npm install --no-save --no-package-lock playwright@1.56.1
+npx playwright install chromium
+node --test tests/browser-smoke.test.mjs
+```
+
+GitHub Actions runs these checks on pull requests targeting `main` and pushes to `main`. No production credentials are required by CI.
 
 ## Supabase setup
 Apply the migration in `supabase/migrations/20261114010000_create_budget_ui_years.sql` to provision the year-based table and owner-scoped RLS policies in a new environment. Production already has this migration applied.
