@@ -1,3 +1,6 @@
+## Unreleased — Phase 2D.4 preview acceptance (not deployed)
+- Added synthetic authenticated desktop/mobile browser regression tests for route restoration, history navigation, and refresh; registered them in production CI. These tests use an in-memory Supabase mock and do not validate live database isolation.
+
 ## Unreleased — Phase 2D.2 production preview
 
 - Added an isolated production-configured preview of the redesigned staging frontend under `production-next/`, without changing live entry points.
