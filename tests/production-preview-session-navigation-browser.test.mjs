@@ -66,3 +66,70 @@ for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: '
     } finally { await browser.close(); }
   });
 }
+
+for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: 'mobile', width: 390, height: 844 }]) {
+  test('synthetic account switch clears prior budget and reloads owner scope on ' + viewport.name, async () => {
+    const browser = await chromium.launch({ headless: true });
+    try {
+      const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height } });
+      await page.addInitScript(() => {
+        const users = [
+          { id: 'synthetic-owner-a', email: 'a@example.invalid' },
+          { id: 'synthetic-owner-b', email: 'b@example.invalid' }
+        ];
+        let selected = users[0];
+        let listener;
+        const requestedOwners = [];
+        const query = {
+          select() { return this; },
+          eq(field, value) { if (field === 'user_id') requestedOwners.push(value); return this; },
+          in() { return this; }, order() { return this; }, limit() { return this; },
+          single() { return Promise.resolve({ data: null, error: null }); },
+          maybeSingle() { return Promise.resolve({ data: null, error: null }); },
+          then(resolve, reject) { return Promise.resolve({ data: [], error: null }).then(resolve, reject); }
+        };
+        window.__syntheticSession = {
+          requestedOwners,
+          switchToB() { selected = users[1]; listener('SIGNED_IN', { user: selected }); },
+          signOut() { selected = null; listener('SIGNED_OUT', null); }
+        };
+        window.supabase = { createClient: () => ({
+          auth: {
+            getUser: async () => ({ data: { user: selected }, error: null }),
+            onAuthStateChange: callback => {
+              listener = callback;
+              return { data: { subscription: { unsubscribe() {} } } };
+            }
+          },
+          from: () => Object.create(query)
+        }) };
+      });
+      await page.route('https://cdn.jsdelivr.net/**', route => route.abort());
+      await page.goto(baseUrl + '/app/?page=budget', { waitUntil: 'domcontentloaded' });
+      await page.locator('html.budget-authenticated').waitFor({ timeout: 12000 });
+      await page.evaluate(() => {
+        // Simulate a previous owner's in-memory financial state.
+        db.__previousOwnerOnly = { marker: 'must-not-survive-switch' };
+        budgetAccounts.push({ id: 'previous-owner-account', name: 'Private', included: true });
+        window.__syntheticSession.switchToB();
+      });
+      await page.waitForFunction(() => currentUser?.id === 'synthetic-owner-b' && document.documentElement.classList.contains('budget-authenticated'), { timeout: 12000 });
+      const result = await page.evaluate(() => ({
+        owner: currentUser?.id,
+        previousData: Object.hasOwn(db, '__previousOwnerOnly'),
+        previousAccount: budgetAccounts.some(account => account.id === 'previous-owner-account'),
+        requestedOwners: window.__syntheticSession.requestedOwners,
+        status: document.getElementById('userStatusSub').textContent
+      }));
+      assert.equal(result.owner, 'synthetic-owner-b');
+      assert.equal(result.previousData, false);
+      assert.equal(result.previousAccount, false);
+      assert.ok(result.requestedOwners.includes('synthetic-owner-b'));
+      assert.match(result.status, /b@example.invalid/);
+      await page.evaluate(() => window.__syntheticSession.signOut());
+      await page.waitForURL(baseUrl + '/', { waitUntil: 'domcontentloaded', timeout: 10000 });
+      assert.equal(page.url(), baseUrl + '/');
+      assert.equal(await page.locator('html.budget-authenticated').count(), 0);
+    } finally { await browser.close(); }
+  });
+}
