@@ -22,7 +22,7 @@ replaceOnce('<body>', '<body>\n  <aside role="note" style="padding:10px;text-ali
 assert.ok(html.includes('function storageKey(year)'), 'Account-scoped storage is missing');
 assert.ok(html.includes('from("budget_ui_years").select("year,budget_data,updated_at")'), 'Cloud data loading is missing');
 // Cloud writes are centralized in the shared revision module, not embedded in HTML.
-const revisionSource = readFileSync(new URL('./budget-revision.mjs', import.meta.url), 'utf8');
+const revisionSource = readFileSync(new URL('../production-next/scripts/budget-revision.mjs', import.meta.url), 'utf8');
 assert.ok(html.includes("import('./scripts/budget-revision.mjs')"), 'Shared revision module must be loaded by the app');
 assert.ok(html.includes('writeBudgetRevision('), 'Budget saves must use the shared revision guard');
 assert.match(revisionSource, /\.insert\(\{/, 'New cloud year insert is missing from revision module');
@@ -106,7 +106,7 @@ for (const path of [
   'recurring-foundation.mjs', 'recurring-scheduler.mjs',
   'recurring-budget-preview.mjs', 'recurring-app-service.mjs'
 ]) {
-  const source = readFileSync(new URL('./' + path, import.meta.url));
+  const source = readFileSync(new URL('../production-next/scripts/' + path, import.meta.url));
   mkdirSync('production-preview-dist/scripts', { recursive: true });
   mkdirSync('production-preview-dist/app/scripts', { recursive: true });
   writeFileSync('production-preview-dist/scripts/' + path, source);
