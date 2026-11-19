@@ -44,3 +44,7 @@ node --test tests/browser-smoke.test.mjs
 
 ## Supabase setup
 Apply the migration in `supabase/migrations/20261114010000_create_budget_ui_years.sql` to provision the year-based table and owner-scoped RLS policies in a new environment. Production already has this migration applied.
+
+## Phase 2D.1 — Database compatibility preparation
+
+The production-only [database upgrade plan](docs/PRODUCTION_DATABASE_UPGRADE.md) documents eight **unapplied** additive migrations and a disposable PostgreSQL regression. The `production-schema-upgrade` CI job validates a production-shaped upgrade without connecting to production. No production schema or data changes are authorized by this preparation PR.
