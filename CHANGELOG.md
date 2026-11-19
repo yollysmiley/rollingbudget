@@ -1,3 +1,9 @@
+## Unreleased — Phase 2D.2 production preview
+
+- Added an isolated production-configured preview of the redesigned staging frontend under `production-next/`, without changing live entry points.
+- Added a build-only CI job and auth, isolation and desktop/mobile preview regression contracts.
+- Documented deployment blockers, callback configuration and database prerequisites; no deployment or live Supabase changes.
+
 ## Unreleased — Phase 2D.1 (PR preparation)
 
 - Staged eight reviewed, additive staging-derived SQL migrations for production accounts, recurring rules, custom expense categories, RLS and privilege hardening; **not applied to production**.
