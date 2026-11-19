@@ -48,3 +48,7 @@ Apply the migration in `supabase/migrations/20261114010000_create_budget_ui_year
 ## Phase 2D.1 — Database compatibility preparation
 
 The production-only [database upgrade plan](docs/PRODUCTION_DATABASE_UPGRADE.md) documents eight **unapplied** additive migrations and a disposable PostgreSQL regression. The `production-schema-upgrade` CI job validates a production-shaped upgrade without connecting to production. No production schema or data changes are authorized by this preparation PR.
+
+## Production preview (Phase 2D.2)
+
+The [production preview guide](docs/PRODUCTION_PREVIEW.md) describes the isolated, build-only redesigned UI. Run `node scripts/build-production-preview.mjs` to generate `production-preview-dist/`. This is not deployed to production.
