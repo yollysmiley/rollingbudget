@@ -1,3 +1,9 @@
+## Unreleased — Phase 2D.1 (PR preparation)
+
+- Staged eight reviewed, additive staging-derived SQL migrations for production accounts, recurring rules, custom expense categories, RLS and privilege hardening; **not applied to production**.
+- Added isolated PostgreSQL 17 production-shaped migration upgrade regression and CI job, including synthetic two-owner data preservation and access-isolation checks.
+- Added production migration and recovery-gate documentation; no frontend behavior changes.
+
 # Changelog
 
 ## 2026-11-14 — Production workflow consolidation
