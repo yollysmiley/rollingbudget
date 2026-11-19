@@ -57,6 +57,8 @@ jobs:
         run: node --test tests/production-preview-browser.test.mjs
       - name: Run isolated synthetic authentication browser tests
         run: node --test tests/production-preview-synthetic-auth.test.mjs
+      - name: Verify protected preview rejects missing or invalid sessions
+        run: node --test tests/production-preview-auth-gate-browser.test.mjs
 
   production-schema-upgrade:
     name: Production-shaped PostgreSQL upgrade regression
