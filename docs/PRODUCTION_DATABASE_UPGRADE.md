@@ -14,7 +14,7 @@ The existing production year-table migration `20261114010000_create_budget_ui_ye
 7. `20261117071637_remove_expense_category_kind.sql`
 8. `20261117071639_allow_custom_recurring_categories.sql`
 
-They add three owner-scoped tables, constraints and foreign keys, explicit client grants and RLS, and default privilege hardening. The existing production budget tables are not modified by these migrations.
+The regression runner uses an explicit eight-file manifest and deliberately ignores other SQL files in the migrations directory, including `draft-tighten-budget-data-grants.sql`. The draft is not part of Phase 2D.1 and remains unchanged. A missing manifest file fails the test before executing that file.\n\nThey add three owner-scoped tables, constraints and foreign keys, explicit client grants and RLS, and default privilege hardening. The existing production budget tables are not modified by these migrations.
 
 ## Regression impact and verification
 Reviewed `tests/ci-contract.test.js`, the existing production desktop/mobile smoke suite, and staging `scripts/verify-clean-migration-replay.sh` and `scripts/verify-b3-upgrade.sh`. Existing production UI tests are unaffected by this schema-only PR; they remain required.
