@@ -15,9 +15,9 @@ for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: '
       await page.goto(url('index.html'), { waitUntil: 'domcontentloaded' });
       assert.match(await page.title(), /Rolling Budget/);
       assert.equal(await page.getByRole('heading', { name: /make room for what matters/i }).count(), 1);
-      await page.getByRole('button', { name: /forgot password/i }).count().then(count => assert.equal(count, 1));
       await page.getByRole('link', { name: 'Login' }).click();
       assert.equal(await page.locator('#accountDialog').evaluate(el => el.open), true);
+      assert.equal(await page.getByRole('button', { name: /forgot password/i }).count(), 1);
       await page.getByRole('button', { name: /forgot password/i }).click();
       assert.equal(await page.locator('#accountPasswordField').isHidden(), true);
       assert.equal(await page.getByRole('button', { name: /send reset link/i }).count(), 1);
