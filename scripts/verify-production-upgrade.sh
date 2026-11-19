@@ -22,6 +22,7 @@ CREATE SCHEMA auth;
 CREATE TABLE auth.users (id uuid PRIMARY KEY);
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS
   'SELECT nullif(current_setting(''request.jwt.claim.sub'', true), '''')::uuid';
+GRANT USAGE ON SCHEMA auth TO authenticated;
 CREATE TABLE public.budget_data (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid UNIQUE NOT NULL REFERENCES auth.users(id),
@@ -45,8 +46,9 @@ psql -X -v ON_ERROR_STOP=1 <<'SQL'
 INSERT INTO public.budget_ui_years(user_id,year,budget_data) VALUES
  ('00000000-0000-4000-8000-000000000101',2026,'{"months":[{"owner":"a"}],"sentinel":"untouched-a"}'),
  ('00000000-0000-4000-8000-000000000102',2027,'{"months":[{"owner":"b"}],"sentinel":"untouched-b"}');
-CREATE TEMP TABLE before_years AS SELECT user_id,year,budget_data,updated_at FROM public.budget_ui_years;
-CREATE TEMP TABLE before_legacy AS SELECT user_id,state,updated_at FROM public.budget_data;
+CREATE SCHEMA audit_snapshot;
+CREATE TABLE audit_snapshot.before_years AS SELECT user_id,year,budget_data,updated_at FROM public.budget_ui_years;
+CREATE TABLE audit_snapshot.before_legacy AS SELECT user_id,state,updated_at FROM public.budget_data;
 SQL
 
 mapfile -t migrations < <(find supabase/migrations -maxdepth 1 -name '*.sql' -type f | LC_ALL=C sort)
@@ -67,14 +69,14 @@ DO $$
 DECLARE n integer;
 BEGIN
   IF EXISTS (SELECT user_id,year,budget_data,updated_at FROM public.budget_ui_years
-             EXCEPT SELECT user_id,year,budget_data,updated_at FROM before_years)
-    OR EXISTS (SELECT user_id,year,budget_data,updated_at FROM before_years
+             EXCEPT SELECT user_id,year,budget_data,updated_at FROM audit_snapshot.before_years)
+    OR EXISTS (SELECT user_id,year,budget_data,updated_at FROM audit_snapshot.before_years
                EXCEPT SELECT user_id,year,budget_data,updated_at FROM public.budget_ui_years) THEN
     RAISE EXCEPTION 'Existing budget-year records changed';
   END IF;
   IF EXISTS (SELECT user_id,state,updated_at FROM public.budget_data
-             EXCEPT SELECT user_id,state,updated_at FROM before_legacy)
-    OR EXISTS (SELECT user_id,state,updated_at FROM before_legacy
+             EXCEPT SELECT user_id,state,updated_at FROM audit_snapshot.before_legacy)
+    OR EXISTS (SELECT user_id,state,updated_at FROM audit_snapshot.before_legacy
                EXCEPT SELECT user_id,state,updated_at FROM public.budget_data) THEN
     RAISE EXCEPTION 'Existing legacy budget records changed';
   END IF;
