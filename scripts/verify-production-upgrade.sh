@@ -51,18 +51,29 @@ CREATE TABLE audit_snapshot.before_years AS SELECT user_id,year,budget_data,upda
 CREATE TABLE audit_snapshot.before_legacy AS SELECT user_id,state,updated_at FROM public.budget_data;
 SQL
 
-mapfile -t migrations < <(find supabase/migrations -maxdepth 1 -name '*.sql' -type f | LC_ALL=C sort)
-count=0
-for migration in "${migrations[@]}"; do
-  [[ "${migration}" == *"20261114010000_create_budget_ui_years.sql" ]] && continue
-  echo "Applying additive migration: ${migration}"
-  psql -X -v ON_ERROR_STOP=1 -f "${migration}" >/dev/null
-  count=$((count+1))
-done
-if [[ "${count}" -ne 8 ]]; then
-  echo "Expected exactly eight additive migrations, found ${count}" >&2
+# Explicit, reviewed production upgrade manifest. Never discover draft SQL files.
+migrations=(
+  supabase/migrations/20261114192802_harden_public_default_privileges.sql
+  supabase/migrations/20261114221703_create_budget_accounts.sql
+  supabase/migrations/20261115043822_create_budget_recurring_rules.sql
+  supabase/migrations/20261116172229_add_recurring_due_day_and_full_dates.sql
+  supabase/migrations/20261117024033_protect_global_recurring_account_refs.sql
+  supabase/migrations/20261117071635_create_budget_expense_categories.sql
+  supabase/migrations/20261117071637_remove_expense_category_kind.sql
+  supabase/migrations/20261117071639_allow_custom_recurring_categories.sql
+)
+if [[ "${#migrations[@]}" -ne 8 ]]; then
+  echo "Expected exactly eight approved migrations" >&2
   exit 1
 fi
+for migration in "${migrations[@]}"; do
+  if [[ ! -f "${migration}" ]]; then
+    echo "Approved migration missing: ${migration}" >&2
+    exit 1
+  fi
+  echo "Applying approved migration: ${migration}"
+  psql -X -v ON_ERROR_STOP=1 -f "${migration}" >/dev/null
+done
 
 psql -X -v ON_ERROR_STOP=1 <<'SQL'
 DO $$
