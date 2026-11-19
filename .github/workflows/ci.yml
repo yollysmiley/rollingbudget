@@ -51,6 +51,10 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Run desktop and mobile browser smoke tests
         run: node --test tests/browser-smoke.test.mjs
+      - name: Build isolated production preview for browser acceptance
+        run: node scripts/build-production-preview.mjs
+      - name: Run preview desktop and mobile browser acceptance tests
+        run: node --test tests/production-preview-browser.test.mjs
 
   production-schema-upgrade:
     name: Production-shaped PostgreSQL upgrade regression
