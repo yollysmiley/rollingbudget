@@ -55,6 +55,8 @@ jobs:
         run: node scripts/build-production-preview.mjs
       - name: Run preview desktop and mobile browser acceptance tests
         run: node --test tests/production-preview-browser.test.mjs
+      - name: Run isolated synthetic authentication browser tests
+        run: node --test tests/production-preview-synthetic-auth.test.mjs
 
   production-schema-upgrade:
     name: Production-shaped PostgreSQL upgrade regression
