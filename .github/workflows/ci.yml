@@ -82,3 +82,21 @@ jobs:
         run: bash -n scripts/verify-production-upgrade.sh
       - name: Replay additive migrations against production-shaped fixture
         run: bash scripts/verify-production-upgrade.sh
+
+  production-preview-build:
+    name: Isolated production preview build and auth contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check preview build syntax
+        run: node --check scripts/build-production-preview.mjs
+      - name: Build preview without deployment
+        run: node scripts/build-production-preview.mjs
+      - name: Validate production auth and isolation contracts
+        run: node --test tests/production-preview.test.mjs
