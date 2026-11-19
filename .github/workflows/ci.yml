@@ -104,3 +104,5 @@ jobs:
         run: node scripts/build-production-preview.mjs
       - name: Validate production auth and isolation contracts
         run: node --test tests/production-preview.test.mjs
+      - name: Verify preview navigation and auth isolation contracts
+        run: node --test tests/production-preview-navigation.test.mjs
