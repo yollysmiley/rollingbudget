@@ -51,3 +51,34 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Run desktop and mobile browser smoke tests
         run: node --test tests/browser-smoke.test.mjs
+
+  production-schema-upgrade:
+    name: Production-shaped PostgreSQL upgrade regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: test-only
+          POSTGRES_DB: production_upgrade_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d production_upgrade_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: test-only
+      PGDATABASE: production_upgrade_test
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Validate upgrade script syntax
+        run: bash -n scripts/verify-production-upgrade.sh
+      - name: Replay additive migrations against production-shaped fixture
+        run: bash scripts/verify-production-upgrade.sh
