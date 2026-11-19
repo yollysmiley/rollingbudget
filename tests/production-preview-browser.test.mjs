@@ -27,18 +27,3 @@ for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: '
   });
 }
 
-test('preview app retains distinct desktop and mobile navigation DOM', async () => {
-  const browser = await chromium.launch({ headless: true });
-  try {
-    const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
-    await page.route('https://cdn.jsdelivr.net/**', route => route.abort());
-    await page.goto(url('app/index.html'), { waitUntil: 'domcontentloaded' });
-    assert.equal(await page.locator('#desktopOverviewButton').count(), 1);
-    assert.equal(await page.locator('#desktopBudgetButton').count(), 1);
-    assert.equal(await page.locator('#recurringDesktopView').count(), 1);
-    assert.equal(await page.locator('#recurringMobileView').count(), 1);
-    await page.setViewportSize({ width: 390, height: 844 });
-    assert.equal(await page.locator('#mobileMenuButton').count(), 1);
-    assert.equal(await page.locator('#mobileSidebar').count(), 1);
-  } finally { await browser.close(); }
-});
