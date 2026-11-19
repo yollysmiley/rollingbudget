@@ -6,6 +6,12 @@
 
 # Changelog
 
+## 2026-11-14 — Legacy budget database access hardening
+- Added a production migration proposal that removes anonymous access and unnecessary TRUNCATE, REFERENCES, and TRIGGER privileges from the retained legacy budget table.
+- Replaced broad PUBLIC-targeted policies with explicit authenticated owner-scoped CRUD policies.
+- Added CI regression contracts verifying least-privilege grants and confirming that the migration does not alter or delete budget records.
+- The migration is proposed for review only and has not been applied to production.
+
 ## 2026-11-14 — Production workflow consolidation
 - Consolidated unit, migration regression, application contract, Supabase RLS, and desktop/mobile browser checks under the single Production CI workflow.
 - Retired the duplicate security workflow; its executable security and RLS contract test remains in the primary CI test suite.
