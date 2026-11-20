@@ -1,4 +1,5 @@
 ## Unreleased — Phase 2D.5 preview acceptance (not deployed)
+- Added desktop/mobile browser acceptance for account creation, renaming, budget inclusion toggling and confirmed deletion through the rendered account manager, using an isolated synthetic account service.
 - Extended synthetic desktop/mobile acceptance tests with two owner-specific saved budget documents, account isolation after switching and refresh, and protected-route rejection after real application sign-out.
 - Added isolated owner-scoped account create/update/delete and recurring-rule create/read/edit/disable/re-enable/delete service regressions, including future-dated version and account dependency assertions, with a required CI step.
 - Updated desktop/mobile sign-out acceptance to click the corresponding visible application controls. These tests use mocked cloud data, not live Supabase.
