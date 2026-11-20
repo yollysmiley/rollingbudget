@@ -1,3 +1,6 @@
+## Unreleased — Phase 2D.6 production Auth configuration read-only audit
+- Reviewed live production Supabase project metadata and security advisor, plus preview signup/recovery callback generation. Documented disabled leaked-password protection and unverified production Site URL, redirect allowlist, email settings, and JWT/session configuration as release blockers. No production settings or data modified.
+
 ## Unreleased — Phase 2D.6 expired-session restoration guard (not deployed)
 - Extended existing desktop/mobile protected-route regression to reject expired restored sessions despite stale owner-scoped local budget cache, with no cloud table reads; documented unverified live Auth redirect allowlist.
 
