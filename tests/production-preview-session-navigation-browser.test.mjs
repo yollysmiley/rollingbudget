@@ -259,3 +259,94 @@ for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: '
     } finally { await browser.close(); }
   });
 }
+
+for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: 'mobile', width: 390, height: 844 }]) {
+  test('synthetic recurring manager UI edit, disable, enable and confirmed delete on ' + viewport.name, async () => {
+    const browser = await chromium.launch({ headless: true });
+    try {
+      const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height } });
+      await page.addInitScript(() => {
+        const user = { id: 'synthetic-recurring-owner', email: 'recurring@example.invalid' };
+        const query = {
+          select() { return this; }, eq() { return this; }, in() { return this; },
+          order() { return this; }, limit() { return this; },
+          single() { return Promise.resolve({ data: null, error: null }); },
+          maybeSingle() { return Promise.resolve({ data: null, error: null }); },
+          then(resolve, reject) { return Promise.resolve({ data: [], error: null }).then(resolve, reject); }
+        };
+        window.supabase = { createClient: () => ({
+          auth: { getUser: async () => ({ data: { user }, error: null }),
+            onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }) },
+          from: () => Object.create(query)
+        }) };
+      });
+      await page.route('https://cdn.jsdelivr.net/**', route => route.abort());
+      await page.goto(baseUrl + '/app/?page=recurring', { waitUntil: 'domcontentloaded' });
+      await page.locator('html.budget-authenticated').waitFor({ timeout: 12000 });
+      await page.evaluate(() => {
+        const rules = [{
+          id: 'synthetic-rent', name: 'Synthetic Rent', category: 'fixed', amount: 500,
+          displayAmount: 500, upcomingAmount: 500, frequency: 'monthly',
+          displayFrequency: 'monthly', upcomingFrequency: 'monthly',
+          displayActive: true, upcomingActive: true, startDate: '2026-01-01',
+          endDate: null, versions: [{ effectiveFrom: '2026-01-01', amount: 500, enabled: true }]
+        }];
+        window.__recurringFixture = { rules, backfills: [] };
+        recurringAppService = {
+          editRecurringRule: async (_client, owner, id, changes, date) => {
+            if (owner !== currentUser.id) throw new Error('Owner changed');
+            const rule = rules.find(row => row.id === id);
+            if (!rule) throw new Error('Rule missing');
+            rule.versions.push({ effectiveFrom: date, amount: changes.amount, enabled: rule.upcomingActive });
+            rule.upcomingAmount = changes.amount;
+            rule.upcomingFrequency = changes.frequency;
+          },
+          setRecurringRuleActive: async (_client, owner, id, enabled, date) => {
+            if (owner !== currentUser.id) throw new Error('Owner changed');
+            const rule = rules.find(row => row.id === id);
+            if (!rule) throw new Error('Rule missing');
+            rule.versions.push({ effectiveFrom: date, amount: rule.upcomingAmount, enabled });
+            rule.upcomingActive = enabled;
+          },
+          removeRecurringRule: async (_client, owner, id) => {
+            if (owner !== currentUser.id) throw new Error('Owner changed');
+            const index = rules.findIndex(row => row.id === id);
+            if (index < 0) throw new Error('Rule missing');
+            rules.splice(index, 1);
+          }
+        };
+        refreshRecurringPreview = async () => {
+          loadedRecurringPreview = { rules: rules.map(row => ({ ...row, versions: row.versions.map(v => ({ ...v })) })), held: 0 };
+        };
+        backfillSavedRecurringYears = async (_owner, start, end) => {
+          window.__recurringFixture.backfills.push({ start, end });
+        };
+        loadedRecurringPreview = { rules: rules.map(row => ({ ...row })), held: 0 };
+        renderRulesList();
+      });
+      const list = page.locator(viewport.name === 'desktop' ? '#desktopRulesList' : '#mobileRulesList');
+      await list.getByText('Synthetic Rent').waitFor();
+      await list.getByRole('button', { name: 'Edit' }).click();
+      await page.locator('#rbDialogInput').fill('750');
+      await page.locator('#rbDialogAccept').click();
+      await page.locator('#rbDialogInput').fill('monthly');
+      await page.locator('#rbDialogAccept').click();
+      await page.waitForFunction(() => window.__recurringFixture.rules[0].upcomingAmount === 750);
+      await list.getByRole('button', { name: /Disable from/ }).click();
+      await page.waitForFunction(() => window.__recurringFixture.rules[0].upcomingActive === false);
+      await list.getByRole('button', { name: /Enable from/ }).click();
+      await page.waitForFunction(() => window.__recurringFixture.rules[0].upcomingActive === true);
+      const beforeDelete = await page.evaluate(() => structuredClone(window.__recurringFixture.rules[0].versions));
+      assert.equal(beforeDelete[0].amount, 500, 'historical version remains unchanged');
+      assert.ok(beforeDelete.some(version => version.amount === 750), 'future edit creates a new version');
+      await list.getByRole('button', { name: /Delete/ }).click();
+      await page.locator('#rbDialogCancel').click();
+      assert.equal(await page.evaluate(() => window.__recurringFixture.rules.length), 1, 'cancel preserves the rule');
+      await list.getByRole('button', { name: /Delete/ }).click();
+      await page.locator('#rbDialogAccept').click();
+      await page.waitForFunction(() => window.__recurringFixture.rules.length === 0);
+      assert.match(await list.innerText(), /No recurring rules yet/);
+      assert.equal(await page.evaluate(() => currentUser.id), 'synthetic-recurring-owner');
+    } finally { await browser.close(); }
+  });
+}
