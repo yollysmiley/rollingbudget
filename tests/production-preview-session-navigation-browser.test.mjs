@@ -87,6 +87,18 @@ for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: '
           'synthetic-owner-a': [{ id: 'a-account', name: 'Owner A checking', included: true, updated_at: '2026-01-01T00:00:00Z' }],
           'synthetic-owner-b': [{ id: 'b-account', name: 'Owner B savings', included: true, updated_at: '2026-01-01T00:00:00Z' }]
         };
+        const budgetRows = Object.fromEntries(users.map((user, index) => [user.id, [{
+          year: new Date().getFullYear(),
+          budget_data: {
+            autoCascade: true, recurringRules: [],
+            months: Array.from({ length: 12 }, (_, month) => ({
+              code: String(month + 1), name: 'Synthetic month ' + month, recordedLeftover: 0,
+              income: [], fixed: [{ id: user.id + '-expense', name: user.id + '-private-expense', amount: (index + 1) * 100, due: 1 }],
+              variable: [], creditCards: [], loans: []
+            }))
+          },
+          updated_at: '2026-01-01T00:00:00Z'
+        }]]));
         const queryFor = table => {
           let owner = null;
           const query = {
@@ -96,7 +108,8 @@ for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: '
             single() { return Promise.resolve({ data: null, error: null }); },
             maybeSingle() { return Promise.resolve({ data: null, error: null }); },
             then(resolve, reject) {
-              const rows = table === 'budget_accounts' ? accountRows[owner] || [] : [];
+              const rows = table === 'budget_accounts' ? accountRows[owner] || []
+                : table === 'budget_ui_years' ? budgetRows[owner] || [] : [];
               return Promise.resolve({ data: rows.map(row => ({ ...row })), error: null }).then(resolve, reject);
             }
           };
@@ -149,6 +162,13 @@ for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: '
       assert.equal(result.previousAccount, false);
       assert.ok(result.requestedOwners.includes('synthetic-owner-b'));
       assert.match(result.status, /b@example.invalid/);
+      assert.equal(await page.evaluate(() => Object.values(db).some(year => year.months?.some(month => month.fixed?.some(item => item.name === 'synthetic-owner-b-private-expense')))), true);
+      assert.equal(await page.evaluate(() => Object.values(db).some(year => year.months?.some(month => month.fixed?.some(item => item.name === 'synthetic-owner-a-private-expense')))), false);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.locator('html.budget-authenticated').waitFor({ timeout: 12000 });
+      assert.equal(await page.evaluate(() => currentUser?.id), 'synthetic-owner-b');
+      assert.equal(await page.evaluate(() => Object.values(db).some(year => year.months?.some(month => month.fixed?.some(item => item.name === 'synthetic-owner-b-private-expense')))), true);
+      assert.equal(await page.evaluate(() => Object.values(db).some(year => year.months?.some(month => month.fixed?.some(item => item.name === 'synthetic-owner-a-private-expense')))), false);
       assert.equal(await page.evaluate(() => budgetAccounts.some(account => account.id === 'b-account' && account.name === 'Owner B savings')), true);
       assert.equal(await page.evaluate(() => budgetAccounts.some(account => account.id === 'a-account')), false);
       // Exercise the real application sign-out handler and confirmation UI.
