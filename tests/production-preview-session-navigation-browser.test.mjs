@@ -281,7 +281,7 @@ for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: '
         }) };
       });
       await page.route('https://cdn.jsdelivr.net/**', route => route.abort());
-      await page.goto(baseUrl + '/app/?page=recurring', { waitUntil: 'domcontentloaded' });
+      await page.goto(baseUrl + '/app/?page=recurring-rules', { waitUntil: 'domcontentloaded' });
       await page.locator('html.budget-authenticated').waitFor({ timeout: 12000 });
       await page.evaluate(() => {
         const rules = [{
@@ -324,6 +324,9 @@ for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: '
         loadedRecurringPreview = { rules: rules.map(row => ({ ...row })), held: 0 };
         renderRulesList();
       });
+      // Recurring rules uses its canonical SPA route.
+      await page.evaluate(() => navigatePage('recurring-rules'));
+      assert.equal(new URL(page.url()).searchParams.get('page'), 'recurring-rules');
       const list = page.locator(viewport.name === 'desktop' ? '#desktopRulesList' : '#mobileRulesList');
       await list.getByText('Synthetic Rent').waitFor();
       await list.getByRole('button', { name: 'Edit' }).click();
