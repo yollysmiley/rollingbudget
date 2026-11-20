@@ -61,6 +61,8 @@ jobs:
         run: node --test tests/production-preview-auth-gate-browser.test.mjs
       - name: Verify owner-scoped account and recurring CRUD contracts
         run: node --test tests/production-preview-owner-crud.test.mjs
+      - name: Verify recurring backfill, idempotency and cloud conflict hardening
+        run: node --test tests/production-preview-recurring-hardening.test.mjs
       - name: Verify synthetic authenticated session and desktop/mobile navigation
         run: node --test tests/production-preview-session-navigation-browser.test.mjs
 
