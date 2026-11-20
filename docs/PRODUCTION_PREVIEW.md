@@ -21,3 +21,6 @@ Run `node --test tests/production-preview-browser.test.mjs tests/production-prev
 
 ## Notes
 The preview source is intentionally a separate copy of staging's approved application for controlled promotion. Future fixes should preserve staging's shared business logic and separate desktop/mobile UI; avoid a permanent two-codebase divergence.
+
+## Phase 2D.5 recurring browser regression correction
+The recurring-rule browser acceptance test must navigate to the canonical `?page=recurring-rules` SPA route before asserting visibility of the desktop or mobile rule list. The obsolete `?page=recurring` route leaves the list hidden; CI #46 identified this test setup defect. The test now verifies the canonical route and still requires visible rule controls. This does not change application routing or production deployment.
