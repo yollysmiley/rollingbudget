@@ -1,4 +1,5 @@
 ## Unreleased — Phase 2D.5 preview acceptance (not deployed)
+- Added CI-required synthetic integration tests for recurring backfill idempotency, duplicate holds, historical entry preservation, failed cloud writes, stale and concurrent revision rejection, and owner/local-conflict cancellation.
 - Corrected recurring browser acceptance setup to navigate to the canonical `recurring-rules` SPA route and assert its URL before testing visible desktop/mobile rule controls (CI #46 regression).
 - Added desktop/mobile recurring-rule manager browser acceptance for future-dated edits, enable/disable, cancel/delete confirmation, and historical rule version preservation using synthetic fixtures.
 - Added desktop/mobile browser acceptance for account creation, renaming, budget inclusion toggling and confirmed deletion through the rendered account manager, using an isolated synthetic account service.
