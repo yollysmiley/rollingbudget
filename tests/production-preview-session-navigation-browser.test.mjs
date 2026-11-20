@@ -172,7 +172,9 @@ for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: '
       assert.equal(await page.evaluate(() => budgetAccounts.some(account => account.id === 'b-account' && account.name === 'Owner B savings')), true);
       assert.equal(await page.evaluate(() => budgetAccounts.some(account => account.id === 'a-account')), false);
       // Exercise the real application sign-out handler and confirmation UI.
-      await page.evaluate(() => { void handleAuthClick(); });
+      // The sign-out action must be reachable from each distinct viewport.
+      const signOutControl = page.locator(viewport.name === 'desktop' ? '#authBtn' : '#mobileAuthBtn');
+      await signOutControl.evaluate(button => button.click());
       await page.locator('#rbDialogAccept').click();
       await page.waitForURL(baseUrl + '/', { waitUntil: 'load', timeout: 10000 });
       assert.equal(page.url(), baseUrl + '/');
