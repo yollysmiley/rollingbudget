@@ -1,3 +1,8 @@
+## Unreleased — Phase 2D.5 preview acceptance (not deployed)
+- Extended synthetic desktop/mobile acceptance tests with two owner-specific saved budget documents, account isolation after switching and refresh, and protected-route rejection after real application sign-out.
+- Added isolated owner-scoped account creation and recurring-rule create/read/delete service regressions and a required CI step. These tests use mocked cloud data, not live Supabase.
+- Updated production preview release blockers to distinguish synthetic coverage from outstanding live auth, RLS, CRUD UI and recovery verification.
+
 ## Unreleased — Phase 2D.4 preview acceptance (not deployed)
 - Added synthetic authenticated desktop/mobile browser regression tests for route restoration, history navigation, and refresh; registered them in production CI. These tests use an in-memory Supabase mock and do not validate live database isolation.
 
