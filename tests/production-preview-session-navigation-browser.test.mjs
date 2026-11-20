@@ -77,31 +77,54 @@ for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: '
           { id: 'synthetic-owner-a', email: 'a@example.invalid' },
           { id: 'synthetic-owner-b', email: 'b@example.invalid' }
         ];
-        let selected = users[0];
+        // Persist auth across document loads; otherwise the homepage resurrects a signed-out user.
+        const sessionKey = 'synthetic-preview-session-owner';
+        const saved = sessionStorage.getItem(sessionKey);
+        let selected = saved === 'signed-out' ? null : users.find(user => user.id === saved) || users[0];
         let listener;
         const requestedOwners = [];
-        const query = {
-          select() { return this; },
-          eq(field, value) { if (field === 'user_id') requestedOwners.push(value); return this; },
-          in() { return this; }, order() { return this; }, limit() { return this; },
-          single() { return Promise.resolve({ data: null, error: null }); },
-          maybeSingle() { return Promise.resolve({ data: null, error: null }); },
-          then(resolve, reject) { return Promise.resolve({ data: [], error: null }).then(resolve, reject); }
+        const accountRows = {
+          'synthetic-owner-a': [{ id: 'a-account', name: 'Owner A checking', included: true, updated_at: '2026-01-01T00:00:00Z' }],
+          'synthetic-owner-b': [{ id: 'b-account', name: 'Owner B savings', included: true, updated_at: '2026-01-01T00:00:00Z' }]
+        };
+        const queryFor = table => {
+          let owner = null;
+          const query = {
+            select() { return this; },
+            eq(field, value) { if (field === 'user_id') { owner = value; requestedOwners.push(value); } return this; },
+            in() { return this; }, order() { return this; }, limit() { return this; },
+            single() { return Promise.resolve({ data: null, error: null }); },
+            maybeSingle() { return Promise.resolve({ data: null, error: null }); },
+            then(resolve, reject) {
+              const rows = table === 'budget_accounts' ? accountRows[owner] || [] : [];
+              return Promise.resolve({ data: rows.map(row => ({ ...row })), error: null }).then(resolve, reject);
+            }
+          };
+          return query;
         };
         window.__syntheticSession = {
           requestedOwners,
-          switchToB() { selected = users[1]; listener('SIGNED_IN', { user: selected }); },
-          signOut() { selected = null; listener('SIGNED_OUT', null); }
+          switchToB() {
+            selected = users[1];
+            sessionStorage.setItem(sessionKey, selected.id);
+            listener('SIGNED_IN', { user: selected });
+          }
         };
         window.supabase = { createClient: () => ({
           auth: {
             getUser: async () => ({ data: { user: selected }, error: null }),
+            signOut: async () => {
+              selected = null;
+              sessionStorage.setItem(sessionKey, 'signed-out');
+              listener?.('SIGNED_OUT', null);
+              return { error: null };
+            },
             onAuthStateChange: callback => {
               listener = callback;
               return { data: { subscription: { unsubscribe() {} } } };
             }
           },
-          from: () => Object.create(query)
+          from: table => queryFor(table)
         }) };
       });
       await page.route('https://cdn.jsdelivr.net/**', route => route.abort());
@@ -126,10 +149,17 @@ for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: '
       assert.equal(result.previousAccount, false);
       assert.ok(result.requestedOwners.includes('synthetic-owner-b'));
       assert.match(result.status, /b@example.invalid/);
-      await page.evaluate(() => window.__syntheticSession.signOut());
-      // Navigation to the public entry point is the observable sign-out contract.
+      assert.equal(await page.evaluate(() => budgetAccounts.some(account => account.id === 'b-account' && account.name === 'Owner B savings')), true);
+      assert.equal(await page.evaluate(() => budgetAccounts.some(account => account.id === 'a-account')), false);
+      // Exercise the real application sign-out handler and confirmation UI.
+      await page.evaluate(() => { void handleAuthClick(); });
+      await page.locator('#rbDialogAccept').click();
       await page.waitForURL(baseUrl + '/', { waitUntil: 'load', timeout: 10000 });
       assert.equal(page.url(), baseUrl + '/');
+      assert.equal(await page.locator('html.budget-authenticated').count(), 0);
+      assert.equal(await page.evaluate(() => sessionStorage.getItem('synthetic-preview-session-owner')), 'signed-out');
+      await page.goto(baseUrl + '/app/', { waitUntil: 'domcontentloaded' });
+      await page.waitForURL(baseUrl + '/', { timeout: 10000 });
       assert.equal(await page.locator('html.budget-authenticated').count(), 0);
     } finally { await browser.close(); }
   });
