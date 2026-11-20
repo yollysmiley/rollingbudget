@@ -172,7 +172,7 @@ INSERT INTO public.budget_expense_categories(user_id,id,name) VALUES
 INSERT INTO public.budget_recurring_rules
  (user_id,id,name,category,amount,frequency,start_date,account_id)
  VALUES ('00000000-0000-4000-8000-000000000102','travel-fund','Travel fund','travel',40,'monthly','2026-01-01','savings');
-DO $
+DO $$
 DECLARE affected integer;
 BEGIN
   -- Cross-tenant UPDATE and DELETE must affect zero rows, not merely avoid errors.
@@ -200,10 +200,10 @@ BEGIN
   DELETE FROM public.budget_ui_years WHERE user_id='00000000-0000-4000-8000-000000000101';
   GET DIAGNOSTICS affected = ROW_COUNT;
   IF affected <> 0 THEN RAISE EXCEPTION 'Cross-owner budget DELETE succeeded'; END IF;
-END $;
+END $$;
 -- An authenticated DB role without a user JWT must not see or change any owner rows.
 SELECT set_config('request.jwt.claim.sub','',false);
-DO $
+DO $$
 DECLARE affected integer;
 BEGIN
   IF (SELECT count(*) FROM public.budget_accounts) <> 0
@@ -215,10 +215,10 @@ BEGIN
   UPDATE public.budget_accounts SET name='ATTACK';
   GET DIAGNOSTICS affected = ROW_COUNT;
   IF affected <> 0 THEN RAISE EXCEPTION 'Missing JWT allowed UPDATE'; END IF;
-END $;
+END $$;
 RESET ROLE;
 -- Verify neither tenant's data was modified by the denied attempts.
-DO $
+DO $$
 BEGIN
  IF NOT EXISTS (SELECT 1 FROM public.budget_accounts WHERE user_id='00000000-0000-4000-8000-000000000101' AND name='Owner A checking')
  OR NOT EXISTS (SELECT 1 FROM public.budget_accounts WHERE user_id='00000000-0000-4000-8000-000000000102' AND name='Owner B savings')
@@ -228,7 +228,7 @@ BEGIN
  OR NOT EXISTS (SELECT 1 FROM public.budget_expense_categories WHERE user_id='00000000-0000-4000-8000-000000000102' AND name='Travel') THEN
   RAISE EXCEPTION 'Cross-owner attack modified data';
  END IF;
-END $;
+END $$;
 SQL
 
 # Owner spoofing through INSERT and UPDATE must fail their WITH CHECK policy.
