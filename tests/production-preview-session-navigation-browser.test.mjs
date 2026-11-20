@@ -186,3 +186,76 @@ for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: '
     } finally { await browser.close(); }
   });
 }
+
+for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: 'mobile', width: 390, height: 844 }]) {
+  test('synthetic account manager UI create, rename, inclusion, and confirmed removal on ' + viewport.name, async () => {
+    const browser = await chromium.launch({ headless: true });
+    try {
+      const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height } });
+      await page.addInitScript(() => {
+        const user = { id: 'synthetic-ui-owner', email: 'ui@example.invalid' };
+        const query = {
+          select() { return this; }, eq() { return this; }, in() { return this; },
+          order() { return this; }, limit() { return this; },
+          single() { return Promise.resolve({ data: null, error: null }); },
+          maybeSingle() { return Promise.resolve({ data: null, error: null }); },
+          then(resolve, reject) { return Promise.resolve({ data: [], error: null }).then(resolve, reject); }
+        };
+        window.supabase = { createClient: () => ({
+          auth: { getUser: async () => ({ data: { user }, error: null }),
+            onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }) },
+          from: () => Object.create(query)
+        }) };
+      });
+      await page.route('https://cdn.jsdelivr.net/**', route => route.abort());
+      await page.goto(baseUrl + '/app/?page=settings', { waitUntil: 'domcontentloaded' });
+      await page.locator('html.budget-authenticated').waitFor({ timeout: 12000 });
+      const rootSelector = viewport.name === 'desktop' ? '#desktopAccountsManager' : '#mobileSettingsAccounts';
+      await page.evaluate(() => {
+        const records = [];
+        accountService = {
+          createAccount: async (_client, owner, _accounts, name, id, included) => {
+            if (owner !== currentUser.id) throw new Error('Owner changed');
+            records.push({ id, name, included, updatedAt: '2026-01-01T00:00:00Z' });
+          },
+          updateAccount: async (_client, owner, _accounts, id, patch) => {
+            if (owner !== currentUser.id) throw new Error('Owner changed');
+            const record = records.find(row => row.id === id);
+            if (!record) throw new Error('Account missing');
+            Object.assign(record, patch);
+          },
+          deleteAccount: async (_client, owner, _accounts, id) => {
+            if (owner !== currentUser.id) throw new Error('Owner changed');
+            const index = records.findIndex(row => row.id === id);
+            if (index < 0) throw new Error('Account missing');
+            records.splice(index, 1);
+          },
+          loadOrSeedAccounts: async (_client, owner) => {
+            if (owner !== currentUser.id) throw new Error('Owner changed');
+            return records.map(row => ({ ...row }));
+          }
+        };
+        budgetAccounts = [];
+        renderAccounts();
+        if (window.innerWidth < 700) showMobileSettingsSection('accounts');
+      });
+      const root = page.locator(rootSelector);
+      await root.locator('[data-account-action="start-create"]').click();
+      await root.locator('[data-account-form] input[name="accountName"]').fill('Synthetic Checking');
+      await root.locator('[data-account-form] button[type="submit"]').click();
+      await root.locator('.account-manager-row[data-account-id]').filter({ hasText: 'Synthetic Checking' }).waitFor();
+      await root.locator('[data-account-action="rename"]').click();
+      await root.locator('[data-account-rename-form] input[name="accountName"]').fill('Renamed Checking');
+      await root.locator('[data-account-rename-form] button[type="submit"]').click();
+      await root.locator('.account-manager-row[data-account-id]').filter({ hasText: 'Renamed Checking' }).waitFor();
+      await root.locator('[data-account-action="included"]').uncheck();
+      await page.waitForFunction(() => budgetAccounts.length === 1 && budgetAccounts[0].included === false);
+      await root.locator('[data-account-action="remove"]').click();
+      await page.locator('#rbDialogAccept').waitFor();
+      await page.locator('#rbDialogAccept').click();
+      await page.waitForFunction(() => budgetAccounts.length === 0);
+      assert.equal(await root.locator('.account-manager-row[data-account-id]').count(), 0);
+      assert.equal(await page.evaluate(() => currentUser.id), 'synthetic-ui-owner');
+    } finally { await browser.close(); }
+  });
+}
