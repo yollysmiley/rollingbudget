@@ -36,3 +36,29 @@ The CI-required `tests/production-preview-auth-callback-browser.test.mjs` exerci
 
 ## Phase 2D.6 — Session restoration and auth configuration review
 Existing desktop/mobile browser acceptance already covers synthetic owner A/B switching, page refresh and route restoration, prior-owner in-memory data clearing and signed-out protected-route rejection. The protected-route browser suite now additionally seeds a stale owner-specific local cache, supplies an expired synthetic JWT response, and asserts that budget/settings remain inaccessible without cloud table requests. This tests frontend gating, not real JWT revocation or server-side RLS. The connected Supabase project interface does not expose the production Auth URL Configuration allowlist or Site URL, so confirmation/recovery callback allowlisting remains unverified and must be checked before release. No production settings, migrations, accounts or data were changed.
+
+## Phase 2D.6 — Production Supabase Auth configuration audit (read-only, 2026-11-20)
+
+**Scope:** Supabase production project `awalptqpsjflrahkrjzk`, repository preview source, and public Supabase Auth guidance. No Auth settings, database records, users, migrations, or deployment were modified.
+
+### Verified observations
+
+- Supabase project metadata reports **ACTIVE_HEALTHY**, region `us-east-2`, PostgreSQL `17.11.0.003`.
+- The current Supabase **security advisor** reports **WARN: Leaked Password Protection Disabled**. Proposed remediation: review and, with separate approval, enable [leaked-password protection](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection). Recheck compatibility with password-reset and signup policies.
+- Preview homepage invokes `signUp({ email, password, options: { emailRedirectTo: new URL("auth-confirmation.html", location.href).href } })` and `resetPasswordForEmail(email, { redirectTo: new URL("reset-password.html", location.href).href })`. These are **origin- and base-path-dependent**; an approved deployment URL must be known before allowlist changes.
+- The preview build writes `auth-confirmation.html` and `reset-password.html` alongside the preview homepage and substitutes the production project URL, publishable key and isolated storage namespace. The confirmation page checks for an authenticated session; recovery requires a callback and handles a `token_hash` recovery verification path.
+- Synthetic desktop/mobile tests cover confirmation/recovery outcomes, protected-route rejection, session restoration, owner switching, and sign-out. They do **not** verify live Auth configuration or actual email token delivery.
+
+### Not verifiable through available read-only connector
+
+The Supabase connector exposes project metadata and security advisors, but no read-only Auth configuration endpoint. Therefore **Site URL, redirect URL allowlist, email confirmation enablement, email template links, SMTP delivery, email rate limits, JWT/session expiry, and password policy are NOT verified**. Do not assume their values, nor infer correct configuration from passing synthetic tests.
+
+### Proposed fixes / verification before release (separate approval for any mutation)
+
+1. Open [production Auth URL Configuration](https://supabase.com/dashboard/project/awalptqpsjflrahkrjzk/auth/url-configuration) and record the **actual Site URL and exact redirect allowlist**, without sharing tokens or credentials. Confirm the final approved production preview base path and both expected callback URLs. Keep staging and production origins separate; prefer exact paths over permissive wildcards.
+2. Review [production Auth email templates](https://supabase.com/dashboard/project/awalptqpsjflrahkrjzk/auth/templates), including confirmation and reset links, and the email-provider/rate-limit settings. Verify templates preserve intended `redirect_to` semantics. Do not send real emails or change templates during this audit.
+3. Review password security settings and propose enabling leaked-password protection; separately review password length and session/JWT expiration settings. Do not change settings without explicit approval.
+4. After approval for a controlled non-production test, verify sign-up, email confirmation, recovery callback, expired/used links, restored session, and sign-out with dedicated synthetic accounts and real Supabase Auth. Do not use legacy or production user accounts.
+5. Before any production release, review migration backup/rollback, production RLS, callback allowlisting and required CI checks. Obtain separate explicit approvals for production Auth configuration changes, migrations, merge and deployment.
+
+**Release decision:** BLOCKED pending actual production Auth configuration verification and approved live end-to-end tests. Read-only metadata and the security advisor alone are not evidence that the configured redirect URLs work.
