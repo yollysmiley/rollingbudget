@@ -1,3 +1,6 @@
+## Unreleased — Phase 2D.6 authentication callback regression (not deployed)
+- Added CI-required synthetic desktop/mobile browser tests for email confirmation session gating, expired callbacks, verified recovery tokens, password validation and update failures. Live production Auth redirect settings and real token delivery remain unverified.
+
 ## Unreleased — Phase 2D.6 RLS and owner isolation audit (not deployed)
 - Audited existing production RLS policies read-only; new account, recurring and expense-category tables are not yet deployed. Security advisor identified leaked-password protection disabled.
 - Expanded isolated PostgreSQL migration regression with cross-owner update/delete, owner-spoofing inserts/updates, and missing-JWT checks. No live schema or production data changes.
