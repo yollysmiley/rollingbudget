@@ -16,7 +16,7 @@ The preview copies staging's public homepage, authenticated app, confirmation an
 
 ## Tests
 `node scripts/build-production-preview.mjs`
-`node --test tests/production-preview.test.mjs tests/production-preview-owner-crud.test.mjs`
+`node --test tests/production-preview.test.mjs tests/production-preview-owner-crud.test.mjs tests/production-preview-recurring-hardening.test.mjs`
 Run `node --test tests/production-preview-browser.test.mjs tests/production-preview-synthetic-auth.test.mjs tests/production-preview-session-navigation-browser.test.mjs` after installing Playwright and Chromium; these tests use no live credentials. The synthetic tests mock Supabase and do not validate the live authentication service. Existing `node --test tests/*.test.js` and production desktop/mobile smoke tests remain required in CI.
 
 ## Notes
@@ -24,3 +24,6 @@ The preview source is intentionally a separate copy of staging's approved applic
 
 ## Phase 2D.5 recurring browser regression correction
 The recurring-rule browser acceptance test must navigate to the canonical `?page=recurring-rules` SPA route before asserting visibility of the desktop or mobile rule list. The obsolete `?page=recurring` route leaves the list hidden; CI #46 identified this test setup defect. The test now verifies the canonical route and still requires visible rule controls. This does not change application routing or production deployment.
+
+## Phase 2D.5 final hardening (synthetic integration)
+The `production-preview-recurring-hardening.test.mjs` suite exercises the real recurring scheduling, preview and conditional cloud commit modules with an isolated owner-filtering in-memory PostgREST-like client. It checks backfill of missing occurrences, repeat-run idempotency, preservation of manual and historical entries, ambiguous manual duplicate holds, cloud-write failure without partial persistence, stale expected revisions, concurrent revision conflicts, owner-change guards, local-conflict rejection and cancelled commits. CI requires this suite. These are synthetic integration regressions, not live Supabase RLS, network-failure, or real cloud durability evidence; release blockers above remain.
