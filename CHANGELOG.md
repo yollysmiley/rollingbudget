@@ -1,3 +1,6 @@
+## Unreleased — Phase 2D.6 expired-session restoration guard (not deployed)
+- Extended existing desktop/mobile protected-route regression to reject expired restored sessions despite stale owner-scoped local budget cache, with no cloud table reads; documented unverified live Auth redirect allowlist.
+
 ## Unreleased — Phase 2D.6 authentication callback regression (not deployed)
 - Added CI-required synthetic desktop/mobile browser tests for email confirmation session gating, expired callbacks, verified recovery tokens, password validation and update failures. Live production Auth redirect settings and real token delivery remain unverified.
 
