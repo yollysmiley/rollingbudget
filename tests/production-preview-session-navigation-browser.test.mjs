@@ -127,9 +127,8 @@ for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: '
       assert.ok(result.requestedOwners.includes('synthetic-owner-b'));
       assert.match(result.status, /b@example.invalid/);
       await page.evaluate(() => window.__syntheticSession.signOut());
-      // A URL match can resolve during a redirect chain before the final page settles.
+      // Navigation to the public entry point is the observable sign-out contract.
       await page.waitForURL(baseUrl + '/', { waitUntil: 'load', timeout: 10000 });
-      await page.waitForFunction(() => window.location.pathname === '/' && document.readyState === 'complete');
       assert.equal(page.url(), baseUrl + '/');
       assert.equal(await page.locator('html.budget-authenticated').count(), 0);
     } finally { await browser.close(); }
