@@ -59,6 +59,8 @@ jobs:
         run: node --test tests/production-preview-synthetic-auth.test.mjs
       - name: Verify protected preview rejects missing or invalid sessions
         run: node --test tests/production-preview-auth-gate-browser.test.mjs
+      - name: Verify desktop/mobile confirmation and recovery callback regressions
+        run: node --test tests/production-preview-auth-callback-browser.test.mjs
       - name: Verify owner-scoped account and recurring CRUD contracts
         run: node --test tests/production-preview-owner-crud.test.mjs
       - name: Verify recurring backfill, idempotency and cloud conflict hardening
