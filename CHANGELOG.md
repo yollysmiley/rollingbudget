@@ -1,4 +1,5 @@
 ## Unreleased — Phase 2D.5 preview acceptance (not deployed)
+- Added desktop/mobile recurring-rule manager browser acceptance for future-dated edits, enable/disable, cancel/delete confirmation, and historical rule version preservation using synthetic fixtures.
 - Added desktop/mobile browser acceptance for account creation, renaming, budget inclusion toggling and confirmed deletion through the rendered account manager, using an isolated synthetic account service.
 - Extended synthetic desktop/mobile acceptance tests with two owner-specific saved budget documents, account isolation after switching and refresh, and protected-route rejection after real application sign-out.
 - Added isolated owner-scoped account create/update/delete and recurring-rule create/read/edit/disable/re-enable/delete service regressions, including future-dated version and account dependency assertions, with a required CI step.
