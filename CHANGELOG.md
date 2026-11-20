@@ -1,3 +1,7 @@
+## Unreleased — Phase 2D.6 RLS and owner isolation audit (not deployed)
+- Audited existing production RLS policies read-only; new account, recurring and expense-category tables are not yet deployed. Security advisor identified leaked-password protection disabled.
+- Expanded isolated PostgreSQL migration regression with cross-owner update/delete, owner-spoofing inserts/updates, and missing-JWT checks. No live schema or production data changes.
+
 ## Unreleased — Phase 2D.5 preview acceptance (not deployed)
 - Added CI-required synthetic integration tests for recurring backfill idempotency, duplicate holds, historical entry preservation, failed cloud writes, stale and concurrent revision rejection, and owner/local-conflict cancellation.
 - Corrected recurring browser acceptance setup to navigate to the canonical `recurring-rules` SPA route and assert its URL before testing visible desktop/mobile rule controls (CI #46 regression).
