@@ -51,6 +51,22 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Run desktop and mobile browser smoke tests
         run: node --test tests/browser-smoke.test.mjs
+      - name: Build isolated production preview for browser acceptance
+        run: node scripts/build-production-preview.mjs
+      - name: Run preview desktop and mobile browser acceptance tests
+        run: node --test tests/production-preview-browser.test.mjs
+      - name: Run isolated synthetic authentication browser tests
+        run: node --test tests/production-preview-synthetic-auth.test.mjs
+      - name: Verify protected preview rejects missing or invalid sessions
+        run: node --test tests/production-preview-auth-gate-browser.test.mjs
+      - name: Verify desktop/mobile confirmation and recovery callback regressions
+        run: node --test tests/production-preview-auth-callback-browser.test.mjs
+      - name: Verify owner-scoped account and recurring CRUD contracts
+        run: node --test tests/production-preview-owner-crud.test.mjs
+      - name: Verify recurring backfill, idempotency and cloud conflict hardening
+        run: node --test tests/production-preview-recurring-hardening.test.mjs
+      - name: Verify synthetic authenticated session and desktop/mobile navigation
+        run: node --test tests/production-preview-session-navigation-browser.test.mjs
 
   production-schema-upgrade:
     name: Production-shaped PostgreSQL upgrade regression
@@ -82,3 +98,23 @@ jobs:
         run: bash -n scripts/verify-production-upgrade.sh
       - name: Replay additive migrations against production-shaped fixture
         run: bash scripts/verify-production-upgrade.sh
+
+  production-preview-build:
+    name: Isolated production preview build and auth contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check preview build syntax
+        run: node --check scripts/build-production-preview.mjs
+      - name: Build preview without deployment
+        run: node scripts/build-production-preview.mjs
+      - name: Validate production auth and isolation contracts
+        run: node --test tests/production-preview.test.mjs
+      - name: Verify preview navigation and auth isolation contracts
+        run: node --test tests/production-preview-navigation.test.mjs

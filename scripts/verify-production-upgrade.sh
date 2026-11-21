@@ -160,4 +160,97 @@ then
   exit 1
 fi
 
+# Phase 2D.6: exercise actual PostgreSQL RLS as distinct JWT owners and without a JWT.
+# These checks run only in the disposable local database; no production SQL is executed.
+psql -X -v ON_ERROR_STOP=1 <<'SQL'
+SET ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000102',false);
+INSERT INTO public.budget_accounts(user_id,id,name) VALUES
+ ('00000000-0000-4000-8000-000000000102','savings','Owner B savings');
+INSERT INTO public.budget_expense_categories(user_id,id,name) VALUES
+ ('00000000-0000-4000-8000-000000000102','travel','Travel');
+INSERT INTO public.budget_recurring_rules
+ (user_id,id,name,category,amount,frequency,start_date,account_id)
+ VALUES ('00000000-0000-4000-8000-000000000102','travel-fund','Travel fund','travel',40,'monthly','2026-01-01','savings');
+DO $$
+DECLARE affected integer;
+BEGIN
+  -- Cross-tenant UPDATE and DELETE must affect zero rows, not merely avoid errors.
+  UPDATE public.budget_accounts SET name='ATTACK' WHERE user_id='00000000-0000-4000-8000-000000000101';
+  GET DIAGNOSTICS affected = ROW_COUNT;
+  IF affected <> 0 THEN RAISE EXCEPTION 'Cross-owner account UPDATE succeeded'; END IF;
+  DELETE FROM public.budget_accounts WHERE user_id='00000000-0000-4000-8000-000000000101';
+  GET DIAGNOSTICS affected = ROW_COUNT;
+  IF affected <> 0 THEN RAISE EXCEPTION 'Cross-owner account DELETE succeeded'; END IF;
+  UPDATE public.budget_expense_categories SET name='ATTACK' WHERE user_id='00000000-0000-4000-8000-000000000101';
+  GET DIAGNOSTICS affected = ROW_COUNT;
+  IF affected <> 0 THEN RAISE EXCEPTION 'Cross-owner category UPDATE succeeded'; END IF;
+  DELETE FROM public.budget_expense_categories WHERE user_id='00000000-0000-4000-8000-000000000101';
+  GET DIAGNOSTICS affected = ROW_COUNT;
+  IF affected <> 0 THEN RAISE EXCEPTION 'Cross-owner category DELETE succeeded'; END IF;
+  UPDATE public.budget_recurring_rules SET amount=999 WHERE user_id='00000000-0000-4000-8000-000000000101';
+  GET DIAGNOSTICS affected = ROW_COUNT;
+  IF affected <> 0 THEN RAISE EXCEPTION 'Cross-owner recurring UPDATE succeeded'; END IF;
+  DELETE FROM public.budget_recurring_rules WHERE user_id='00000000-0000-4000-8000-000000000101';
+  GET DIAGNOSTICS affected = ROW_COUNT;
+  IF affected <> 0 THEN RAISE EXCEPTION 'Cross-owner recurring DELETE succeeded'; END IF;
+  UPDATE public.budget_ui_years SET budget_data='{}' WHERE user_id='00000000-0000-4000-8000-000000000101';
+  GET DIAGNOSTICS affected = ROW_COUNT;
+  IF affected <> 0 THEN RAISE EXCEPTION 'Cross-owner budget UPDATE succeeded'; END IF;
+  DELETE FROM public.budget_ui_years WHERE user_id='00000000-0000-4000-8000-000000000101';
+  GET DIAGNOSTICS affected = ROW_COUNT;
+  IF affected <> 0 THEN RAISE EXCEPTION 'Cross-owner budget DELETE succeeded'; END IF;
+END $$;
+-- An authenticated DB role without a user JWT must not see or change any owner rows.
+SELECT set_config('request.jwt.claim.sub','',false);
+DO $$
+DECLARE affected integer;
+BEGIN
+  IF (SELECT count(*) FROM public.budget_accounts) <> 0
+    OR (SELECT count(*) FROM public.budget_expense_categories) <> 0
+    OR (SELECT count(*) FROM public.budget_recurring_rules) <> 0
+    OR (SELECT count(*) FROM public.budget_ui_years) <> 0 THEN
+    RAISE EXCEPTION 'Missing JWT exposed owner data';
+  END IF;
+  UPDATE public.budget_accounts SET name='ATTACK';
+  GET DIAGNOSTICS affected = ROW_COUNT;
+  IF affected <> 0 THEN RAISE EXCEPTION 'Missing JWT allowed UPDATE'; END IF;
+END $$;
+RESET ROLE;
+-- Verify neither tenant's data was modified by the denied attempts.
+DO $$
+BEGIN
+ IF NOT EXISTS (SELECT 1 FROM public.budget_accounts WHERE user_id='00000000-0000-4000-8000-000000000101' AND name='Owner A checking')
+ OR NOT EXISTS (SELECT 1 FROM public.budget_accounts WHERE user_id='00000000-0000-4000-8000-000000000102' AND name='Owner B savings')
+ OR NOT EXISTS (SELECT 1 FROM public.budget_recurring_rules WHERE user_id='00000000-0000-4000-8000-000000000101' AND amount=25)
+ OR NOT EXISTS (SELECT 1 FROM public.budget_recurring_rules WHERE user_id='00000000-0000-4000-8000-000000000102' AND amount=40)
+ OR NOT EXISTS (SELECT 1 FROM public.budget_expense_categories WHERE user_id='00000000-0000-4000-8000-000000000101' AND name='Pets')
+ OR NOT EXISTS (SELECT 1 FROM public.budget_expense_categories WHERE user_id='00000000-0000-4000-8000-000000000102' AND name='Travel') THEN
+  RAISE EXCEPTION 'Cross-owner attack modified data';
+ END IF;
+END $$;
+SQL
+
+# Owner spoofing through INSERT and UPDATE must fail their WITH CHECK policy.
+for operation in insert_account insert_category insert_recurring insert_year reassign_account; do
+  if OPERATION="$operation" psql -X -v ON_ERROR_STOP=1 -v operation="$operation" <<'SQL' >/dev/null 2>&1
+SET ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000102',false);
+SELECT CASE :'operation'
+  WHEN 'insert_account' THEN 'INSERT INTO public.budget_accounts(user_id,id,name) VALUES (''00000000-0000-4000-8000-000000000101'',''spoof'',''Spoof'')'
+  WHEN 'insert_category' THEN 'INSERT INTO public.budget_expense_categories(user_id,id,name) VALUES (''00000000-0000-4000-8000-000000000101'',''spoof'',''Spoof'')'
+  WHEN 'insert_recurring' THEN 'INSERT INTO public.budget_recurring_rules(user_id,id,name,category,amount,frequency,start_date) VALUES (''00000000-0000-4000-8000-000000000101'',''spoof'',''Spoof'',''fixed'',1,''monthly'',''2026-01-01'')'
+  WHEN 'insert_year' THEN 'INSERT INTO public.budget_ui_years(user_id,year,budget_data) VALUES (''00000000-0000-4000-8000-000000000101'',2030,''{}'')'
+  WHEN 'reassign_account' THEN 'UPDATE public.budget_accounts SET user_id=''00000000-0000-4000-8000-000000000101'' WHERE user_id=''00000000-0000-4000-8000-000000000102'' AND id=''savings'''
+END AS sql_command
+\gexec
+SQL
+  then
+    echo "RLS owner spoofing unexpectedly succeeded: $operation" >&2
+    exit 1
+  fi
+done
+
+echo "Phase 2D.6 cross-owner read/write/delete, JWT absence, and owner-spoofing RLS checks passed"
+
 echo "Production-shaped additive upgrade, data preservation, RLS, and cross-owner FK tests passed"

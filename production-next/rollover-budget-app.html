@@ -1,0 +1,3403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rolling Budget</title>
+  <!-- Supabase JS Client CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #f8f7fc;
+      --panel: #ffffff;
+      --panel-2: #f3f0fa;
+      --border: #e5e1f2;
+      --text: #181326;
+      --muted: #645e78;
+      --accent: #7c3aed;
+      --accent-hover: #6d28d9;
+      --accent-soft: #ede9fe;
+      --accent-glow: rgba(124, 58, 237, 0.14);
+      --green: #059669;
+      --green-bg: #ecfdf5;
+      --red: #dc2626;
+      --red-bg: #fef2f2;
+      --amber: #d97706;
+      --amber-bg: #fffbeb;
+      --shadow-sm: 0 1px 3px rgba(24, 19, 38, 0.04), 0 1px 2px rgba(24, 19, 38, 0.03);
+      --shadow-md: 0 10px 25px -5px rgba(124, 58, 237, 0.08), 0 4px 10px -2px rgba(24, 19, 38, 0.04);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 64px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    header {
+      background: rgba(255, 255, 255, 0.86);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    .header-top {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.05rem;
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.28);
+      flex-shrink: 0;
+    }
+
+    .title-group h1 { font-size: 1.18rem; font-weight: 800; letter-spacing: -0.025em; }
+    .title-group p { font-size: 0.8rem; color: var(--muted); }
+    /* Match the approved Supabase confirmation email brand. */
+    header {
+      background: #17152B;
+      border-bottom-color: #302D4B;
+      color: #FFFFFF;
+    }
+    .title-group { gap: 14px; }
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 0;
+      background: transparent;
+      color: inherit;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 5px;
+      padding: 1px 0;
+      box-shadow: none;
+    }
+    .brand-bar {
+      display: block;
+      width: 9px;
+      border-radius: 3px;
+      background: #8B7CFF;
+      flex: 0 0 9px;
+    }
+    .brand-bar-short { height: 17px; }
+    .brand-bar-medium { height: 26px; }
+    .brand-bar-tall { height: 36px; background: #B1A6FF; }
+    .title-group h1 { color: #FFFFFF; font-size: 1.28rem; font-weight: 700; letter-spacing: -0.035em; }
+    .title-group h1 span { color: #A99CFF; }
+    .title-group p { color: #C8C3E2; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; }
+    .mobile-menu-button, .mobile-auth-button {
+      background: #24213D;
+      color: #FFFFFF;
+      border-color: #494465;
+      box-shadow: none;
+    }
+    .mobile-menu-button:hover, .mobile-auth-button:hover {
+      background: #302C50;
+      border-color: #8B7CFF;
+      color: #FFFFFF;
+    }
+    .auth-brand { display:flex; justify-content:center; margin:2px 0 16px; }
+    .auth-brand-mark { display:flex; align-items:flex-end; gap:5px; height:36px; }
+    .auth-brand-mark span { display:block; width:9px; border-radius:3px; background:#8B7CFF; }
+    .auth-brand-mark span:nth-child(1) { height:17px; }
+    .auth-brand-mark span:nth-child(2) { height:26px; }
+    .auth-brand-mark span:nth-child(3) { height:36px; background:#B1A6FF; }
+    .auth-modal .auth-intro { text-align:center; margin-bottom:18px; }
+    .auth-modal .auth-intro h3 { font-size:1.35rem; margin-bottom:5px; }
+    .auth-modal .auth-intro p { margin-bottom:0; }
+    .auth-modal .form-group label { text-transform:none; letter-spacing:0; font-size:.8rem; }
+    .auth-modal .form-group input { min-height:46px; }
+    .auth-message { display:none; padding:10px 12px; border-radius:9px; font-size:.82rem; margin:0 0 14px; }
+    .auth-message.visible { display:block; }
+    .auth-message.error { background:#fef2f2; color:#b91c1c; }
+    .auth-message.success { background:#ecfdf5; color:#047857; }
+    .auth-links { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:14px; }
+    .auth-link { border:0; background:none; box-shadow:none; padding:4px 0; color:#6554C0; font-size:.82rem; font-weight:700; }
+    .auth-link:hover { background:none; color:#4f3fa8; text-decoration:underline; }
+    .mobile-sidebar-tools { display:grid; gap:10px; padding:16px 2px 0; margin-top:14px; border-top:1px solid var(--border); }
+    .mobile-sidebar-tools h3 { font-size:.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; }
+    #mobileSettingsControls { display:grid; gap:10px; }
+    #mobileSettingsControls > * { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+    #mobileSettingsControls button, #mobileSettingsControls select { min-height:44px; }
+    .mobile-sidebar-nav button { min-height:46px; }
+    .mobile-sidebar-nav button[data-mobile-action] { color:var(--text); }
+    @media (max-width:768px) {
+      button { min-height:44px; border-radius:11px; font-weight:700; }
+      .del-btn { min-width:44px; min-height:44px; }
+      button:focus-visible { outline:3px solid rgba(139,124,255,.55); outline-offset:2px; }
+      .auth-modal { padding:22px 18px; border-radius:18px; }
+      .auth-modal .modal-actions { display:grid; grid-template-columns:1fr; }
+      .auth-modal .modal-actions > div { display:grid; grid-template-columns:1fr 1fr; }
+      .auth-modal .modal-actions button { min-height:46px; }
+      .auth-links { align-items:flex-start; flex-direction:column; }
+    }
+    @media (max-width: 768px) {
+      .title-group { gap: 10px; }
+      .brand-icon { width: 32px; height: 36px; gap: 4px; }
+      .brand-bar { width: 8px; flex-basis: 8px; }
+      .brand-bar-short { height: 15px; }
+      .brand-bar-medium { height: 23px; }
+      .brand-bar-tall { height: 32px; }
+      .title-group h1 { font-size: 1.02rem; }
+      .title-group p { font-size: 0.56rem; letter-spacing: 0.09em; }
+    }
+
+
+    .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+    select, button, input[type="email"], input[type="password"] {
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      border-radius: 9px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.16s ease;
+      box-shadow: var(--shadow-sm);
+      font-family: inherit;
+    }
+
+    select:focus, button:hover, input:focus {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--panel-2);
+      outline: none;
+    }
+
+    button.primary {
+      background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+      color: #ffffff;
+      border-color: #6d28d9;
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+    }
+    button.primary:hover {
+      background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    button.danger:hover { border-color: #fca5a5; color: var(--red); background: var(--red-bg); }
+
+    .toggle-pill {
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 7px 12px;
+      border-radius: 9px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: var(--shadow-sm);
+    }
+    .toggle-pill input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
+
+    .container { max-width: 1400px; margin: 22px auto; padding: 0 24px; }
+
+    /* Rolling Strip */
+    .rolling-strip {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(98px, 1fr));
+      gap: 9px;
+      overflow-x: auto;
+      padding: 2px 2px 10px 2px;
+      margin-bottom: 20px;
+    }
+
+    .month-pill {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 11px 10px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.16s ease;
+      box-shadow: var(--shadow-sm);
+    }
+    .month-pill:hover { border-color: #c4b5fd; transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .month-pill.active {
+      border-color: var(--accent);
+      background: linear-gradient(180deg, #faf7ff 0%, #f3edff 100%);
+      box-shadow: 0 0 0 2px var(--accent-glow), var(--shadow-md);
+    }
+    .month-pill .m-name { font-size: 0.74rem; font-weight: 700; color: var(--muted); }
+    .month-pill.active .m-name { color: var(--accent); }
+    .month-pill .m-roll { font-size: 0.92rem; font-weight: 800; margin-top: 5px; color: var(--green); font-variant-numeric: tabular-nums; }
+    .month-pill .m-roll.neg { color: var(--red); }
+    .month-pill .m-sub { font-size: 0.69rem; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+    /* Mid-Month 15th Payday Snapshot Banner */
+    .mid-month-banner {
+      background: linear-gradient(135deg, #f5f0ff 0%, #ede9fe 100%);
+      border: 1px solid #c4b5fd;
+      border-radius: 14px;
+      padding: 16px 22px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+    .mm-title { font-size: 0.88rem; font-weight: 800; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+    .mm-stats { display: flex; flex-wrap: wrap; gap: 24px; font-size: 0.82rem; }
+    .mm-stat-item span { color: var(--muted); display: block; font-size: 0.72rem; text-transform: uppercase; font-weight: 700; }
+    .mm-stat-item strong { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+
+    /* KPI Summary Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .kpi-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 18px; box-shadow: var(--shadow-sm); }
+    .kpi-card.highlight { background: linear-gradient(135deg, #ffffff 0%, #f5f0ff 100%); border-color: #c4b5fd; box-shadow: var(--shadow-md); }
+    .kpi-label { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 700; }
+    .kpi-val { font-size: 1.62rem; font-weight: 800; margin-top: 6px; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; }
+    .kpi-foot { font-size: 0.77rem; color: var(--muted); margin-top: 5px; }
+    .pos { color: var(--green); }
+    .neg { color: var(--red); }
+    .warn { color: var(--amber); }
+    .purple-text { color: var(--accent); }
+
+    /* Visual Bar */
+    .flow-bar-wrap { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 16px 20px; margin-bottom: 22px; box-shadow: var(--shadow-sm); }
+    .flow-bar-header { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 0.84rem; margin-bottom: 10px; color: var(--muted); }
+    .flow-bar { height: 12px; background: #ede9fe; border-radius: 999px; overflow: hidden; display: flex; gap: 2px; }
+    .seg-fixed { background: #7c3aed; }
+    .seg-var { background: #f59e0b; }
+    .seg-cc { background: #ef4444; }
+    .seg-loan { background: #a855f7; }
+    .seg-left { background: #10b981; }
+
+    .legend { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 12px; font-size: 0.78rem; color: var(--muted); font-weight: 500; }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+
+    /* Main Grid */
+    .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    @media (max-width: 1024px) { .main-grid { grid-template-columns: 1fr; } }
+
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-sm); }
+    .card.full { grid-column: 1 / -1; }
+
+    .card-header {
+      padding: 14px 18px;
+      background: #fcfbff;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .card-header h2 { font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 9px; }
+
+    .badge {
+      font-size: 0.74rem;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+    th, td { padding: 9px 14px; border-bottom: 1px solid #f1eef9; text-align: left; }
+    th { font-size: 0.71rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); background: #faf9fe; font-weight: 700; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #faf8ff; }
+    .roll-row td { background: #f5f0ff !important; border-bottom: 1px solid #e4dbfb; }
+
+    .inline-input { background: transparent; border: 1px solid transparent; color: var(--text); font-size: 0.84rem; padding: 4px 7px; border-radius: 6px; width: 100%; font-family: inherit; }
+    .inline-input:hover { background: #f5f3ff; border-color: #ddd6fe; }
+    .inline-input:focus { background: #ffffff; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); outline: none; }
+    .inline-input.num { text-align: right; width: 94px; }
+    .inline-input.sm { width: 66px; }
+
+    .del-btn { background: transparent; border: none; color: #9ca3af; padding: 3px 7px; font-size: 1rem; border-radius: 6px; cursor: pointer; }
+    .del-btn:hover { color: var(--red); background: var(--red-bg); }
+
+    .add-row { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 16px; background: #faf9fe; border-top: 1px solid var(--border); }
+    .add-row input, .add-row select { background: #ffffff; border: 1px solid var(--border); color: var(--text); padding: 7px 10px; border-radius: 8px; font-size: 0.82rem; font-family: inherit; }
+    .add-row input:focus, .add-row select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+
+    /* Desktop income entry follows the table column order; mobile has its own stacked layout. */
+    .add-row.income-add-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1.2fr) auto; align-items: end; gap: 10px; }
+    .income-add-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+    .income-add-field > span { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+    .income-add-field input, .income-add-field select { width: 100%; min-width: 0; }
+    @media (max-width: 768px) {
+      .add-row.income-add-row { grid-template-columns: 1fr; }
+      .income-add-field input, .income-add-field select, .income-add-button { min-height: 44px; width: 100%; }
+    }
+
+    /* Modal / Auth Overlays */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(24, 19, 38, 0.45); backdrop-filter: blur(4px);
+      display: none; align-items: center; justify-content: center; z-index: 50; padding: 16px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+      max-width: 500px; width: 100%; padding: 24px; box-shadow: 0 20px 40px rgba(24, 19, 38, 0.18);
+      max-height: 90vh; overflow-y: auto;
+    }
+    .modal h3 { font-size: 1.15rem; font-weight: 800; margin-bottom: 6px; }
+    .modal p { font-size: 0.83rem; color: var(--muted); margin-bottom: 16px; }
+    .form-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 18px; }
+    .form-group label { display: block; font-size: 0.74rem; color: var(--muted); margin-bottom: 5px; font-weight: 700; text-transform: uppercase; }
+    .form-group input, .form-group select { width: 100%; background: #faf9fe; border: 1px solid var(--border); color: var(--text); padding: 9px 11px; border-radius: 8px; font-size: 0.85rem; font-family: inherit; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+    /* Shared branded application dialogs, separate from authentication overlays. */
+    .rb-dialog-backdrop { position:fixed; inset:0; z-index:110; background:rgba(23,21,43,.66); display:flex; align-items:center; justify-content:center; padding:16px; }
+    .rb-dialog-backdrop[hidden] { display:none; }
+    .rb-dialog { width:min(100%,440px); max-height:calc(100dvh - 32px); overflow:auto; background:var(--panel); color:var(--text); border:1px solid var(--border); border-radius:18px; padding:24px; box-shadow:0 22px 55px rgba(0,0,0,.25); }
+    .rb-dialog h2 { font-size:1.18rem; margin:0 0 10px; }
+    .rb-dialog p { margin:0 0 18px; line-height:1.5; white-space:pre-wrap; }
+    .rb-dialog label { display:block; font-weight:600; margin-bottom:8px; }
+    .rb-dialog [hidden] { display:none; }
+    .rb-dialog input { width:100%; min-height:44px; border:1px solid var(--border); border-radius:8px; padding:10px; font:inherit; margin-bottom:12px; }
+    .rb-dialog .modal-actions { flex-wrap:wrap; }
+    .rb-dialog .modal-actions button { min-height:44px; }
+    @media(max-width:768px) { .rb-dialog { padding:20px; } .rb-dialog .modal-actions { display:grid; grid-template-columns:1fr 1fr; } }
+    /* Dedicated mobile presentation. Desktop keeps the existing dashboard layout. */
+    .mobile-card-tools { display: none; }
+    .mobile-card-toggle { display: none; }
+    @media (min-width: 1025px) {
+      .main-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    }
+    @media (max-width: 768px) {
+      body { padding-bottom: 28px; }
+      header { padding: 12px 14px; }
+      .header-top { align-items: flex-start; gap: 12px; }
+      .title-group { gap: 9px; }
+      .brand-icon { width: 34px; height: 34px; }
+      .title-group h1 { font-size: 0.98rem; }
+      .title-group p { font-size: 0.7rem; }
+      .controls { width: 100%; gap: 7px; }
+      .controls > * { flex: 0 0 auto; }
+      .container { margin: 14px auto; padding: 0 12px; }
+      .rolling-strip {
+        display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory;
+        padding: 2px 2px 10px; margin-right: -2px;
+      }
+      .month-pill { min-width: 104px; scroll-snap-align: start; }
+      .mid-month-banner { padding: 13px; gap: 12px; }
+      .mm-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: 100%; }
+      .mm-stat-item strong { font-size: 0.94rem; }
+      .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+      .kpi-card { padding: 12px; border-radius: 12px; min-width: 0; }
+      .kpi-label { font-size: 0.65rem; }
+      .kpi-val { font-size: 1.18rem; overflow-wrap: anywhere; }
+      .kpi-foot { font-size: 0.68rem; }
+      .flow-bar-wrap { padding: 13px; }
+      .legend { gap: 9px 14px; font-size: 0.7rem; }
+      .main-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+      .card, .card.full { grid-column: 1; border-radius: 13px; }
+      .card-header { padding: 13px 14px; gap: 8px; }
+      .card-header h2 { font-size: 0.88rem; flex: 1 1 auto; }
+      .card-header > span { font-size: 0.68rem !important; }
+      .mobile-card-toggle {
+        display: inline-flex; align-items: center; justify-content: center;
+        flex: 0 0 auto; min-width: 76px; padding: 7px 9px;
+        font-size: 0.72rem; color: var(--accent); background: var(--accent-soft);
+        border: 1px solid #ddd6fe; border-radius: 8px; box-shadow: none;
+      }
+      .mobile-card-tools {
+        display: flex; justify-content: flex-end; margin: 0 0 10px;
+      }
+      .mobile-card-tools button { font-size: 0.75rem; padding: 7px 11px; }
+      .card.mobile-collapsed > :not(.card-header) { display: none; }
+      .card table { font-size: 0.75rem; }
+      .card th, .card td { padding: 8px 7px; }
+      .inline-input { font-size: 0.76rem; padding: 4px 3px; }
+      .inline-input.num { width: 76px; }
+      .add-row { padding: 10px; gap: 6px; }
+      .add-row input, .add-row select { min-width: 0 !important; max-width: 100%; }
+      .add-row button { padding: 7px 10px; }
+    }
+    @media (min-width: 769px) {
+      .mobile-card-tools, .mobile-card-toggle { display: none !important; }
+      .card.mobile-collapsed > :not(.card-header) { display: revert; }
+    }
+
+
+    /* Mobile-only overview and navigation. Desktop markup and behavior remain unchanged. */
+    .mobile-overview,.mobile-bottom-nav { display:none; }
+    @media (max-width:768px) {
+      body { padding-bottom:104px; }
+      header { position:relative; }
+      .mobile-overview { display:block; margin:0 0 18px; }
+      body.mobile-tab-overview #rollingStrip,
+      body.mobile-tab-overview #midMonthBanner,
+      body.mobile-tab-overview #kpiGrid,
+      body.mobile-tab-overview #flowBarWrap,
+      body.mobile-tab-overview .mobile-card-tools,
+      body.mobile-tab-overview .main-grid { display:none !important; }
+      body.mobile-tab-plan #mobileOverview { display:none; }
+      body.mobile-tab-plan #rollingStrip { display:flex; }
+      body.mobile-tab-plan #midMonthBanner,
+      body.mobile-tab-plan #kpiGrid,
+      body.mobile-tab-plan #flowBarWrap { display:none !important; }
+      body.mobile-tab-plan .mobile-card-tools { display:flex; }
+      body.mobile-tab-plan .main-grid { display:grid; }
+      .mobile-overview-hero {
+        border-radius:26px; padding:22px 20px 20px; color:#fff;
+        background:linear-gradient(135deg,#352052 0%,#57318a 58%,#7040b2 100%);
+        box-shadow:0 14px 32px rgba(75,42,120,.18); margin-bottom:22px;
+      }
+      .mobile-overview-eyebrow { color:#dfd0ff; font-size:.78rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+      .mobile-overview-balance { font-size:2.45rem; line-height:1.15; font-weight:850; letter-spacing:-.04em; margin:14px 0 5px; font-variant-numeric:tabular-nums; }
+      .mobile-overview-caption { color:#e6dcf4; font-size:.96rem; }
+      .mobile-overview-stats { border-top:1px solid rgba(255,255,255,.2); margin-top:20px; padding-top:16px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+      .mobile-overview-stat span { display:block; color:#d9c9ee; font-size:.72rem; margin-bottom:4px; }
+      .mobile-overview-stat strong { display:block; font-size:1.02rem; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+      .mobile-section-heading { display:flex; justify-content:space-between; align-items:center; margin:0 4px 12px; gap:8px; }
+      .mobile-section-heading strong { font-size:1.05rem; }
+      .mobile-section-heading span { font-size:.78rem; color:var(--muted); }
+      .mobile-snapshot-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-bottom:14px; }
+      .mobile-snapshot-card { background:#fff; border:1px solid var(--border); border-radius:20px; padding:15px 14px; min-width:0; box-shadow:var(--shadow-sm); }
+      .mobile-snapshot-card span { display:block; font-size:.7rem; letter-spacing:.08em; font-weight:800; color:var(--muted); text-transform:uppercase; }
+      .mobile-snapshot-card strong { display:block; font-size:1.55rem; letter-spacing:-.03em; margin:7px 0 3px; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+      .mobile-snapshot-card small { color:var(--muted); font-size:.76rem; }
+      .mobile-allocation { background:#fff; border:1px solid var(--border); border-radius:20px; padding:16px; box-shadow:var(--shadow-sm); }
+      .mobile-allocation-head { display:flex; justify-content:space-between; gap:8px; font-size:.84rem; font-weight:750; margin-bottom:12px; }
+      .mobile-allocation-bar { display:flex; height:13px; border-radius:99px; overflow:hidden; background:#eeeaf6; }
+      .mobile-allocation-legend { display:flex; flex-wrap:wrap; gap:9px 13px; color:var(--muted); font-size:.73rem; margin-top:12px; }
+      .mobile-allocation-legend span { display:flex; align-items:center; gap:5px; }
+      .mobile-allocation-legend i { width:9px;height:9px;border-radius:50%;display:inline-block; }
+      .mobile-bottom-nav { display:grid; grid-template-columns:repeat(4,1fr); position:fixed; bottom:0;left:0;right:0; z-index:30; padding:10px 8px max(12px,env(safe-area-inset-bottom)); background:rgba(255,255,255,.96); border-top:1px solid var(--border); backdrop-filter:blur(14px); }
+      .mobile-bottom-nav button { border:0; box-shadow:none; background:transparent; color:#8b849b; display:flex; flex-direction:column; align-items:center; gap:3px; padding:4px 2px; font-size:.72rem; font-weight:600; }
+      .mobile-bottom-nav button span { font-size:1.35rem; line-height:1.2; }
+      .mobile-bottom-nav button.active { color:var(--accent); font-weight:800; }
+      body:not(.mobile-tab-overview):not(.mobile-tab-plan) #mobileOverview,
+      body:not(.mobile-tab-overview):not(.mobile-tab-plan) #rollingStrip,
+      body:not(.mobile-tab-overview):not(.mobile-tab-plan) #midMonthBanner,
+      body:not(.mobile-tab-overview):not(.mobile-tab-plan) #kpiGrid,
+      body:not(.mobile-tab-overview):not(.mobile-tab-plan) #flowBarWrap,
+      body:not(.mobile-tab-overview):not(.mobile-tab-plan) .mobile-card-tools,
+      body:not(.mobile-tab-overview):not(.mobile-tab-plan) .main-grid { display:none !important; }
+      body:not(.mobile-tab-overview):not(.mobile-tab-plan) .mobile-bottom-nav { display:grid; }
+      .mobile-bottom-nav { display:grid; }
+      .mobile-tab-plan .mobile-bottom-nav { display:grid; }
+      .mobile-card-tools { margin-top:8px; }
+      .mobile-card-toggle { min-width:34px; width:34px; height:34px; padding:0; font-size:0; border-radius:50%; }
+      .mobile-card-toggle:after { content:"⌄"; font-size:1.15rem; }
+      .card.mobile-collapsed .mobile-card-toggle:after { content:"⌃"; }
+      .card-header { min-height:82px; padding:14px 15px; }
+      .card-header h2 { font-size:1rem; }
+      .card-header .badge { display:none; }
+      .card table { display:block; overflow-x:auto; }
+      .card th,.card td { white-space:nowrap; }
+    }
+
+
+    .mobile-auth-button { display:none; }
+    @media (max-width:768px) {
+      .header-top { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; }
+      .mobile-auth-button {
+        display:inline-flex; align-items:center; justify-content:center;
+        min-height:40px; padding:9px 13px; border-radius:11px;
+        background:var(--accent); color:#fff; border:1px solid var(--accent);
+        font-size:.8rem; font-weight:750; white-space:nowrap; box-shadow:0 4px 12px rgba(124,58,237,.2);
+      }
+      .mobile-auth-button:hover { background:var(--accent-hover); color:#fff; }
+      .controls { grid-column:1 / -1; }
+    }
+
+
+    /* Recurring Rules Manager: separate desktop table and mobile card views */
+    .recurring-manager-page{display:none;max-width:1400px;margin:28px auto;padding:0 24px}
+    body.recurring-manager-open .container > *{display:none!important}
+    body.recurring-manager-open .recurring-manager-page{display:block}
+    .recurring-manager-shell{display:grid;gap:20px}
+    .recurring-manager-heading{display:flex;justify-content:space-between;align-items:center;gap:18px}
+    .recurring-back-button{flex:0 0 auto;min-height:42px;padding:9px 14px;border:1px solid var(--border);border-radius:10px;background:var(--panel);color:var(--text);font-weight:700;box-shadow:var(--shadow-sm)}
+    .recurring-back-button:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+    .recurring-manager-heading h2{font-size:1.7rem;letter-spacing:-.035em;margin:3px 0 5px}
+    .recurring-manager-heading p,.recurring-panel-heading p{color:var(--muted);font-size:.86rem}
+    .recurring-eyebrow{color:var(--accent)!important;font-size:.7rem!important;font-weight:800;letter-spacing:.1em}
+    .recurring-desktop-view{display:grid;gap:18px}.recurring-mobile-view{display:none}
+
+    .recurring-sync-box{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:grid;gap:8px;min-width:0}
+    .recurring-sync-box[hidden],.recurring-sync-box button[hidden]{display:none!important}
+    .recurring-sync-box p{color:var(--text);font-size:.86rem;font-weight:700}
+    .recurring-sync-box ul{padding-left:19px;color:var(--muted);font-size:.8rem;line-height:1.55;overflow-wrap:anywhere}
+    .recurring-sync-box button{justify-self:start;border:1px solid var(--accent);color:var(--accent);background:var(--panel);border-radius:9px;min-height:44px;padding:9px 15px;font-weight:750}
+    .recurring-sync-box button:disabled{opacity:.55;cursor:wait}
+    .recurring-panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-sm);padding:20px;min-width:0}
+    .recurring-panel-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+    .recurring-panel-heading h3,.recurring-mobile-section h3{font-size:1rem;font-weight:800}
+    .recurring-table-wrap{width:100%;overflow-x:auto}.recurring-table{min-width:720px}.recurring-table td{vertical-align:middle}
+    .recurring-status{display:inline-flex;padding:4px 9px;border-radius:99px;font-size:.72rem;font-weight:800;background:var(--green-bg);color:var(--green)}
+    .recurring-status.disabled{background:#f1f0f4;color:var(--muted)}
+    .recurring-form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+    .recurring-form-grid label,.recurring-mobile-form label{display:grid;gap:6px;color:var(--muted);font-size:.73rem;font-weight:800;text-transform:uppercase;letter-spacing:.035em;min-width:0}
+    .recurring-form-grid input,.recurring-form-grid select,.recurring-mobile-form input,.recurring-mobile-form select{width:100%;min-width:0;min-height:42px;padding:9px 11px;border:1px solid var(--border);border-radius:9px;background:#faf9fe;color:var(--text);font-family:inherit;font-size:.86rem;font-weight:600;text-transform:none;letter-spacing:normal}
+    .recurring-form-actions{display:flex;justify-content:flex-end;margin-top:16px}
+    @media(max-width:768px){
+      .recurring-manager-page{margin:16px auto 28px;padding:0 12px}
+      .recurring-manager-heading{align-items:flex-start;flex-direction:column}
+      .recurring-manager-heading h2{font-size:1.35rem}
+      .recurring-back-button{display:none}
+      .recurring-manager-heading>button{width:100%;min-height:44px}
+      .recurring-desktop-view{display:none}.recurring-mobile-view{display:grid;gap:14px}
+      .recurring-mobile-section{min-width:0;padding:16px;border:1px solid var(--border);border-radius:18px;background:var(--panel);box-shadow:var(--shadow-sm)}
+      .recurring-mobile-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+      .recurring-mobile-heading p,.recurring-mobile-add>p{color:var(--muted);font-size:.78rem;margin-top:3px}
+      .recurring-mobile-rules{display:grid;gap:10px}
+      .recurring-rule-card{border:1px solid var(--border);border-radius:13px;padding:13px;min-width:0}
+      .recurring-rule-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+      .recurring-rule-card h4{font-size:.92rem;overflow-wrap:anywhere}
+      .recurring-rule-card-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0;color:var(--muted);font-size:.75rem}
+      .recurring-rule-card-meta strong{display:block;color:var(--text);font-size:.83rem;overflow-wrap:anywhere}
+      .recurring-rule-card button{width:100%;min-height:42px}
+      .recurring-mobile-form{display:grid;gap:12px;margin-top:14px}
+      .recurring-mobile-add-button{width:100%;min-height:46px;margin-top:14px}
+    }
+    /* Distinct mobile navigation and settings layout */
+    .mobile-menu-button,.mobile-sidebar,.mobile-sidebar-backdrop,.mobile-settings-panel { display:none; }
+    @media (max-width:768px) {
+      body { padding-bottom:24px !important; }
+      .header-top { grid-template-columns:40px minmax(0,1fr) auto !important; gap:10px; }
+      .mobile-menu-button { display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; padding:0; border-radius:11px; font-size:1.25rem; }
+      .title-group { min-width:0; }
+      .title-group h1 { font-size:1rem; line-height:1.2; }
+      .title-group p { display:none; }
+      .mobile-auth-button { grid-column:3; grid-row:1; }
+      .controls { display:none !important; }
+      .mobile-sidebar-backdrop:not([hidden]) { display:block; position:fixed; inset:0; z-index:90; background:rgba(18,12,30,.42); }
+      .mobile-sidebar { display:block; position:fixed; z-index:91; inset:0 auto 0 0; width:min(82vw,310px); padding:calc(18px + env(safe-area-inset-top)) 16px 24px; background:var(--panel); box-shadow:12px 0 36px rgba(20,12,38,.2); transform:translateX(-105%); transition:transform .22s ease; overflow-y:auto; }
+      .mobile-sidebar.open { transform:translateX(0); }
+      .mobile-sidebar-heading { display:flex; align-items:center; justify-content:space-between; padding:4px 2px 18px; border-bottom:1px solid var(--border); font-size:1.05rem; }
+      .mobile-sidebar-heading button { font-size:1.5rem; padding:4px 10px; }
+      .mobile-sidebar-nav { display:grid; gap:7px; padding-top:16px; }
+      .mobile-sidebar-nav button { text-align:left; padding:13px 14px; border:0; box-shadow:none; background:transparent; color:var(--text); border-radius:12px; font-weight:700; }
+      .mobile-sidebar-nav button.active { color:var(--accent); background:var(--accent-soft); }
+      .mobile-settings-panel { display:none; margin:4px 0 20px; padding:18px; border:1px solid var(--border); border-radius:18px; background:var(--panel); }
+      body.mobile-tab-settings #mobileSettingsPanel { display:block; }
+      body.mobile-tab-settings #mobileOverview,body.mobile-tab-settings #rollingStrip,body.mobile-tab-settings #midMonthBanner,body.mobile-tab-settings #kpiGrid,body.mobile-tab-settings #flowBarWrap,body.mobile-tab-settings .mobile-card-tools,body.mobile-tab-settings .main-grid { display:none !important; }
+      #mobileSettingsControls { display:grid; gap:14px; }
+      #mobileSettingsControls > * { display:flex !important; flex-wrap:wrap; align-items:center; gap:10px; }
+      #mobileSettingsControls button,#mobileSettingsControls select { min-height:42px; }
+      #mobileSettingsControls .toggle-pill { justify-content:flex-start; }
+      body.mobile-tab-overview .mobile-overview { display:block; }
+      body.mobile-tab-plan .main-grid { display:grid; }
+      .mobile-bottom-nav { display:none !important; }
+    }
+  </style>
+<style>
+  .desktop-settings-panel { max-width:1100px; margin:28px auto; padding:0 24px; }
+  .desktop-settings-panel[hidden] { display:none !important; }
+  .desktop-settings-card { padding:22px; margin:16px 0; border:1px solid var(--border); border-radius:16px; background:var(--panel); }
+  .desktop-settings-card h3 { margin:0 0 12px; }
+  .account-manager-list { display:grid; gap:10px; margin:14px 0; }
+  .account-manager-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px; border:1px solid var(--border); border-radius:12px; background:var(--panel); }
+  .account-manager-row strong { overflow-wrap:anywhere; }
+  .account-manager-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .account-manager-actions button { min-height:40px; }
+  .account-manager-form { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:12px; }
+  .account-manager-form input { min-height:42px; flex:1; min-width:160px; padding:9px; border:1px solid var(--border); border-radius:9px; }
+  .account-manager-status { color:var(--muted); font-size:.85rem; margin-top:10px; }
+  @media(max-width:768px) { .account-manager-row { flex-direction:column; align-items:stretch; } .account-manager-actions button { flex:1; } }
+  .desktop-settings-card .controls { display:flex; flex-wrap:wrap; align-items:center; gap:12px; }
+  body.desktop-settings-open > .container { display:none; }
+  @media (min-width:769px) {
+    body.route-overview .container > :not(#mobileOverview) { display:none !important; }
+    body.route-overview #mobileOverview { display:block; max-width:1100px; margin:20px auto; }
+    body.route-overview #mobileOverview .mobile-overview-hero { padding:26px; background:var(--panel); border:1px solid var(--border); border-radius:18px; }
+    body.route-overview #mobileOverview .mobile-overview-balance { font-size:2.5rem; font-weight:800; color:var(--accent); }
+    body.route-overview #mobileOverview .mobile-overview-stats,
+    body.route-overview #mobileOverview .mobile-snapshot-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin:16px 0; }
+    body.route-overview #mobileOverview .mobile-overview-stat,
+    body.route-overview #mobileOverview .mobile-snapshot-card { background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:16px; }
+    body.route-overview #mobileOverview .mobile-overview-stat span,
+    body.route-overview #mobileOverview .mobile-snapshot-card span { display:block; color:var(--muted); }
+    body.route-overview #mobileOverview .mobile-overview-stat strong,
+    body.route-overview #mobileOverview .mobile-snapshot-card strong { display:block; font-size:1.35rem; }
+  }
+  @media (max-width:768px) { .desktop-settings-panel { display:none !important; } }
+</style>
+  <link rel="stylesheet" href="styles/brand.css"><link rel="stylesheet" href="styles/settings.css">
+</head>
+<body>
+<style id="authGateStyle">html:not(.budget-authenticated) body > :not(#authGateScreen):not(script){visibility:hidden!important}#authGateScreen{position:fixed;inset:0;z-index:99999;background:#f8f7fc;color:#17152b;display:grid;place-items:center;font-family:Inter,system-ui,sans-serif;padding:24px}html.budget-authenticated #authGateScreen{display:none}#authGateScreen section{max-width:440px;text-align:center}#authGateScreen a{color:#7c3aed;font-weight:700}</style>
+<div id="authGateScreen" role="status" aria-live="polite"><section><h1>Rolling Budget</h1><p id="authGateMessage">Checking your account…</p><p><a href="../">Return to homepage</a></p></section></div>
+
+<header>
+  <div class="header-top">
+    <button type="button" id="mobileMenuButton" class="mobile-menu-button" aria-label="Open navigation menu" aria-expanded="false" onclick="toggleMobileSidebar(true)">☰</button>
+    <div class="title-group">
+      <div class="brand-icon" aria-hidden="true">
+        <span class="brand-bar brand-bar-short"></span>
+        <span class="brand-bar brand-bar-medium"></span>
+        <span class="brand-bar brand-bar-tall"></span>
+      </div>
+      <div class="brand-copy">
+        <h1>Rolling <span>Budget</span></h1>
+        <p id="userStatusSub">Plan smarter. Grow stronger.</p>
+      </div>
+    </div>
+    <button id="mobileAuthBtn" class="mobile-auth-button" onclick="handleAuthClick()">Sign In</button>
+    <div class="controls desktop-header-actions">
+      <nav class="desktop-primary-nav" aria-label="Primary navigation">
+        <button type="button" id="desktopOverviewButton" onclick="showDesktopPage('overview')">Overview</button>
+        <button type="button" id="desktopBudgetButton" onclick="showDesktopPage('budget')" aria-current="page">Budget</button>
+        <button type="button" id="desktopRecurringButton" onclick="showDesktopPage('recurring')">Recurring Rules</button>
+        <button type="button" id="desktopSettingsButton" onclick="showDesktopPage('settings')" aria-expanded="false" aria-controls="desktopSettingsPanel">Settings</button>
+      </nav>
+      <button id="authBtn" onclick="handleAuthClick()">Sign In</button>
+    </div>
+
+  </div>
+</header>
+<section class="budget-year-toolbar" aria-label="Budget year selection">
+  <div class="budget-year-picker budget-year-picker-desktop">
+    <label for="activeYearSelect">Budget year</label>
+    <select id="activeYearSelect" aria-label="Budget year" onchange="switchYear(this.value)"></select>
+    <button type="button" id="desktopCopyPreviousYear" class="copy-previous-year-button" onclick="copyPreviousYearPlan()" hidden>Copy Previous Year’s Plan</button>
+    <button type="button" id="desktopProjectJanuary" class="copy-previous-year-button" onclick="applyProjectedJanuaryOpening()" hidden>Use December Rollover for January</button>
+  </div>
+  <div class="budget-year-picker budget-year-picker-mobile">
+    <label for="mobileActiveYearSelect">Budget year</label>
+    <select id="mobileActiveYearSelect" aria-label="Budget year" onchange="switchYear(this.value)"></select>
+    <button type="button" id="mobileCopyPreviousYear" class="copy-previous-year-button" onclick="copyPreviousYearPlan()" hidden>Copy Previous Year’s Plan</button>
+    <button type="button" id="mobileProjectJanuary" class="copy-previous-year-button" onclick="applyProjectedJanuaryOpening()" hidden>Use December Rollover for January</button>
+  </div>
+</section>
+
+<div id="mobileSidebarBackdrop" class="mobile-sidebar-backdrop" onclick="toggleMobileSidebar(false)" hidden></div>
+<aside id="mobileSidebar" class="mobile-sidebar" aria-label="Mobile navigation" aria-hidden="true">
+  <div class="mobile-sidebar-heading">
+    <strong>Navigation</strong>
+    <button type="button" aria-label="Close navigation menu" onclick="toggleMobileSidebar(false)">×</button>
+  </div>
+  <nav class="mobile-sidebar-nav">
+    <button type="button" data-mobile-tab="overview" onclick="setMobileTab('overview')">Overview</button>
+    <button type="button" data-mobile-tab="plan" onclick="setMobileTab('plan')">Plan</button>
+    <button type="button" data-mobile-action="recurring" onclick="navigatePage('recurring-rules')">Recurring Rules</button>
+    <button type="button" data-mobile-tab="settings" onclick="setMobileTab('settings')">Settings</button>
+  </nav>
+</aside>
+
+<section id="desktopSettingsPanel" class="desktop-settings-panel" aria-label="Desktop settings" hidden>
+  <h2>Settings</h2>
+  <div class="settings-layout">
+    <nav class="settings-section-nav" aria-label="Settings sections">
+<button type="button" data-settings-section="accounts" aria-controls="settingsAccounts" onclick="showSettingsSection('accounts')">Budget Accounts</button>
+<button type="button" data-settings-section="categories" aria-controls="settingsCategories" onclick="showSettingsSection('categories')">Expense Categories</button>
+<button type="button" data-settings-section="automation" aria-controls="settingsAutomation" onclick="showSettingsSection('automation')">Rollover &amp; Automation</button>
+<button type="button" data-settings-section="security" aria-controls="settingsProfile" onclick="showSettingsSection('security')">Profile &amp; Security</button>
+</nav>
+    <div class="settings-sections">
+  <div class="desktop-settings-card" id="settingsAccounts">
+    <h3>Budget Accounts</h3>
+    <p>Manage the accounts used by your budget. Exclusion from financial totals will become available when transaction assignment is upgraded.</p>
+    <div id="desktopAccountsManager" class="account-manager" aria-label="Accounts Manager"></div>
+  </div>
+  <div class="desktop-settings-card" id="settingsCategories" hidden><h3>Expense Categories</h3><p>Manage custom expense categories for your budget.</p><div id="desktopExpenseCategoriesManager" class="account-manager" aria-label="Expense Categories Manager"></div></div>
+  <div class="desktop-settings-card" id="settingsAutomation" hidden>
+    <h3>Rollover &amp; Automation</h3>
+    <p>Control how unspent funds carry forward and manage recurring budget rules.</p>
+    <div class="controls" id="desktopAutomationControls">
+      <label class="toggle-pill" title="Auto-cascade surplus into next month">
+        <input type="checkbox" id="autoRollToggle" checked />
+        <span>Auto-Cascade</span>
+      </label>
+      
+    </div>
+  </div>
+  <div class="desktop-settings-card" id="settingsProfile" hidden>
+    <h3>Profile &amp; Security</h3>
+    <p>Your account session and recovery options are managed through Rolling Budget authentication.</p>
+  </div>
+    </div>
+  </div>
+</section>
+<div class="container">
+  <!-- 12-Month Rolling Timeline -->
+  <div class="rolling-strip" id="rollingStrip"></div>
+
+  <!-- Mid-Month 15th Payday Snapshot Banner -->
+  <div class="mid-month-banner" id="midMonthBanner"></div>
+
+  <!-- Top KPIs -->
+  <div class="kpi-grid" id="kpiGrid"></div>
+
+  <!-- Cash Allocation Bar -->
+  <div class="flow-bar-wrap" id="flowBarWrap"></div>
+
+  <section id="mobileOverview" class="mobile-overview" aria-label="Monthly budget overview"></section>
+  <section id="mobileSettingsPanel" class="mobile-settings-panel" aria-label="Settings">
+    <h2>Settings</h2>
+    <p class="mobile-settings-intro">Choose a section to manage your budget preferences.</p>
+<nav id="mobileSettingsMenu" class="mobile-settings-menu" aria-label="Settings sections">
+<button type="button" onclick="showMobileSettingsSection('accounts')">Budget Accounts</button>
+<button type="button" onclick="showMobileSettingsSection('categories')">Expense Categories</button>
+<button type="button" onclick="showMobileSettingsSection('automation')">Rollover &amp; Automation</button>
+<button type="button" onclick="showMobileSettingsSection('security')">Profile &amp; Security</button>
+</nav>
+<div id="mobileSettingsDetail" hidden><button type="button" class="mobile-settings-back" onclick="showMobileSettingsMenu()">← Back to Settings</button>
+    <div data-mobile-settings-section="accounts" hidden class="card mobile-settings-section" style="padding:16px;box-shadow:none;margin-bottom:12px">
+      <h3 style="font-size:.95rem;margin-bottom:8px">Budget Accounts</h3>
+      <div id="mobileSettingsAccounts" class="account-manager"></div>
+    </div>
+<div data-mobile-settings-section="categories" hidden class="card mobile-settings-section" style="padding:16px;box-shadow:none"><h3>Expense Categories</h3><div id="mobileExpenseCategoriesManager" class="account-manager"></div></div>
+<div data-mobile-settings-section="automation" hidden class="card mobile-settings-section" style="padding:16px;box-shadow:none"><h3 style="font-size:.95rem;margin-bottom:8px">Rollover &amp; Automation</h3><label class="mobile-settings-toggle" for="mobileAutoRollToggle"><input type="checkbox" id="mobileAutoRollToggle" onchange="setAutoCascade(this.checked)"><span>Auto-Cascade</span></label><p class="settings-help">Carry remaining funds into the next month automatically.</p></div>
+    <div data-mobile-settings-section="security" hidden class="card mobile-settings-section" style="padding:16px;box-shadow:none">
+      <h3 style="font-size:.95rem;margin-bottom:5px">Profile &amp; Security</h3>
+      <p style="color:var(--muted);font-size:.82rem;margin-bottom:12px">Sign in to access your cloud-synced budgets across devices, or sign out of your account.</p>
+      <button type="button" class="primary" onclick="handleAuthClick()">Manage Account</button>
+    </div>
+  </div>
+</section>
+  <section class="mobile-settings-panel" id="mobileAccountsManagerPanel" aria-label="Mobile Accounts Manager" style="display:none">
+    <h3>Accounts</h3>
+    <div id="mobileAccountsManager" class="account-manager"></div>
+  </section>
+  <!-- Main Tables -->
+  <div class="mobile-card-tools"><button type="button" id="toggleAllCards" onclick="toggleAllMobileCards()">Collapse all cards</button></div>
+  <div class="main-grid">
+    <!-- INCOME -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Income & Starting Rollover <span class="badge" id="incTotalBadge">$0.00</span></h2>
+        <span style="font-size:0.76rem;color:var(--muted);font-weight:600" id="acctSplitLabel"></span>
+      <button type="button" class="mobile-card-toggle" aria-expanded="true" onclick="toggleMobileCard(this)">Collapse</button></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Source</th>
+            <th class="num">Amount</th>
+            <th>Account</th>
+            <th style="width:34px"></th>
+          </tr>
+        </thead>
+        <tbody id="incomeBody"></tbody>
+      </table>
+      <div class="add-row income-add-row">
+        <label class="income-add-field"><span>Source</span><input type="text" id="newIncName" placeholder="Income source" /></label>
+        <label class="income-add-field"><span>Amount</span><input type="number" step="0.01" id="newIncAmount" placeholder="$0.00" /></label>
+        <label class="income-add-field"><span>Account</span><select id="newIncAccount" data-new-entry-account aria-label="Account for new income"></select></label>
+        <button class="primary income-add-button" onclick="addIncome()">Add</button>
+      </div>
+    </div>
+
+    <!-- FIXED EXPENSES -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Fixed Expenses <span class="badge" id="fixTotalBadge">$0.00</span></h2>
+        <span style="font-size:0.76rem;color:var(--muted)">Recurring bills & mortgages</span>
+      <button type="button" class="mobile-card-toggle" aria-expanded="true" onclick="toggleMobileCard(this)">Collapse</button></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Expense</th>
+            <th>Due</th>
+            <th class="num">Amount</th>
+            <th style="width:34px"></th>
+          </tr>
+        </thead>
+        <tbody id="fixedBody"></tbody>
+      </table>
+      <div class="add-row">
+        <input type="text" id="newFixName" placeholder="Fixed bill name" style="flex:1;min-width:130px" />
+        <select id="newFixDue" aria-label="Due day for new fixed expense" style="width:95px"><option value="">No day</option></select>
+        <input type="number" step="0.01" id="newFixAmt" placeholder="Amount $" style="width:95px" />
+        <label>Account <select id="newFixAccount" data-new-entry-account aria-label="Account for new newFix"></select></label>
+        <button class="primary" onclick="addExpense('fixed')">Add</button>
+      </div>
+    </div>
+
+    <!-- VARIABLE EXPENSES -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Variable & One-Time Expenses <span class="badge" id="varTotalBadge">$0.00</span></h2>
+        <span style="font-size:0.76rem;color:var(--muted)">Utilities & discretionary</span>
+      <button type="button" class="mobile-card-toggle" aria-expanded="true" onclick="toggleMobileCard(this)">Collapse</button></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Expense</th>
+            <th>Due</th>
+            <th class="num">Amount</th>
+            <th style="width:34px"></th>
+          </tr>
+        </thead>
+        <tbody id="variableBody"></tbody>
+      </table>
+      <div class="add-row">
+        <input type="text" id="newVarName" placeholder="Variable expense" style="flex:1;min-width:130px" />
+        <select id="newVarDue" aria-label="Due day for new variable expense" style="width:95px"><option value="">No day</option></select>
+        <input type="number" step="0.01" id="newVarAmt" placeholder="Amount $" style="width:95px" />
+        <label>Account <select id="newVarAccount" data-new-entry-account aria-label="Account for new newVar"></select></label>
+        <button class="primary" onclick="addExpense('variable')">Add</button>
+      </div>
+    </div>
+
+    <div id="customExpenseCards" data-expense-cards="desktop"></div>
+
+    <!-- LOANS -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Installment Loans <span class="badge" id="loanTotalBadge">$0.00</span></h2>
+        <span style="font-size:0.76rem;color:var(--muted)">Payments & balances</span>
+      <button type="button" class="mobile-card-toggle" aria-expanded="true" onclick="toggleMobileCard(this)">Collapse</button></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Loan</th>
+            <th>Due</th>
+            <th class="num">Balance</th>
+            <th class="num">APR %</th>
+            <th class="num">Payment</th>
+            <th style="width:34px"></th>
+          </tr>
+        </thead>
+        <tbody id="loanBody"></tbody>
+      </table>
+      <div class="add-row">
+        <input type="text" id="newLoanName" placeholder="Loan name" style="flex:1;min-width:110px" />
+        <select id="newLoanDue" aria-label="Due day for new loan" style="width:65px"><option value="">No day</option></select>
+        <input type="number" step="0.01" id="newLoanBal" placeholder="Balance $" style="width:90px" />
+        <input type="number" step="0.01" id="newLoanPay" placeholder="Pay $" style="width:85px" />
+        <label>Account <select id="newLoanAccount" data-new-entry-account aria-label="Account for new newLoan"></select></label>
+        <button class="primary" onclick="addLoan()">Add</button>
+      </div>
+    </div>
+
+    <!-- CREDIT CARDS -->
+    <div class="card full">
+      <div class="card-header">
+        <h2>Credit Cards <span class="badge" id="ccTotalBadge">$0.00</span></h2>
+        <span style="font-size:0.76rem;color:var(--muted);font-weight:600" id="ccStmtSummary"></span>
+      <button type="button" class="mobile-card-toggle" aria-expanded="true" onclick="toggleMobileCard(this)">Collapse</button></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Card</th>
+            <th>Due</th>
+            <th class="num">Statement Bal</th>
+            <th class="num">APR / Min</th>
+            <th class="num">Planned Payment</th>
+            <th style="width:34px"></th>
+          </tr>
+        </thead>
+        <tbody id="ccBody"></tbody>
+      </table>
+      <div class="add-row">
+        <input type="text" id="newCcName" placeholder="Card name" style="flex:1;min-width:140px" />
+        <select id="newCcDue" aria-label="Due day for new credit card" style="width:95px"><option value="">No day</option></select>
+        <input type="number" step="0.01" id="newCcStmt" placeholder="Statement $" style="width:110px" />
+        <input type="number" step="0.01" id="newCcApr" placeholder="APR/Min" style="width:95px" />
+        <input type="number" step="0.01" id="newCcPay" placeholder="Payment $" style="width:110px" />
+        <label>Account <select id="newCcAccount" data-new-entry-account aria-label="Account for new newCc"></select></label>
+        <button class="primary" onclick="addCC()">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Account Auth Modal -->
+<div class="modal-backdrop" id="authModal">
+  <div class="modal auth-modal" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
+    <div class="auth-brand" aria-label="Rolling Budget logo">
+      <div class="auth-brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+    </div>
+    <div class="auth-intro">
+      <h3 id="authModalTitle">Welcome back!</h3>
+      <p id="authModalDescription">Sign in to pick up where you left off and access your budget across devices.</p>
+    </div>
+    <div id="authMessage" class="auth-message" role="status" aria-live="polite"></div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="authEmail">Email address</label>
+        <input type="email" id="authEmail" autocomplete="email" placeholder="you@example.com" />
+      </div>
+      <div class="form-group" id="authPasswordGroup">
+        <label for="authPassword">Password</label>
+        <input type="password" id="authPassword" autocomplete="current-password" placeholder="Enter your password" />
+      </div>
+    </div>
+    <div class="modal-actions">
+      <div>
+        <button type="button" onclick="closeAuthModal()">Cancel</button>
+        <button type="button" class="primary" id="authSubmitBtn" onclick="submitAuth()">Sign In</button>
+      </div>
+    </div>
+    <div class="auth-links">
+      <button type="button" class="auth-link" id="authModeLink" onclick="toggleAuthMode()">New to Rolling Budget? Create an account</button>
+      <button type="button" class="auth-link" id="authResetLink" onclick="showForgotPassword()">Forgot password?</button>
+      <button type="button" class="auth-link" id="authBackLink" onclick="showSignInMode()" hidden>Back to sign in</button>
+    </div>
+  </div>
+</div>
+
+<section id="recurringManagerPage" class="recurring-manager-page" aria-label="Recurring Rules Manager">
+<div class="recurring-manager-shell">
+<div class="recurring-manager-heading"><div><p class="recurring-eyebrow">RECURRING RULES</p><h2>Recurring Rules Manager</h2><p>Manage scheduled income and expenses and choose how often each rule repeats.</p></div><button type="button" class="recurring-back-button" onclick="navigatePage('overview')">← Back to Overview</button></div>
+<div id="recurringDesktopView" class="recurring-desktop-view">
+<section id="desktopRecurringSyncStatus" class="recurring-sync-box" role="status" aria-live="polite" hidden><p id="desktopRecurringSyncMessage"></p><ul id="desktopRecurringSyncDetails"></ul><button id="desktopRetryRecurringSync" type="button" onclick="retryRecurringSynchronization()" hidden>Retry synchronization</button></section>
+<section class="recurring-panel"><div class="recurring-panel-heading"><div><h3>All recurring rules</h3><p>Enable or disable rules without deleting their definitions.</p></div><span id="desktopRuleCount" class="badge">0 rules</span></div><div class="recurring-table-wrap"><table class="recurring-table"><thead><tr><th>Rule</th><th>Type</th><th>Amount</th><th>Frequency</th><th>Starts</th><th>Status</th><th>Action</th></tr></thead><tbody id="desktopRulesList"></tbody></table></div></section>
+<section class="recurring-panel"><div class="recurring-panel-heading"><div><h3>Add a recurring rule</h3><p>Missing entries are added automatically from the start date.</p></div></div><div class="recurring-form-grid" data-recurring-form="desktop">
+<label>Category<select data-rec-field="category" onchange="toggleRecFields(this)"><option value="fixed">Fixed Expense</option><option value="variable">Variable Expense</option><option value="income">Income</option><option value="loan">Loan Payment</option><option value="cc">Credit Card Payment</option></select></label>
+<label>Name<input data-rec-field="name" type="text" placeholder="e.g. Mortgage or Salary"></label>
+<label>Amount ($)<input data-rec-field="amount" type="number" min="0" step="0.01" placeholder="0.00"></label>
+<label data-rec-account-group>Account<select data-rec-field="account"><option value="cpm">CPM Federal</option><option value="usaa">USAA</option></select></label>
+<label>Start date<input data-rec-field="startDate" type="date" required></label>
+<label>End date (optional)<input data-rec-field="endDate" type="date"></label>
+<label>Frequency<select data-rec-field="frequency"><option value="monthly">Monthly</option><option value="every-2-months">Every 2 months</option><option value="quarterly">Quarterly</option><option value="every-6-months">Every 6 months</option><option value="annually">Annually</option></select></label></div><div class="recurring-form-actions"><button class="primary" type="button" onclick="addRecurringRule('desktop')">Add rule</button></div></section>
+</div>
+<div id="recurringMobileView" class="recurring-mobile-view"><section id="mobileRecurringSyncStatus" class="recurring-sync-box" role="status" aria-live="polite" hidden><p id="mobileRecurringSyncMessage"></p><ul id="mobileRecurringSyncDetails"></ul><button id="mobileRetryRecurringSync" type="button" onclick="retryRecurringSynchronization()" hidden>Retry synchronization</button></section><section class="recurring-mobile-section"><div class="recurring-mobile-heading"><div><h3>All recurring rules</h3><p id="mobileRuleCount">0 rules</p></div></div><div id="mobileRulesList" class="recurring-mobile-rules"></div></section><section class="recurring-mobile-section recurring-mobile-add"><h3>Add a recurring rule</h3><p>Missing entries are added automatically from the start date.</p><div class="recurring-mobile-form" data-recurring-form="mobile">
+<label>Category<select data-rec-field="category" onchange="toggleRecFields(this)"><option value="fixed">Fixed Expense</option><option value="variable">Variable Expense</option><option value="income">Income</option><option value="loan">Loan Payment</option><option value="cc">Credit Card Payment</option></select></label>
+<label>Name<input data-rec-field="name" type="text" placeholder="e.g. Mortgage or Salary"></label>
+<label>Amount ($)<input data-rec-field="amount" type="number" min="0" step="0.01" placeholder="0.00"></label>
+<label data-rec-account-group>Deposit account<select data-rec-field="account"><option value="cpm">CPM Federal</option><option value="usaa">USAA</option></select></label>
+<label>Start date<input data-rec-field="startDate" type="date" required></label>
+<label>End date (optional)<input data-rec-field="endDate" type="date"></label>
+<label>Frequency<select data-rec-field="frequency"><option value="monthly">Monthly</option><option value="every-2-months">Every 2 months</option><option value="quarterly">Quarterly</option><option value="every-6-months">Every 6 months</option><option value="annually">Annually</option></select></label></div><button class="primary recurring-mobile-add-button" type="button" onclick="addRecurringRule('mobile')">Add rule</button></section></div>
+</div></section>
+<div id="rbDialogBackdrop" class="rb-dialog-backdrop" hidden>
+  <section class="rb-dialog" role="dialog" aria-modal="true" aria-labelledby="rbDialogTitle" aria-describedby="rbDialogMessage">
+    <h2 id="rbDialogTitle">Rolling Budget</h2>
+    <p id="rbDialogMessage"></p>
+    <label id="rbDialogInputLabel" for="rbDialogInput" hidden>Value</label>
+    <input id="rbDialogInput" type="text" hidden>
+    <div class="modal-actions">
+      <button id="rbDialogCancel" type="button">Cancel</button>
+      <button id="rbDialogAccept" type="button" class="primary">Continue</button>
+    </div>
+  </section>
+</div>
+<script>
+// Shared, queued branded dialogs; never run a destructive callback before confirmation.
+let rbDialogQueue = Promise.resolve();
+function rbDialog(type, message, options = {}) {
+  const previous = rbDialogQueue;
+  let release;
+  rbDialogQueue = new Promise(resolve => { release = resolve; });
+  return (async () => {
+    await previous;
+    const backdrop = document.getElementById('rbDialogBackdrop');
+    const title = document.getElementById('rbDialogTitle');
+    const description = document.getElementById('rbDialogMessage');
+    const input = document.getElementById('rbDialogInput');
+    const inputLabel = document.getElementById('rbDialogInputLabel');
+    const accept = document.getElementById('rbDialogAccept');
+    const cancel = document.getElementById('rbDialogCancel');
+    const priorFocus = document.activeElement;
+    title.textContent = options.title || (type === 'alert' ? 'Rolling Budget' : 'Please confirm');
+    description.textContent = message;
+    input.hidden = type !== 'prompt';
+    inputLabel.hidden = type !== 'prompt';
+    input.value = options.value ?? '';
+    input.type = options.inputType || 'text';
+    cancel.hidden = type === 'alert';
+    accept.textContent = type === 'alert' ? 'OK' : (options.acceptLabel || 'Continue');
+    backdrop.hidden = false;
+    return new Promise(resolve => {
+      const controls = () => [accept, cancel, ...(input.hidden ? [] : [input])].filter(el => !el.hidden);
+      const finish = result => {
+        backdrop.hidden = true;
+        backdrop.removeEventListener('keydown', onKeydown);
+        accept.removeEventListener('click', onAccept);
+        cancel.removeEventListener('click', onCancel);
+        input.oninput = null;
+        if (priorFocus?.isConnected) priorFocus.focus?.();
+        release();
+        resolve(result);
+      };
+      const onAccept = () => {
+        if (type === 'prompt') {
+          if (!input.value.trim()) { input.setCustomValidity('Enter a value'); input.reportValidity(); return; }
+          if (input.type === 'number' && !input.checkValidity()) { input.reportValidity(); return; }
+        }
+        finish(type === 'prompt' ? input.value : true);
+      };
+      const onCancel = () => finish(type === 'prompt' ? null : false);
+      const onKeydown = event => {
+        if (event.key === 'Escape') { event.preventDefault(); if (type !== 'alert') onCancel(); return; }
+        if (event.key === 'Enter' && event.target === input) { event.preventDefault(); onAccept(); return; }
+        if (event.key !== 'Tab') return;
+        const focusables = controls();
+        const first = focusables[0], last = focusables[focusables.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      };
+      input.setCustomValidity('');
+      input.oninput = () => input.setCustomValidity('');
+      accept.addEventListener('click', onAccept);
+      cancel.addEventListener('click', onCancel);
+      backdrop.addEventListener('keydown', onKeydown);
+      (type === 'prompt' ? input : accept).focus();
+    });
+  })();
+}
+function rbAlert(message) { return rbDialog('alert', message); }
+function rbConfirm(message, options) { return rbDialog('confirm', message, options); }
+function rbPrompt(message, value = '', options = {}) { return rbDialog('prompt', message, { ...options, value }); }
+
+// --- CLOUD CONFIGURATION ---
+// Replace with your backend URL and Anon Key when deploying
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const STAGING_STORAGE_PREFIX = "YOUR_STAGING_STORAGE_PREFIX";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+let supabaseClient = null;
+let currentUser = null;
+let uiSignOutInProgress = false;
+let isSignUpMode = false;
+let isPasswordResetMode = false;
+
+if (SUPABASE_URL && window.supabase) {
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { storageKey: STAGING_STORAGE_PREFIX + "_auth" } });
+}
+
+const BASELINE_2026 = {
+  autoCascade: true,
+  recurringRules: [],
+  months: Array.from({ length: 12 }, (_, index) => {
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const monthCodes = ["JAN", "FEB", "MAR", "APR", "MAY", "JUNE", "JULY", "AUG", "SEPT", "OCT", "NOV", "DEC"];
+    return {
+      code: monthCodes[index],
+      name: monthNames[index],
+      recordedLeftover: 0,
+      income: [],
+      fixed: [],
+      variable: [],
+      creditCards: [],
+      loans: []
+    };
+  })
+};
+
+let activeYear = String(new Date().getFullYear());
+function defaultMonthIndex(year, now = new Date()) {
+  return String(year) === String(now.getFullYear()) ? now.getMonth() : 0;
+}
+// Month selection is a per-account, per-year tab-session preference, not budget data.
+function monthSessionKey(year, user = currentUser) {
+  return user?.id ? "rollingbudget_selected_month:" + encodeURIComponent(user.id) + ":" + String(year) : null;
+}
+function restoreSelectedMonth(year) {
+  const key = monthSessionKey(year);
+  if (!key) return defaultMonthIndex(year);
+  try {
+    const stored = sessionStorage.getItem(key);
+    if (stored !== null && /^(?:[0-9]|1[01])$/.test(stored)) return Number(stored);
+  } catch (error) { console.warn("Month session preference unavailable", error); }
+  return defaultMonthIndex(year);
+}
+function rememberSelectedMonth(year, index) {
+  const key = monthSessionKey(year);
+  if (!key) return;
+  try { sessionStorage.setItem(key, String(index)); }
+  catch (error) { console.warn("Month session preference unavailable", error); }
+}
+function clearMonthPreferences(user) {
+  if (!user?.id) return;
+  const prefix = "rollingbudget_selected_month:" + encodeURIComponent(user.id) + ":";
+  try {
+    for (const key of Object.keys(sessionStorage)) {
+      if (key.startsWith(prefix)) sessionStorage.removeItem(key);
+    }
+    sessionStorage.removeItem('rollingbudget_selected_year:' + encodeURIComponent(user.id));
+  } catch (error) { console.warn("Could not clear month preferences", error); }
+}
+function selectedYearSessionKey(user = currentUser) {
+  return user?.id ? 'rollingbudget_selected_year:' + encodeURIComponent(user.id) : null;
+}
+let selectedIdx = defaultMonthIndex(activeYear);
+let db = {};
+let budgetAccounts = [];
+// A cloud year must never render before its owner's account catalog is ready.
+let accountReadyOwner = null;
+let accountService = null;
+let accountBudgetModule = null;
+let recurringAppService = null;
+let dueDayModule = null;
+let loadedRecurringPreview = { rules: [], held: 0 };
+let recurringPreviewError = '';
+
+let recurringSyncOwner = null;
+let recurringSyncScopes = [];
+let recurringSyncLastReport = null;
+let recurringSyncBusy = false;
+let recurringSyncRetryBusy = false;
+let recurringSyncQueue = Promise.resolve();
+function recurringSyncPendingKey(owner) {
+  return STAGING_STORAGE_PREFIX + ':recurring-sync-pending:' + encodeURIComponent(owner);
+}
+function validRecurringSyncScope(scope) {
+  return scope && /^\d{4}-\d{2}-\d{2}$/.test(scope.startDate) &&
+    (scope.endDate === null || /^\d{4}-\d{2}-\d{2}$/.test(scope.endDate)) &&
+    (!scope.endDate || scope.endDate >= scope.startDate);
+}
+function ensureRecurringSyncOwner(owner) {
+  if (owner === recurringSyncOwner) return;
+  recurringSyncOwner = owner;
+  recurringSyncScopes = [];
+  recurringSyncLastReport = null;
+  recurringSyncBusy = false;
+  if (!owner) return;
+  try {
+    const key = recurringSyncPendingKey(owner);
+    const durable = localStorage.getItem(key);
+    const legacy = sessionStorage.getItem(key);
+    const saved = JSON.parse(durable || legacy || '[]');
+    if (Array.isArray(saved)) {
+      recurringSyncScopes = saved.filter(validRecurringSyncScope)
+        .slice(0, 50).map(s => ({ startDate: s.startDate, endDate: s.endDate || null }));
+    }
+    // Upgrade tab-only pending scopes without losing an unfinished retry.
+    if (durable === null && legacy && recurringSyncScopes.length) {
+      localStorage.setItem(key, JSON.stringify(recurringSyncScopes));
+      sessionStorage.removeItem(key);
+    }
+  } catch (error) { console.warn('Could not restore recurring sync status:', error); }
+}
+function rememberRecurringSyncScopes(owner) {
+  if (currentUser?.id !== owner) return;
+  try {
+    const key = recurringSyncPendingKey(owner);
+    if (recurringSyncScopes.length) {
+      localStorage.setItem(key, JSON.stringify(recurringSyncScopes));
+    } else {
+      localStorage.removeItem(key);
+    }
+    sessionStorage.removeItem(key);
+  } catch (error) { console.warn('Could not persist recurring sync status:', error); }
+}
+function recordPendingRecurringScope(owner, startDate, endDate = null) {
+  const scope = { startDate, endDate };
+  if (currentUser?.id !== owner || !validRecurringSyncScope(scope)) return;
+  ensureRecurringSyncOwner(owner);
+  if (!recurringSyncScopes.some(item => recurringSyncScopeMatches(item, scope))) {
+    recurringSyncScopes.push(scope);
+  }
+  rememberRecurringSyncScopes(owner);
+  renderRecurringSyncStatus();
+}
+function recurringSyncScopeMatches(a, b) {
+  return a.startDate === b.startDate && a.endDate === b.endDate;
+}
+function renderRecurringSyncStatus() {
+  const owner = currentUser?.id || null;
+  ensureRecurringSyncOwner(owner);
+  const pending = recurringSyncScopes.length;
+  const report = recurringSyncLastReport;
+  const details = [];
+  if (report) {
+    for (const year of report.years) {
+      details.push(year.year + ': ' + year.added + ' added; ' + year.existing +
+        ' already present; ' + year.ambiguous.length + ' possible duplicates skipped');
+      for (const occurrence of year.ambiguous.slice(0, 6)) {
+        details.push('Skipped ' + occurrence.name + ' on ' + occurrence.month +
+          ': possible existing transaction; no data was changed');
+      }
+      if (year.ambiguous.length > 6) details.push((year.ambiguous.length - 6) + ' additional possible duplicates skipped');
+    }
+    for (const item of report.deferred) {
+      details.push(item.year + ': synchronization incomplete; ' + item.reason);
+    }
+    if (report.discoveryFailed) details.push('Could not verify saved cloud budget years.');
+  }
+  let message = '';
+  if (recurringSyncBusy || recurringSyncRetryBusy) message = 'Synchronizing recurring entries…';
+  else if (pending) message = 'Recurring synchronization incomplete for ' + pending +
+    ' date range' + (pending === 1 ? '' : 's') + '. Check connectivity or resolve cloud conflicts, then retry.';
+  else if (report) {
+    const added = report.years.reduce((sum, item) => sum + item.added, 0);
+    const skipped = report.years.reduce((sum, item) => sum + item.ambiguous.length, 0);
+    message = report.years.length
+      ? 'Recurring synchronization complete: ' + added + ' entries added across ' +
+        report.years.length + ' saved budget year' + (report.years.length === 1 ? '' : 's') +
+        (skipped ? '; ' + skipped + ' possible duplicate' + (skipped === 1 ? '' : 's') + ' skipped.' : '.')
+      : 'No saved budget years are eligible for this recurring date range.';
+  } else if (pending) message = 'Recurring synchronization requires another attempt.';
+  for (const prefix of ['desktop', 'mobile']) {
+    const panel = document.getElementById(prefix + 'RecurringSyncStatus');
+    if (!panel) continue;
+    panel.hidden = !owner || (!message && !pending);
+    const text = document.getElementById(prefix + 'RecurringSyncMessage');
+    text.textContent = message;
+    const list = document.getElementById(prefix + 'RecurringSyncDetails');
+    list.replaceChildren();
+    for (const detail of details) {
+      const item = document.createElement('li');
+      item.textContent = detail;
+      list.appendChild(item);
+    }
+    const retry = document.getElementById(prefix + 'RetryRecurringSync');
+    retry.hidden = !pending || !owner;
+    retry.disabled = recurringSyncBusy || recurringSyncRetryBusy;
+  }
+}
+async function retryRecurringSynchronization() {
+  const owner = currentUser?.id;
+  if (!owner || recurringSyncRetryBusy || recurringSyncBusy) return;
+  ensureRecurringSyncOwner(owner);
+  const scopes = recurringSyncScopes.slice();
+  if (!scopes.length) return;
+  recurringSyncRetryBusy = true;
+  renderRecurringSyncStatus();
+  try {
+    for (const scope of scopes) {
+      if (currentUser?.id !== owner) return;
+      await backfillSavedRecurringYears(owner, scope.startDate, scope.endDate);
+    }
+  } finally {
+    if (currentUser?.id === owner) {
+      recurringSyncRetryBusy = false;
+      if (!recurringSyncScopes.length && !cloudBudgetConflicts.has(owner + ':' + activeYear)) {
+        const status = document.getElementById('cloudSaveStatus');
+        if (status?.firstChild?.textContent?.includes('Recurring entries are still pending')) {
+          showCloudSaveStatus('');
+        }
+      }
+    }
+    renderRecurringSyncStatus();
+  }
+}
+let recurringApplyBusy = false;
+let accountsBusy = false;
+let accountsMessage = '';
+let accountCreateOpen = false;
+let accountCreateIncluded = true;
+let accountEditingId = null;
+function accountStatus(message) {
+  accountsMessage = message;
+  for (const id of ['desktopAccountsStatus', 'mobileAccountsStatus']) {
+    const node = document.getElementById(id);
+    if (node) node.textContent = message;
+  }
+}
+function renderAccounts() {
+  const markup = budgetAccounts.map(account => `
+    <div class="account-manager-row" data-account-id="${esc(account.id)}">
+      ${accountEditingId === account.id ? `<form data-account-rename-form data-account-id="${esc(account.id)}" class="account-manager-form"><input name="accountName" maxlength="120" required aria-label="Edit account name" value="${esc(account.name)}"><button type="submit" class="primary">Save</button><button type="button" data-account-action="cancel-rename">Cancel</button></form>` : `<strong>${esc(account.name)}</strong>`}
+      <div class="account-manager-actions">
+        <label><input type="checkbox" data-account-action="included" data-account-id="${esc(account.id)}" ${account.included ? 'checked' : ''} ${accountsBusy ? 'disabled' : ''}> Include in budget totals</label>
+        ${accountEditingId === account.id ? '' : `<button type="button" data-account-action="rename" data-account-id="${esc(account.id)}" aria-label="Edit ${esc(account.name)} account name" title="Edit account name" ${accountsBusy ? 'disabled' : ''}>&#9998;</button>`}
+        <button type="button" data-account-action="remove" data-account-id="${esc(account.id)}" ${accountsBusy ? 'disabled' : ''}>Remove</button>
+      </div>
+    </div>`).join('');
+  for (const [target, suffix] of [['desktopAccountsManager','desktop'], ['mobileSettingsAccounts','mobile']]) {
+    const el = document.getElementById(target);
+    if (!el) continue;
+    el.innerHTML = `<div class="account-manager-list">${markup || '<p>No accounts yet.</p>'}</div>
+      <button type="button" class="primary" data-account-action="start-create" ${accountsBusy ? 'disabled' : ''}>+ Add account</button>
+      ${accountCreateOpen ? `<form class="account-manager-form account-manager-row" data-account-form>
+        <label>Account name <input type="text" name="accountName" maxlength="120" placeholder="Enter account name" aria-label="New account name" required ${accountsBusy ? 'disabled' : ''}></label>
+        <label><input type="checkbox" name="included" ${accountCreateIncluded ? 'checked' : ''} ${accountsBusy ? 'disabled' : ''}> Include in budget totals</label>
+        <div class="account-manager-actions">
+          <button type="button" data-account-action="cancel-create">Cancel</button>
+          <button type="submit" class="primary" ${accountsBusy ? 'disabled' : ''}>Save account</button>
+        </div>
+      </form>` : ''}
+      <p class="account-manager-status" id="${suffix}AccountsStatus" role="status" aria-live="polite">${esc(accountsMessage)}</p>`;
+  }
+}
+// Category management uses the same owner-scoped cloud session as budget accounts.
+let expenseCategories = [];
+let expenseCategoryService = null;
+let expenseCategoryOwner = null;
+let expenseCategoryBusy = false;
+let expenseCategoryEditingId = null;
+let expenseCategoryMessage = '';
+function renderExpenseCategories() {
+  const builtins = [{ id: 'fixed', name: 'Fixed Expenses' }, { id: 'variable', name: 'Variable & One-Time Expenses' }];
+  const rows = [...builtins.map(category => `<div class="account-manager-row"><strong>${esc(category.name)}</strong><span>Built-in</span></div>`),
+    ...expenseCategories.map(category => `<div class="account-manager-row" data-expense-category-id="${esc(category.id)}">
+      ${expenseCategoryEditingId === category.id ? `<form data-expense-category-rename="${esc(category.id)}" class="account-manager-form"><label>Category name <input name="categoryName" maxlength="80" required value="${esc(category.name)}"></label><button type="submit" class="primary">Save</button><button type="button" data-expense-category-action="cancel">Cancel</button></form>` : `<strong>${esc(category.name)}</strong><button type="button" data-expense-category-action="rename" data-id="${esc(category.id)}" ${expenseCategoryBusy ? 'disabled' : ''}>Rename</button><button type="button" data-expense-category-action="delete" data-id="${esc(category.id)}" ${expenseCategoryBusy ? 'disabled' : ''}>Delete</button>`}
+    </div>`)].join('');
+  for (const id of ['desktopExpenseCategoriesManager', 'mobileExpenseCategoriesManager']) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    el.innerHTML = `<div class="account-manager-list">${rows}</div>
+      <form data-expense-category-create class="account-manager-form">
+        <label>Category name <input name="categoryName" maxlength="80" required ${expenseCategoryBusy ? 'disabled' : ''}></label>
+        <button type="submit" class="primary" ${expenseCategoryBusy ? 'disabled' : ''}>Add category</button>
+      </form>
+      <p class="account-manager-status" role="status" aria-live="polite">${esc(expenseCategoryMessage)}</p>`;
+  }
+}
+async function initializeExpenseCategories() {
+  const owner = currentUser?.id;
+  expenseCategoryOwner = null;
+  expenseCategories = [];
+  expenseCategoryMessage = '';
+  renderExpenseCategories();
+  renderRecurringCategoryOptions();
+  if (!owner) return;
+  try {
+    const service = await import('./scripts/expense-category-storage.mjs');
+    const categories = await service.loadExpenseCategories(supabaseClient, owner);
+    if (currentUser?.id !== owner) return;
+    expenseCategoryService = service;
+    expenseCategories = categories;
+    expenseCategoryOwner = owner;
+  } catch (error) {
+    if (currentUser?.id === owner) expenseCategoryMessage = error.message || 'Could not load expense categories.';
+  }
+  if (currentUser?.id === owner) { renderExpenseCategories(); renderRecurringCategoryOptions(); render(); }
+}
+async function confirmDeleteExpenseCategory(id) {
+  const owner = currentUser?.id;
+  const category = expenseCategories.find(item => item.id === id);
+  if (!category || !owner || expenseCategoryOwner !== owner || expenseCategoryBusy) return;
+  const confirmed = await rbConfirm('Delete expense category "' + category.name + '"? This cannot be undone.', { acceptLabel: 'Delete category' });
+  if (!confirmed || currentUser?.id !== owner || expenseCategoryOwner !== owner) return;
+  expenseCategoryBusy = true;
+  expenseCategoryMessage = '';
+  renderExpenseCategories();
+  try {
+    await expenseCategoryService.deleteExpenseCategory(supabaseClient, owner, expenseCategories, id);
+    const fresh = await expenseCategoryService.loadExpenseCategories(supabaseClient, owner);
+    if (currentUser?.id !== owner) return;
+    expenseCategories = fresh;
+    expenseCategoryMessage = 'Expense category deleted.';
+  } catch (error) {
+    if (currentUser?.id === owner) expenseCategoryMessage = error.message || 'Category could not be deleted.';
+  } finally {
+    expenseCategoryBusy = false;
+    if (currentUser?.id === owner) { renderExpenseCategories(); renderRecurringCategoryOptions(); }
+  }
+}
+async function saveExpenseCategoryAction(action, id, name) {
+  const owner = currentUser?.id;
+  if (!owner || expenseCategoryOwner !== owner || !expenseCategoryService || expenseCategoryBusy) return;
+  expenseCategoryBusy = true;
+  expenseCategoryMessage = '';
+  renderExpenseCategories();
+  try {
+    if (action === 'create') {
+      const newId = 'cat_' + crypto.randomUUID().replace(/-/g, '');
+      await expenseCategoryService.saveExpenseCategory(supabaseClient, owner, expenseCategories, { id: newId, name });
+    } else {
+      await expenseCategoryService.updateExpenseCategory(supabaseClient, owner, expenseCategories, id, name);
+    }
+    const fresh = await expenseCategoryService.loadExpenseCategories(supabaseClient, owner);
+    if (currentUser?.id !== owner) return;
+    expenseCategories = fresh;
+    expenseCategoryEditingId = null;
+    expenseCategoryMessage = 'Expense category saved.';
+    renderRecurringCategoryOptions();
+    render();
+  } catch (error) {
+    if (currentUser?.id === owner) expenseCategoryMessage = error.message || 'Could not save expense category.';
+  } finally {
+    expenseCategoryBusy = false;
+    if (currentUser?.id === owner) renderExpenseCategories();
+  }
+}
+document.addEventListener('submit', event => {
+  const create = event.target.closest('[data-expense-category-create]');
+  const rename = event.target.closest('[data-expense-category-rename]');
+  if (!create && !rename) return;
+  event.preventDefault();
+  if (create) void saveExpenseCategoryAction('create', null, create.elements.categoryName.value.trim());
+  else void saveExpenseCategoryAction('rename', rename.dataset.expenseCategoryRename, rename.elements.categoryName.value.trim());
+});
+document.addEventListener('click', event => {
+  const button = event.target.closest('[data-expense-category-action]');
+  if (!button || expenseCategoryBusy) return;
+  if (button.dataset.expenseCategoryAction === 'delete') { void confirmDeleteExpenseCategory(button.dataset.id); return; }
+  expenseCategoryEditingId = button.dataset.expenseCategoryAction === 'rename' ? button.dataset.id : null;
+  renderExpenseCategories();
+});
+
+let accountMigrationModule = null;
+async function migrateLoadedIncome() {
+  if (!currentUser || !accountMigrationModule || !budgetAccounts.length) return;
+  const owner = currentUser.id;
+  if (!cloudYearLoadSucceeded) return; // Never migrate without an authoritative cloud read.
+  for (const [year, original] of Object.entries(db)) {
+    const key = owner + ':' + year;
+    if (cloudBudgetConflicts.has(key) || localStorage.getItem(conflictStorageKey(year, owner)) === '1') continue;
+    const migrated = accountMigrationModule.migrateLegacyYear(original, budgetAccounts);
+    if (!migrated.changed) continue;
+    const backupKey = storageKey(year) + '_pre_income_migration';
+    // Never overwrite the original backup, including on later sign-ins.
+    if (localStorage.getItem(backupKey) === null) {
+      localStorage.setItem(backupKey, JSON.stringify({ data: original, backedUpAt: new Date().toISOString() }));
+    }
+    const updatedAt = new Date().toISOString();
+    const snapshot = migrated.year;
+    // Migration is an ordinary owner-scoped revision write, not an unconditional upsert.
+    // A concurrent cloud edit must not be replaced by this one-time legacy conversion.
+    let committedAt = updatedAt;
+    if (supabaseClient) {
+      try {
+        await queueCloudSave(key, async () => {
+          if (currentUser?.id !== owner) throw new Error('Account changed during legacy income migration');
+          const { writeBudgetRevision } = await import('./scripts/budget-revision.mjs');
+          const write = await writeBudgetRevision(supabaseClient, {
+            owner, year: Number(year), document: snapshot,
+            knownRevision: cloudBudgetVersions.get(key) ?? null, requestedAt: updatedAt
+          });
+          committedAt = write.updatedAt;
+          cloudBudgetVersions.set(key, committedAt);
+        });
+      } catch (error) {
+        markCloudConflict(key, year);
+        throw error;
+      }
+    }
+    if (currentUser?.id !== owner) return;
+    db[year] = snapshot;
+    try {
+      localStorage.setItem(storageKey(year), JSON.stringify({ data: snapshot, updatedAt: committedAt }));
+    } catch (storageError) {
+      // Cloud is authoritative after a successful upsert; reload can recover it.
+      console.warn('Migrated income saved to cloud but local cache could not be updated', storageError);
+    }
+  }
+}
+// Read-only migration preflight: never mutates db or writes cloud/local data.
+// Conversion stays disabled until default-card editing and recurring backfill can
+// read the versioned expense collection without changing historical entries.
+async function preflightExpenseMigration() {
+  if (!currentUser || !cloudYearLoadSucceeded || !accountBudgetModule) return;
+  const owner = currentUser.id;
+  const migration = await import('./scripts/expense-entry-migration.mjs');
+  for (const [year, original] of Object.entries(db)) {
+    if (currentUser?.id !== owner) return;
+    const key = owner + ':' + year;
+    if (cloudBudgetConflicts.has(key) ||
+        localStorage.getItem(conflictStorageKey(year, owner)) === '1') continue;
+    const converted = migration.migrateExpenseYear(original);
+    migration.verifyExpenseMigration(original, converted, budgetAccounts,
+      accountBudgetModule.computeAccountBudget);
+  }
+}
+async function initializeAccounts() {
+  const owner = currentUser?.id;
+  if (!owner) return false;
+  accountReadyOwner = null;
+  budgetAccounts = [];
+  try {
+    const service = await import('./scripts/account-storage.mjs');
+    const budgetModule = await import('./scripts/account-budget.mjs');
+    const migrationModule = await import('./scripts/account-model.mjs');
+    const accounts = await service.loadOrSeedAccounts(supabaseClient, owner, db);
+    if (currentUser?.id !== owner) return false;
+    accountService = service;
+    accountBudgetModule = budgetModule;
+    accountMigrationModule = migrationModule;
+    budgetAccounts = accounts;
+    await migrateLoadedIncome();
+    if (currentUser?.id !== owner) return false;
+    await preflightExpenseMigration();
+    if (currentUser?.id !== owner) return false;
+    accountReadyOwner = owner;
+    accountsMessage = '';
+    renderAccounts();
+    await initializeExpenseCategories();
+    return true;
+  } catch (error) {
+    console.error('Accounts could not be loaded or income migrated:', error);
+    if (currentUser?.id === owner) {
+      accountReadyOwner = null;
+      budgetAccounts = [];
+      renderAccounts();
+      accountStatus('Could not load accounts. Please retry by refreshing the page.');
+    }
+    return false;
+  }
+}
+async function runAccountAction(action, id, value) {
+  if (accountsBusy || !accountService || !currentUser || accountReadyOwner !== currentUser.id) return;
+  const owner = currentUser.id;
+  accountsBusy = true;
+  accountsMessage = '';
+  renderAccounts();
+  try {
+    if (action === 'create') {
+      const name = String(value?.name ?? value ?? '').trim();
+      if (!name) throw new Error('Enter an account name');
+      const accountId = 'account-' + crypto.randomUUID();
+      await accountService.createAccount(supabaseClient, owner, budgetAccounts, name, accountId, value?.included ?? true);
+    } else if (action === 'rename') {
+      await accountService.updateAccount(supabaseClient, owner, budgetAccounts, id, { name: value });
+    } else if (action === 'included') {
+      await accountService.updateAccount(supabaseClient, owner, budgetAccounts, id, { included: value });
+    } else if (action === 'remove') {
+      await accountService.deleteAccount(supabaseClient, owner, budgetAccounts, id, db);
+    }
+    // Never publish a previous owner's result into a newly authenticated session.
+    if (currentUser?.id !== owner) return;
+    const latest = await accountService.loadOrSeedAccounts(supabaseClient, owner);
+    if (currentUser?.id !== owner) return;
+    budgetAccounts = latest;
+    accountCreateOpen = false;
+    accountEditingId = null;
+    accountStatus('Account changes saved.');
+    render();
+  } catch (error) {
+    console.error('Account change failed:', error);
+    if (currentUser?.id === owner) {
+      accountStatus(error.message || 'Account changes could not be saved.');
+    }
+  } finally {
+    accountsBusy = false;
+    if (currentUser?.id === owner) renderAccounts();
+  }
+}
+document.addEventListener('submit', event => {
+  const renameForm = event.target.closest('[data-account-rename-form]');
+  if (renameForm) {
+    event.preventDefault();
+    void runAccountAction('rename', renameForm.dataset.accountId, renameForm.elements.accountName.value.trim());
+    return;
+  }
+  const form = event.target.closest('[data-account-form]');
+  if (!form) return;
+  event.preventDefault();
+  const name = form.elements.accountName.value;
+  const included = form.elements.included.checked;
+  void runAccountAction('create', null, { name, included });
+});
+document.addEventListener('click', event => {
+  const button = event.target.closest('[data-account-action]');
+  if (!button || accountsBusy) return;
+  if (button.dataset.accountAction === 'cancel-rename') {
+    accountEditingId = null;
+    renderAccounts();
+    return;
+  }
+  if (button.dataset.accountAction === 'start-create') {
+    accountCreateOpen = true;
+    accountCreateIncluded = true;
+    renderAccounts();
+    return;
+  }
+  if (button.dataset.accountAction === 'cancel-create') {
+    accountCreateOpen = false;
+    renderAccounts();
+    return;
+  }
+  const id = button.dataset.accountId;
+  const account = budgetAccounts.find(item => item.id === id);
+  if (!account) return;
+  if (button.dataset.accountAction === 'rename') {
+    accountEditingId = id;
+    renderAccounts();
+  } else if (button.dataset.accountAction === 'remove') {
+    void rbConfirm('Remove ' + account.name + '? This cannot be undone.', { acceptLabel: 'Remove account' }).then(confirmed => { if (confirmed) void runAccountAction('remove', id); });
+  }
+});
+document.addEventListener('change', event => {
+  const input = event.target.closest('[data-account-action="included"]');
+  if (input) void runAccountAction('included', input.dataset.accountId, input.checked);
+});
+
+function storageKey(year) {
+  return STAGING_STORAGE_PREFIX + "_" + (currentUser?.id || "guest") + "_budget_" + year;
+}
+function validYearData(value) {
+  return value && typeof value === "object" && Array.isArray(value.months) && value.months.length === 12 &&
+    value.months.every(m => m && typeof m === "object" && ["income", "fixed", "variable", "creditCards", "loans"].every(k => Array.isArray(m[k])));
+}
+async function initApp() {
+  const gateMessage = document.getElementById("authGateMessage");
+  const home = new URL(window.location.pathname.endsWith("/app/") || window.location.pathname.endsWith("/app/index.html") ? "../" : "./", window.location.href).href;
+  if (!supabaseClient) {
+    gateMessage.textContent = "Sign in is temporarily unavailable. Please try again later.";
+    return;
+  }
+  const { data: { user }, error } = await supabaseClient.auth.getUser();
+  if (error || !user) {
+    window.location.replace(home);
+    return;
+  }
+  currentUser = user;
+  dueDayModule = await import('./scripts/due-day.mjs');
+  selectedIdx = restoreSelectedMonth(activeYear);
+  gateMessage.textContent = 'Loading your accounts and budget…';
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    if (event === "SIGNED_OUT" || !session?.user) {
+      clearMonthPreferences(currentUser);
+      currentUser = null;
+      accountReadyOwner = null;
+      budgetAccounts = [];
+      ensureRecurringSyncOwner(null);
+      db = {};
+      document.documentElement.classList.remove("budget-authenticated");
+      // UI logout redirects only after Supabase has cleared its session.
+      if (!uiSignOutInProgress) window.location.replace(home);
+      return;
+    }
+    if (session.user.id !== currentUser?.id) {
+      const switchingTo = session.user.id;
+      clearMonthPreferences(currentUser);
+      // Hide the previous owner's UI immediately; the cloud year and catalog
+      // are loaded separately and must not become interactable halfway through.
+      document.documentElement.classList.remove("budget-authenticated");
+      gateMessage.textContent = 'Loading your selected account…';
+      accountReadyOwner = null;
+      budgetAccounts = [];
+      db = {};
+      currentUser = session.user;
+      selectedIdx = restoreSelectedMonth(activeYear);
+      setTimeout(async () => {
+        try {
+          const verified = await supabaseClient.auth.getUser();
+          if (currentUser?.id !== switchingTo) return;
+          if (verified.error || verified.data.user?.id !== switchingTo) {
+            document.documentElement.classList.remove("budget-authenticated");
+            window.location.replace(home);
+            return;
+          }
+          await loadAllYears();
+          if (currentUser?.id !== switchingTo) return;
+          const ready = await initializeAccounts();
+          if (currentUser?.id !== switchingTo) return;
+          if (!ready) {
+            gateMessage.textContent = 'Could not load accounts. Refresh to retry.';
+            return;
+          }
+          render();
+          applyPage(pageFromLocation());
+          document.getElementById('userStatusSub').textContent = 'Logged in as ' + (currentUser.email || '');
+          document.documentElement.classList.add("budget-authenticated");
+          ensureRecurringSyncOwner(switchingTo);
+          if (recurringSyncScopes.length) void retryRecurringSynchronization();
+        } catch (error) {
+          console.error('Could not restore the selected account:', error);
+          if (currentUser?.id === switchingTo) {
+            gateMessage.textContent = 'Could not load the selected account. Refresh to retry.';
+          }
+        }
+      }, 0);
+    }
+  });
+  document.getElementById("authBtn").textContent = "Sign Out";
+  document.getElementById("mobileAuthBtn").textContent = "Sign Out";
+  document.getElementById("userStatusSub").textContent = "Logged in as " + currentUser.email;
+  await loadAllYears();
+  const ready = await initializeAccounts();
+  if (!ready || currentUser?.id !== user.id) {
+    if (currentUser?.id === user.id) gateMessage.textContent = 'Could not load accounts. Refresh to retry.';
+    return;
+  }
+  render();
+  applyPage(pageFromLocation());
+  document.documentElement.classList.add("budget-authenticated");
+  ensureRecurringSyncOwner(currentUser?.id);
+  if (recurringSyncScopes.length) void retryRecurringSynchronization();
+}
+function parseLocalBudgetRecord(raw) {
+  if (raw === null) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    // Current format is an envelope. Older staging versions stored the budget object directly.
+    if (parsed && typeof parsed === "object" && Object.hasOwn(parsed, "data")) {
+      if (!validYearData(parsed.data)) return null;
+      const time = parsed.updatedAt ? Date.parse(parsed.updatedAt) : NaN;
+      return { data: parsed.data, updatedAt: Number.isFinite(time) ? time : null, legacy: false };
+    }
+    if (validYearData(parsed)) return { data: parsed, updatedAt: null, legacy: true };
+  } catch (error) {
+    console.warn("Ignored unreadable local budget data; original storage was preserved.", error);
+  }
+  return null;
+}
+async function loadAllYears() {
+  const { availableBudgetYears, sameBudgetDocument } = await import('./scripts/year-discovery.mjs');
+  cloudBudgetVersions.clear();
+  cloudBudgetConflicts.clear();
+  cloudYearLoadSucceeded = false;
+  const owner = currentUser?.id;
+  if (!owner) return;
+  const all = {};
+  const localRecords = {};
+  const unreadableLocalYears = new Set();
+  const ownedPrefix = STAGING_STORAGE_PREFIX + '_' + owner + '_budget_';
+  let keys = [];
+  try { keys = Object.keys(localStorage); }
+  catch (error) { console.warn('Local year discovery unavailable; cloud years will still load:', error); }
+  const years = availableBudgetYears(new Date().getFullYear(), [], keys, ownedPrefix);
+  for (const yr of years) {
+    all[yr] = JSON.parse(JSON.stringify(BASELINE_2026));
+    try {
+      const raw = localStorage.getItem(storageKey(yr));
+      const record = parseLocalBudgetRecord(raw);
+      if (record) {
+        localRecords[yr] = record;
+        all[yr] = record.data;
+      } else if (raw !== null) {
+        // Never replace an unreadable local snapshot during a cloud refresh.
+        unreadableLocalYears.add(yr);
+      }
+    } catch (error) { console.warn('Could not read local budget data for', yr, '; original storage was preserved.', error); }
+  }
+  if (supabaseClient) {
+    try {
+      const { data, error } = await supabaseClient.from("budget_ui_years").select("year,budget_data,updated_at").eq("user_id", owner);
+      if (error) throw error;
+      if (currentUser?.id !== owner) return;
+      cloudYearLoadSucceeded = true;
+      for (const row of data || []) {
+        const year = String(row.year);
+        if (!/^\d{4}$/.test(year) || Number(year) < 1900 || Number(year) > 2200) continue;
+        if (!all[year]) all[year] = JSON.parse(JSON.stringify(BASELINE_2026));
+        const key = owner + ':' + year;
+        if (!validYearData(row.budget_data)) {
+          markCloudConflict(key, year);
+          continue;
+        }
+        cloudBudgetVersions.set(key, row.updated_at);
+        const local = localRecords[year];
+        const pending = localStorage.getItem(conflictStorageKey(year)) === '1';
+        const divergent = local && !sameBudgetDocument(local.data, row.budget_data);
+        if (pending || divergent || unreadableLocalYears.has(year)) {
+          // A timestamp cannot prove that two documents share a cloud revision.
+          // Keep the local copy and block writes until explicit reconciliation.
+          markCloudConflict(key, year);
+          if (local) all[year] = local.data;
+          else all[year] = row.budget_data;
+          continue;
+        }
+        all[year] = row.budget_data;
+        try {
+          localStorage.setItem(storageKey(year), JSON.stringify({ data: row.budget_data, updatedAt: row.updated_at }));
+        } catch (storageError) { console.warn('Could not cache cloud budget locally:', storageError); }
+      }
+    } catch (error) { console.error('Cloud load error; local data was retained:', error); }
+  }
+  for (const year of Object.keys(all)) {
+    try {
+      if (unreadableLocalYears.has(year) || localStorage.getItem(conflictStorageKey(year)) === '1') {
+        markCloudConflict(owner + ':' + year, year);
+      }
+    } catch (error) { console.warn('Could not inspect saved budget conflicts:', error); }
+  }
+  if (currentUser?.id !== owner) return;
+  db = all;
+  const calendarYear = String(new Date().getFullYear());
+  let preference = null;
+  try {
+    const key = selectedYearSessionKey();
+    preference = key ? sessionStorage.getItem(key) : null;
+  } catch (error) { console.warn('Could not restore budget year preference:', error); }
+  const { selectableBudgetYears } = await import('./scripts/year-discovery.mjs');
+  const selectable = selectableBudgetYears(Number(calendarYear));
+  activeYear = preference && selectable.includes(preference) && Object.hasOwn(db, preference) ? preference : calendarYear;
+  selectedIdx = restoreSelectedMonth(activeYear);
+  if (localStorage.getItem(conflictStorageKey(activeYear)) === '1') {
+    showCloudSaveStatus('Unsynced local budget changes require reconciliation before cloud saving.');
+  } else if (cloudBudgetConflicts.size) {
+    showCloudSaveStatus('Another budget year has unsynced changes; select it to reconcile.');
+  } else {
+    showCloudSaveStatus('');
+  }
+  await refreshRecurringPreview();
+}
+async function refreshRecurringPreview() {
+  loadedRecurringPreview = { rules: [], held: 0 };
+  recurringPreviewError = '';
+  if (!currentUser || !supabaseClient) return;
+  try {
+    recurringAppService = await import('./scripts/recurring-app-service.mjs');
+    loadedRecurringPreview = await recurringAppService.loadRecurringPreviewRules(supabaseClient, currentUser.id);
+  } catch (error) {
+    recurringPreviewError = 'Recurring preview unavailable';
+    console.warn('Recurring preview was not loaded; budgets remain unchanged:', error);
+  }
+}
+const cloudSaveQueues = new Map();
+const reconcilingBudgetYears = new Set();
+const cloudBudgetVersions = new Map();
+let cloudYearLoadSucceeded = false;
+const cloudBudgetConflicts = new Set();
+function conflictStorageKey(year, owner = currentUser?.id || 'guest') {
+  return STAGING_STORAGE_PREFIX + '_' + owner + '_budget_' + year + '_cloud_conflict';
+}
+function markCloudConflict(key, year) {
+  const owner = key.slice(0, key.lastIndexOf(':'));
+  if (!owner || key !== owner + ':' + year) throw new Error('Invalid conflict owner scope');
+  cloudBudgetConflicts.add(key);
+  localStorage.setItem(conflictStorageKey(year, owner), '1');
+}
+function clearCloudConflict(key, year) {
+  const owner = key.slice(0, key.lastIndexOf(':'));
+  if (!owner || key !== owner + ':' + year) throw new Error('Invalid conflict owner scope');
+  localStorage.removeItem(conflictStorageKey(year, owner));
+  cloudBudgetConflicts.delete(key);
+}
+async function reconcileCloudBudget(useLocal) {
+  const year = activeYear, owner = currentUser?.id;
+  if (!owner || !supabaseClient) return;
+  const key = owner + ':' + year;
+  const budgetKey = storageKey(year), markerKey = conflictStorageKey(year);
+  if (reconcilingBudgetYears.has(key) || localStorage.getItem(markerKey) !== '1') return;
+  if (!await rbConfirm(useLocal ? 'Replace the cloud budget with your unsynced local budget? This replaces newer cloud edits.' : 'Replace the local budget with the latest cloud copy? A local backup will be retained.')) return;
+  const originalMemory = structuredClone(db[year]);
+  const originalLocalRaw = localStorage.getItem(budgetKey);
+  let insertedNewYear = false;
+  let recurringPendingMessage = '';
+  reconcilingBudgetYears.add(key);
+  showCloudSaveStatus('Reconciling budget. Wait before making further changes.');
+  try {
+    const { sameBudgetDocument } = await import('./scripts/year-discovery.mjs');
+    await queueCloudSave(key, async () => {
+      const assertUnchanged = () => {
+        if (currentUser?.id !== owner || activeYear !== year) {
+          throw new Error('Account or selected year changed during reconciliation');
+        }
+        if (localStorage.getItem(markerKey) !== '1' ||
+            localStorage.getItem(budgetKey) !== originalLocalRaw ||
+            !sameBudgetDocument(db[year], originalMemory)) {
+          throw new Error('Local budget changed during reconciliation; retry with the latest changes');
+        }
+      };
+      assertUnchanged();
+      const { data, error } = await supabaseClient.from('budget_ui_years')
+        .select('year,budget_data,updated_at').eq('user_id', owner).eq('year', Number(year));
+      if (error) throw error;
+      assertUnchanged();
+      if (!Array.isArray(data) || data.length > 1) throw new Error('Cloud budget unavailable');
+      const cloud = data[0] || null;
+      if (cloud && !validYearData(cloud.budget_data)) {
+        throw new Error('Cloud budget is invalid; local data was not replaced');
+      }
+      const local = parseLocalBudgetRecord(originalLocalRaw);
+      if (originalLocalRaw !== null && !local) {
+        throw new Error('Unreadable local snapshot must be preserved before reconciliation');
+      }
+      if (local && !sameBudgetDocument(local.data, originalMemory)) {
+        throw new Error('Local budget changed since it was saved; retry reconciliation');
+      }
+      if (useLocal && !local) throw new Error('Local budget unavailable');
+      if (!useLocal && !cloud) throw new Error('No cloud copy exists; keep local changes instead');
+      const backup = local ? JSON.parse(originalLocalRaw) : { data: originalMemory, updatedAt: null };
+      // Back up the original local copy before any destructive cloud/local replacement.
+      localStorage.setItem(budgetKey + '_conflict_backup', JSON.stringify(backup));
+      assertUnchanged();
+      if (useLocal) {
+        const normalizedLocal = dueDayModule.migrateYearDueDays(local.data).year;
+        const { writeBudgetRevision } = await import('./scripts/budget-revision.mjs');
+        const write = await writeBudgetRevision(supabaseClient, {
+          owner, year, document: normalizedLocal, knownRevision: cloud?.updated_at ?? null,
+          requestedAt: new Date().toISOString()
+        });
+        const nextTimestamp = write.updatedAt;
+        insertedNewYear = write.inserted;
+        // Retain the committed revision even if local state changes during the write.
+        // The conflict marker stays set until the user explicitly reconciles.
+        cloudBudgetVersions.set(key, nextTimestamp);
+        // A cloud commit may have succeeded, but never overwrite edits made while awaiting it.
+        assertUnchanged();
+        localStorage.setItem(budgetKey, JSON.stringify({ data: normalizedLocal, updatedAt: nextTimestamp }));
+        db[year] = normalizedLocal;
+        cloudBudgetVersions.set(key, nextTimestamp);
+      } else {
+        const nextCloud = structuredClone(cloud.budget_data);
+        localStorage.setItem(budgetKey, JSON.stringify({ data: nextCloud, updatedAt: cloud.updated_at }));
+        db[year] = nextCloud;
+        cloudBudgetVersions.set(key, cloud.updated_at);
+      }
+      clearCloudConflict(key, year);
+    });
+    if (currentUser?.id === owner) {
+      showCloudSaveStatus('');
+      render();
+      if (insertedNewYear) {
+        // Cloud reconciliation succeeded even if subsequent recurring backfill is deferred.
+        try {
+          const report = await backfillSavedRecurringYears(owner, year + '-01-01', year + '-12-31');
+          if (!report || report.discoveryFailed || report.deferred.length) {
+            recurringPendingMessage = 'Budget reconciled in cloud. Recurring entries are still pending; retry in Recurring Rules.';
+          }
+        } catch (error) {
+          console.warn('Recurring backfill deferred after cloud reconciliation:', error);
+          recordPendingRecurringScope(owner, year + '-01-01', year + '-12-31');
+          recurringPendingMessage = 'Budget reconciled in cloud. Recurring entries are still pending; retry in Recurring Rules.';
+        }
+        if (recurringPendingMessage) showCloudSaveStatus(recurringPendingMessage);
+      }
+    }
+  } catch (error) {
+    console.error('Cloud reconciliation failed:', error);
+    if (currentUser?.id === owner && activeYear === year) {
+      showCloudSaveStatus('Reconciliation failed: ' + String(error?.message || 'retry required') +
+        '. Local changes and backups were preserved.');
+    }
+  } finally {
+    reconcilingBudgetYears.delete(key);
+    if (currentUser?.id === owner && activeYear === year) showCloudSaveStatus(
+      localStorage.getItem(markerKey) === '1'
+        ? document.getElementById('cloudSaveStatus')?.firstChild?.textContent || 'Reconciliation still required.'
+        : recurringPendingMessage);
+  }
+}
+function showCloudSaveStatus(message) {
+  let status = document.getElementById("cloudSaveStatus");
+  if (!status) {
+    status = document.createElement("div");
+    status.id = "cloudSaveStatus";
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    status.style.cssText = "padding:10px 20px;background:var(--amber-bg);color:#78440a;font-weight:600;text-align:center";
+    document.querySelector("header").insertAdjacentElement("afterend", status);
+  }
+  status.replaceChildren(document.createTextNode(message));
+  const pending = currentUser && localStorage.getItem(conflictStorageKey(activeYear)) === '1';
+  status.hidden = !message && !pending;
+  if (pending) {
+    const localButton = document.createElement('button');
+    localButton.textContent = 'Keep local changes';
+    localButton.onclick = () => reconcileCloudBudget(true);
+    localButton.disabled = reconcilingBudgetYears.has(currentUser.id + ':' + activeYear);
+    const cloudButton = document.createElement('button');
+    cloudButton.textContent = 'Use cloud version';
+    cloudButton.onclick = () => reconcileCloudBudget(false);
+    cloudButton.disabled = reconcilingBudgetYears.has(currentUser.id + ':' + activeYear);
+    status.append(localButton, cloudButton);
+  }
+}
+function queueCloudSave(key, operation) {
+  const previous = cloudSaveQueues.get(key) || Promise.resolve();
+  const pending = previous.catch(() => {}).then(operation);
+  cloudSaveQueues.set(key, pending);
+  void pending.finally(() => {
+    if (cloudSaveQueues.get(key) === pending) cloudSaveQueues.delete(key);
+  }).catch(() => {});
+  return pending;
+}
+function budgetEditAllowed() {
+  const owner = currentUser?.id;
+  if (owner && accountReadyOwner !== owner) {
+    showCloudSaveStatus('Account data is still loading. Changes are temporarily blocked.');
+    return false;
+  }
+  if (owner && reconcilingBudgetYears.has(owner + ':' + activeYear)) {
+    showCloudSaveStatus('Reconciliation in progress. Budget changes are blocked; retry when it finishes.');
+    return false;
+  }
+  return true;
+}
+async function saveDB({ backfillNewYear = true } = {}) {
+  const year = activeYear;
+  const userId = currentUser?.id || null;
+  if (userId && reconcilingBudgetYears.has(userId + ':' + year)) {
+    showCloudSaveStatus('Reconciliation is in progress. Wait before editing this budget.');
+    return 'not-saved';
+  }
+  let insertedNewYear = false;
+  const original = db[year];
+  const migrated = dueDayModule.migrateYearDueDays(original);
+  const snapshot = JSON.parse(JSON.stringify(migrated.year));
+  const updatedAt = new Date().toISOString();
+  const dueWarning = migrated.unrecognized.length
+    ? 'Some legacy due dates need review. Select a valid day (1–31) for the affected expenses.' : '';
+  try {
+    localStorage.setItem(storageKey(year), JSON.stringify({ data: snapshot, updatedAt }));
+    if (migrated.changed && db[year] === original) db[year] = snapshot;
+  } catch (error) {
+    console.error("Local save error:", error);
+    void rbAlert("Could not save this budget in browser storage. Your changes may not persist.");
+    return 'not-saved';
+  }
+  if (!supabaseClient || !userId) {
+    if (dueWarning) showCloudSaveStatus(dueWarning);
+    return 'local-saved';
+  }
+  const client = supabaseClient;
+  const key = userId + ":" + year;
+  try {
+    await queueCloudSave(key, async () => {
+      if (cloudBudgetConflicts.has(key) || localStorage.getItem(conflictStorageKey(year)) === '1') {
+        throw new Error('Budget has unsynced changes; reconcile before saving');
+      }
+      if (currentUser?.id !== userId) throw new Error('Account changed while saving budget');
+      const { writeBudgetRevision } = await import('./scripts/budget-revision.mjs');
+      const write = await writeBudgetRevision(client, {
+        owner: userId, year, document: snapshot,
+        knownRevision: cloudBudgetVersions.get(key) ?? null, requestedAt: updatedAt
+      });
+      const nextTimestamp = write.updatedAt;
+      insertedNewYear = write.inserted;
+      cloudBudgetVersions.set(key, nextTimestamp);
+    });
+    if (currentUser?.id === userId) {
+      let recurringPending = false;
+      if (insertedNewYear && backfillNewYear) {
+        // The budget is already saved: a failed recurring backfill must not
+        // turn a confirmed cloud save into a misleading conflict or success.
+        try {
+          const report = await backfillSavedRecurringYears(userId, year + '-01-01', year + '-12-31');
+          recurringPending = !report || report.discoveryFailed || report.deferred.length > 0;
+        } catch (error) {
+          console.warn('Recurring backfill deferred after cloud budget save:', error);
+          recordPendingRecurringScope(userId, year + '-01-01', year + '-12-31');
+          recurringPending = true;
+        }
+      }
+      const pending = localStorage.getItem(conflictStorageKey(year, userId)) === '1';
+      showCloudSaveStatus(pending ? 'Unsynced local changes require reconciliation before cloud saving.' :
+        recurringPending ? 'Budget saved to cloud. Recurring entries are still pending; retry in Recurring Rules.' : dueWarning);
+      return recurringPending ? 'cloud-saved-recurring-pending' : 'cloud-saved';
+    }
+    return 'cloud-saved';
+  } catch (error) {
+    console.error("Cloud sync error; local copy was retained:", error);
+    try { markCloudConflict(key, year); } catch (storageError) { console.error("Could not persist cloud conflict marker:", storageError); }
+    if (currentUser?.id === userId) showCloudSaveStatus("Cloud save rejected or unavailable. Local changes were preserved; choose a reconciliation option.");
+    return 'local-saved';
+  }
+}
+function yearPlanSourceAvailable(owner, year) {
+  const key = owner + ':' + year;
+  return Boolean(owner && supabaseClient && db[year] && cloudBudgetVersions.has(key) &&
+    !cloudBudgetConflicts.has(key) && localStorage.getItem(conflictStorageKey(year)) !== '1' &&
+    !cloudSaveQueues.has(key));
+}
+async function verifiedYearPlanSource(owner, year) {
+  if (!yearPlanSourceAvailable(owner, year) || currentUser?.id !== owner) {
+    throw new Error('Previous year must be cloud-saved and reconciled before planning');
+  }
+  const key = owner + ':' + year;
+  const snapshot = structuredClone(db[year]);
+  const revision = cloudBudgetVersions.get(key);
+  const { data: rows, error } = await supabaseClient.from('budget_ui_years')
+    .select('year,budget_data,updated_at').eq('user_id', owner).eq('year', Number(year));
+  if (error) throw new Error('Could not verify the previous year against cloud storage');
+  if (!yearPlanSourceAvailable(owner, year) || currentUser?.id !== owner ||
+      cloudBudgetVersions.get(key) !== revision) {
+    throw new Error('Previous year changed while planning; retry after synchronization');
+  }
+  const cloud = Array.isArray(rows) && rows.length === 1 ? rows[0] : null;
+  const raw = localStorage.getItem(storageKey(year));
+  const cached = parseLocalBudgetRecord(raw);
+  const { sameBudgetDocument } = await import('./scripts/year-discovery.mjs');
+  if (!sameBudgetDocument(snapshot, db[year])) {
+    throw new Error('Previous year changed while planning; retry');
+  }
+  try {
+    const service = recurringAppService || await import('./scripts/recurring-app-service.mjs');
+    service.requireRecurringCloudSnapshot({
+      owner, activeOwner: currentUser?.id, cloudRow: cloud, knownRevision: revision,
+      inMemoryBudget: db[year], cachedBudget: cached?.data,
+      hasLocalCache: raw !== null, conflicted: !yearPlanSourceAvailable(owner, year)
+    });
+  } catch (error) {
+    if (currentUser?.id === owner) {
+      try { markCloudConflict(key, year); }
+      catch (storageError) { console.warn('Could not retain previous-year conflict marker:', storageError); }
+    }
+    throw new Error('Previous year differs from its cloud version. Reconcile it before planning', { cause: error });
+  }
+  return snapshot;
+}
+// The two year-planning actions share a lock: neither may snapshot the same
+// target while the other is awaiting a cloud save or recurring backfill.
+let yearPlanActionBusy = false;
+async function persistYearPlanChange(owner, year, updated, localOnlyMessage) {
+  if (!budgetEditAllowed()) return 'not-saved';
+  const original = db[year];
+  db[year] = updated;
+  const status = await saveDB();
+  if (status === 'not-saved' && currentUser?.id === owner && db[year] === updated) {
+    // No local or cloud write occurred. Restore the previous working document.
+    db[year] = original;
+  }
+  if (currentUser?.id === owner && activeYear === year) {
+    render();
+    if (status === 'not-saved') {
+      showCloudSaveStatus('Budget change was not saved. Free browser storage and retry.');
+    } else if (status === 'local-saved') {
+      showCloudSaveStatus(localOnlyMessage);
+    } else if (status === 'cloud-saved-recurring-pending') {
+      showCloudSaveStatus('Budget saved to cloud. Recurring entries are still pending; retry in Recurring Rules.');
+    }
+  }
+  return status;
+}
+async function applyProjectedJanuaryOpening() {
+  if (yearPlanActionBusy || !currentUser) return;
+  const year = activeYear, previous = String(Number(year) - 1), owner = currentUser.id;
+  if (!yearPlanSourceAvailable(owner, previous) || !db[year] || !accountBudgetModule ||
+      cloudBudgetConflicts.has(owner + ':' + year) ||
+      localStorage.getItem(conflictStorageKey(year)) === '1') return;
+  yearPlanActionBusy = true;
+  syncJanuaryProjectionControls();
+  syncCopyPreviousYearControls();
+  try {
+    const { projectedJanuaryOpening, canApplyJanuaryOpening } = await import('./scripts/year-plan.mjs');
+    if (activeYear !== year || currentUser?.id !== owner || !canApplyJanuaryOpening(db[year])) return;
+    const source = await verifiedYearPlanSource(owner, previous);
+    const projection = projectedJanuaryOpening(source, budgetAccounts, accountBudgetModule.computeAccountBudget);
+    if (!await rbConfirm('Apply the projected ' + previous + ' December ending balance (' + fmt(projection) +
+        ') as the ' + year + ' January opening balance? This does not change the previous year.')) return;
+    if (activeYear !== year || currentUser?.id !== owner ||
+        cloudBudgetConflicts.has(owner + ':' + year) ||
+        localStorage.getItem(conflictStorageKey(year)) === '1' ||
+        !canApplyJanuaryOpening(db[year])) return;
+    const confirmedSource = await verifiedYearPlanSource(owner, previous);
+    const updated = structuredClone(db[year]);
+    updated.months[0].recordedLeftover = projectedJanuaryOpening(
+      confirmedSource, budgetAccounts, accountBudgetModule.computeAccountBudget);
+    await persistYearPlanChange(owner, year, updated,
+      'January projection saved in this browser only. Cloud synchronization is pending; reconcile before using another device.');
+  } catch (error) {
+    console.error('Could not apply January projection:', error);
+    if (currentUser?.id === owner) {
+      showCloudSaveStatus('January projection blocked: verify and reconcile the previous budget year before retrying.');
+      void rbAlert('January projection could not be applied. Check the previous year and retry.');
+    }
+  } finally {
+    yearPlanActionBusy = false;
+    if (currentUser?.id === owner) {
+      syncJanuaryProjectionControls();
+      syncCopyPreviousYearControls();
+    }
+  }
+}
+function syncJanuaryProjectionControls() {
+  const year = activeYear, previous = String(Number(year) - 1);
+  const source = db[previous];
+  const eligible = Boolean(currentUser && accountBudgetModule && source && db[year] &&
+    yearPlanSourceAvailable(currentUser.id, previous) &&
+    !cloudBudgetConflicts.has(currentUser.id + ':' + year) &&
+    localStorage.getItem(conflictStorageKey(year)) !== '1' &&
+    Number(db[year].months?.[0]?.recordedLeftover) === 0 &&
+    source.months?.some(month =>
+      ['income','fixed','variable','creditCards','loans'].some(type =>
+        month[type]?.length > 0) || Number(month.recordedLeftover) !== 0));
+  for (const id of ['desktopProjectJanuary', 'mobileProjectJanuary']) {
+    const button = document.getElementById(id);
+    if (!button) continue;
+    button.hidden = !eligible;
+    button.disabled = yearPlanActionBusy;
+  }
+}
+async function copyPreviousYearPlan() {
+  if (yearPlanActionBusy || !currentUser) return;
+  const year = activeYear;
+  const previous = String(Number(year) - 1);
+  const owner = currentUser.id;
+  if (!yearPlanSourceAvailable(owner, previous) || !Object.hasOwn(db, year) ||
+      cloudBudgetConflicts.has(owner + ':' + year) ||
+      localStorage.getItem(conflictStorageKey(year)) === '1') return;
+  yearPlanActionBusy = true;
+  syncCopyPreviousYearControls();
+  syncJanuaryProjectionControls();
+  try {
+    const { copyPreviousYearPlan: copyPlan } = await import('./scripts/year-plan.mjs');
+    if (activeYear !== year || currentUser?.id !== owner) return;
+    // Validate the cloud-backed source before prompting, then revalidate after confirmation.
+    const source = await verifiedYearPlanSource(owner, previous);
+    copyPlan(source, db[year]);
+    if (!await rbConfirm('Copy the manual planned amounts and categories from ' + previous + ' into ' +
+        year + '? Existing opening balances and recurring entries will remain unchanged.')) return;
+    if (activeYear !== year || currentUser?.id !== owner ||
+        cloudBudgetConflicts.has(owner + ':' + year) ||
+        localStorage.getItem(conflictStorageKey(year)) === '1') return;
+    const confirmedSource = await verifiedYearPlanSource(owner, previous);
+    const updated = copyPlan(confirmedSource, db[year]);
+    await persistYearPlanChange(owner, year, updated,
+      'Plan copied in this browser only. Cloud synchronization is pending; reconcile before using another device.');
+  } catch (error) {
+    console.error('Could not copy previous year plan:', error);
+    if (currentUser?.id === owner) {
+      showCloudSaveStatus('Plan copy blocked: verify and reconcile the previous budget year before retrying.');
+      void rbAlert('The plan could not be copied. Check the previous year and retry.');
+    }
+  } finally {
+    yearPlanActionBusy = false;
+    if (currentUser?.id === owner) {
+      syncCopyPreviousYearControls();
+      syncJanuaryProjectionControls();
+    }
+  }
+}
+function syncCopyPreviousYearControls() {
+  const year = activeYear;
+  const previous = String(Number(year) - 1);
+  const eligible = Boolean(currentUser && Object.hasOwn(db, previous) && Object.hasOwn(db, year) &&
+    yearPlanSourceAvailable(currentUser.id, previous) &&
+    !cloudBudgetConflicts.has(currentUser.id + ':' + year) &&
+    localStorage.getItem(conflictStorageKey(year)) !== '1' &&
+    // Recurring-only years remain eligible; a manual entry blocks overwrites.
+    db[year].months?.every(month => ['income','fixed','variable','creditCards','loans']
+      .every(type => Array.isArray(month[type]) && month[type].every(entry =>
+        entry.occurrenceId || entry.recurringRuleId || entry.scheduledMonth))) &&
+    db[previous].months?.some(month => ['income','fixed','variable','creditCards','loans']
+      .some(type => Array.isArray(month[type]) && month[type].some(entry =>
+        !entry.occurrenceId && !entry.recurringRuleId && !entry.scheduledMonth))));
+  for (const id of ['desktopCopyPreviousYear', 'mobileCopyPreviousYear']) {
+    const button = document.getElementById(id);
+    if (!button) continue;
+    button.hidden = !eligible;
+    button.disabled = yearPlanActionBusy;
+  }
+}
+function switchYear(yr) {
+  const next = String(yr);
+  if (!/^\d{4}$/.test(next) || !Object.hasOwn(db, next)) return;
+  const calendarYear = new Date().getFullYear();
+  if (Number(next) < calendarYear || Number(next) > calendarYear + 2) return;
+  activeYear = next;
+  selectedIdx = restoreSelectedMonth(activeYear);
+  try {
+    const key = selectedYearSessionKey();
+    if (key) sessionStorage.setItem(key, activeYear);
+  } catch (error) { console.warn('Could not remember selected budget year:', error); }
+  render();
+  if (currentUser) {
+    const conflicted = localStorage.getItem(conflictStorageKey(activeYear)) === '1';
+    showCloudSaveStatus(conflicted ? 'Unsynced local budget changes require reconciliation before cloud saving.' : '');
+  }
+}
+
+function fmt(n) {
+  const val = Number(n) || 0;
+  return val.toLocaleString("en-US", { style: "currency", currency: "USD" });
+}
+
+function parseDayNum(entry) {
+  try { return dueDayModule?.dueDayOf(entry) ?? 99; }
+  catch { return 99; } // Preserve invalid legacy data until the user corrects it.
+}
+
+function computeRolling(yrKey) {
+  if (accountBudgetModule) {
+    return accountBudgetModule.computeAccountBudget(db[yrKey], budgetAccounts);
+  }
+  const yearData = db[yrKey];
+  if (!yearData) return [];
+  const results = [];
+  let runningRollover = yearData.months[0].recordedLeftover;
+
+  yearData.months.forEach((m, i) => {
+    const startLeftover = (i === 0 || !yearData.autoCascade) ? m.recordedLeftover : runningRollover;
+    const cpmIncome = m.income.reduce((s, x) => s + (Number(x.cpm) || 0), 0);
+    const usaaIncome = m.income.reduce((s, x) => s + (Number(x.usaa) || 0), 0);
+    const newIncome = cpmIncome + usaaIncome;
+    const totalAvailable = startLeftover + newIncome;
+
+    const fixedTotal = m.fixed.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+    const varTotal = m.variable.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+    const ccTotal = m.creditCards.reduce((s, x) => s + (Number(x.payment) || 0), 0);
+    const loanTotal = m.loans.reduce((s, x) => s + (Number(x.payment) || 0), 0);
+    const totalOutflow = fixedTotal + varTotal + ccTotal + loanTotal;
+
+    let pre15Outflow = 0;
+    m.fixed.forEach(x => { if (parseDayNum(x) <= 15) pre15Outflow += Number(x.amount) || 0; });
+    m.variable.forEach(x => { if (parseDayNum(x) <= 15) pre15Outflow += Number(x.amount) || 0; });
+    m.creditCards.forEach(x => { if (parseDayNum(x) <= 15) pre15Outflow += Number(x.payment) || 0; });
+    m.loans.forEach(x => { if (parseDayNum(x) <= 15) pre15Outflow += Number(x.payment) || 0; });
+
+    const pre15Buffer = startLeftover - pre15Outflow;
+    const endingRollover = totalAvailable - totalOutflow;
+    runningRollover = endingRollover;
+
+    results.push({
+      startLeftover, cpmIncome, usaaIncome, newIncome, totalAvailable,
+      fixedTotal, varTotal, ccTotal, loanTotal, totalOutflow,
+      pre15Outflow, pre15Buffer,
+      netMonthlyChange: newIncome - totalOutflow, endingRollover
+    });
+  });
+  return results;
+}
+
+
+function dueDayOptions(selected) {
+  return '<option value=""' + (selected === null ? ' selected' : '') + '>No day</option>' +
+    Array.from({ length: 31 }, (_, i) => {
+      const day = i + 1;
+      return '<option value="' + day + '"' + (selected === day ? ' selected' : '') + '>' + day + '</option>';
+    }).join('');
+}
+function populateNewDueDaySelectors() {
+  for (const id of ['newFixDue', 'newVarDue', 'newLoanDue', 'newCcDue']) {
+    const select = document.getElementById(id);
+    if (select && select.options.length === 1) select.innerHTML = dueDayOptions(null);
+  }
+}
+// A default card may read legacy arrays or migrated category entries.
+// Preserve source indices so edits always target the underlying saved record.
+function defaultExpenseRows(month, categoryId) {
+  if (month.expenseSchemaVersion === 2) {
+    if (!Array.isArray(month.expenses) || month.fixed.length || month.variable.length) {
+      throw new Error('Invalid migrated expense inventory');
+    }
+    return month.expenses.map((entry, index) => ({ entry, index }))
+      .filter(row => row.entry.categoryId === categoryId);
+  }
+  return month[categoryId].map((entry, index) => ({ entry, index }));
+}
+function defaultExpenseEntry(month, categoryId, index) {
+  if (categoryId !== 'fixed' && categoryId !== 'variable') return null;
+  const entries = month.expenseSchemaVersion === 2 ? month.expenses : month[categoryId];
+  const entry = entries?.[index];
+  if (!entry || (month.expenseSchemaVersion === 2 && entry.categoryId !== categoryId)) return null;
+  return entry;
+}
+function dueDayPicker(type, idx, item) {
+  let selected = null, invalid = false;
+  try { selected = dueDayModule.dueDayOf(item); }
+  catch { invalid = true; }
+  const action = type === 'fixed' || type === 'variable'
+    ? "editExp('" + type + "', " + idx + ", 'dueDay', this.value)"
+    : type === 'loans' ? "editLoan(" + idx + ", 'dueDay', this.value)"
+      : "editCC(" + idx + ", 'dueDay', this.value)";
+  const options = invalid
+    ? '<option value="" selected>Review legacy date</option>' + dueDayOptions(-1)
+    : dueDayOptions(selected);
+  return '<select class="inline-input sm" aria-label="Due day for ' + type + ' entry" onchange="' + action + '">' + options + '</select>';
+}
+function setEntryDueDay(entry, value) {
+  entry.dueDay = dueDayModule.parseDueDay(value);
+  delete entry.due;
+}
+function accountOptions(selectedId, unassigned = true) {
+  const blank = unassigned ? '<option value="">Unassigned (included)</option>' : '';
+  return blank + budgetAccounts.map(account => '<option value="' + esc(account.id) + '"' + (account.id === selectedId ? ' selected' : '') + '>' + esc(account.name) + (account.included ? '' : ' (excluded)') + '</option>').join('');
+}
+function accountPicker(type, idx, accountId) {
+  return '<select aria-label="Account for ' + esc(type) + ' entry" onchange="editEntryAccount(&quot;' + type + '&quot;,' + idx + ',this.value)">' + accountOptions(accountId) + '</select>';
+}
+async function editEntryAccount(type, idx, accountId) {
+  if (!budgetEditAllowed()) return;
+  if (accountId && !budgetAccounts.some(a => a.id === accountId)) return;
+  const month = db[activeYear].months[selectedIdx];
+  const entry = type === 'fixed' || type === 'variable'
+    ? defaultExpenseEntry(month, type, idx) : month[type]?.[idx];
+  if (!entry) return;
+  entry.accountId = accountId || null;
+  await saveDB(); render();
+}
+function refreshAccountSelectors() {
+  document.querySelectorAll('[data-new-entry-account]').forEach(select => { const prior = select.value; select.innerHTML = accountOptions(prior); });
+  document.querySelectorAll('[data-rec-field="account"]').forEach(select => { const prior = select.value; select.innerHTML = accountOptions(prior, false); });
+}
+
+// Custom cards use a single month-scoped expense collection. Legacy default cards
+// continue to read their existing arrays until the migration is independently verified.
+function renderCustomExpenseCards(month) {
+  const target = document.getElementById('customExpenseCards');
+  if (!target) return;
+  const entries = Array.isArray(month.expenses) ? month.expenses : [];
+  if (currentUser && expenseCategoryOwner !== currentUser.id) { target.innerHTML = ''; return; }
+  target.innerHTML = expenseCategories.map(category => {
+    const rows = entries.map((entry, index) => ({ entry, index }))
+      .filter(item => item.entry.categoryId === category.id);
+    const total = rows.reduce((sum, item) => sum + (budgetAccounts.some(account =>
+      account.id === item.entry.accountId && account.included === false) ? 0 : Number(item.entry.amount) || 0), 0);
+    return `<section class="card" data-custom-expense-card="${esc(category.id)}">
+      <div class="card-header"><h2>${esc(category.name)} <span class="badge">${fmt(total)}</span></h2>
+      <button type="button" class="mobile-card-toggle" aria-expanded="true" onclick="toggleMobileCard(this)">Collapse</button></div>
+      <table><thead><tr><th>Expense</th><th>Due</th><th class="num">Amount</th><th>Account</th><th></th></tr></thead>
+      <tbody>${rows.map(({entry,index}) => `<tr>
+        <td><input class="inline-input" aria-label="Expense name" value="${esc(entry.name)}" onchange="editCustomExpense(${index},'name',this.value)"></td>
+        <td><select aria-label="Due day" onchange="editCustomExpense(${index},'dueDay',this.value)">${dueDayOptions(entry.dueDay ?? null)}</select></td>
+        <td><input class="inline-input num" aria-label="Expense amount" type="number" step="0.01" value="${Number(entry.amount)||0}" onchange="editCustomExpense(${index},'amount',this.value)"></td>
+        <td><select aria-label="Expense account" onchange="editCustomExpense(${index},'accountId',this.value)">${accountOptions(entry.accountId)}</select></td>
+        <td><button type="button" class="del-btn" aria-label="Delete expense" onclick="deleteCustomExpense(${index})">×</button></td>
+      </tr>`).join('')}</tbody></table>
+      <form class="add-row" data-add-custom-expense="${esc(category.id)}">
+        <input name="name" aria-label="New expense name" required maxlength="120" placeholder="Expense name">
+        <select name="dueDay" aria-label="New expense due day">${dueDayOptions(null)}</select>
+        <input name="amount" aria-label="New expense amount" type="number" step="0.01" required placeholder="Amount">
+        <select name="accountId" aria-label="New expense account">${accountOptions(null)}</select>
+        <button type="submit" class="primary">Add</button>
+      </form></section>`;
+  }).join('');
+}
+async function editCustomExpense(index, field, value) {
+  if (!budgetEditAllowed()) return;
+  const entry = db[activeYear]?.months[selectedIdx]?.expenses?.[index];
+  if (!entry) return;
+  if (field === 'dueDay') setEntryDueDay(entry, value);
+  else if (field === 'amount') entry.amount = Number(value) || 0;
+  else if (field === 'accountId') {
+    if (value && !budgetAccounts.some(account => account.id === value)) return;
+    entry.accountId = value || null;
+  } else if (field === 'name') entry.name = value.trim();
+  await saveDB(); render();
+}
+async function deleteCustomExpense(index) {
+  if (!budgetEditAllowed()) return;
+  const entries = db[activeYear]?.months[selectedIdx]?.expenses;
+  if (!Array.isArray(entries) || !entries[index]) return;
+  entries.splice(index, 1);
+  await saveDB(); render();
+}
+document.addEventListener('submit', event => {
+  const form = event.target.closest('[data-add-custom-expense]');
+  if (!form) return;
+  event.preventDefault();
+  if (!budgetEditAllowed()) return;
+  const id = form.dataset.addCustomExpense;
+  if (!expenseCategories.some(category => category.id === id)) return;
+  const name = form.elements.name.value.trim();
+  const amount = Number(form.elements.amount.value);
+  if (!name || !Number.isFinite(amount) || amount < 0) return;
+  const month = db[activeYear].months[selectedIdx];
+  if (!Array.isArray(month.expenses)) month.expenses = [];
+  month.expenses.push({ categoryId: id, name, amount,
+    dueDay: dueDayModule.parseDueDay(form.elements.dueDay.value),
+    accountId: form.elements.accountId.value || null });
+  void saveDB().then(() => render());
+});
+
+function render() {
+  if (currentUser && accountReadyOwner !== currentUser.id) return;
+  const yearData = db[activeYear];
+  if (!yearData) return;
+  // Compute the selected month before rendering either desktop or mobile views.
+  const computed = computeRolling(activeYear);
+  const m = yearData.months[selectedIdx];
+  const c = computed[selectedIdx];
+  renderCustomExpenseCards(m);
+  const nextMonthName = selectedIdx < 11 ? yearData.months[selectedIdx + 1].name : `Jan ${parseInt(activeYear)+1}`;
+  document.getElementById("autoRollToggle").checked = yearData.autoCascade; syncMobileSettingsControls();
+  refreshAccountSelectors();
+  populateNewDueDaySelectors();
+  syncCopyPreviousYearControls();
+  syncJanuaryProjectionControls();
+  const mobileBase = Math.max(c.totalAvailable, c.totalOutflow, 1);
+  const committed = Math.min(100, (c.totalOutflow / Math.max(c.totalAvailable, 1)) * 100);
+  document.getElementById("mobileOverview").innerHTML = `
+    <div class="mobile-overview-hero">
+      <div class="mobile-overview-eyebrow">${esc(m.name)} ${activeYear} Overview</div>
+      <div class="mobile-overview-balance">${fmt(c.endingRollover)}</div>
+      <div class="mobile-overview-caption">Projected rollover into next month</div>
+      <div class="mobile-overview-stats">
+        <div class="mobile-overview-stat"><span>Cash available</span><strong>${fmt(c.totalAvailable)}</strong></div>
+        <div class="mobile-overview-stat"><span>Planned outflow</span><strong>${fmt(c.totalOutflow)}</strong></div>
+        <div class="mobile-overview-stat"><span>Monthly net</span><strong class="${c.netMonthlyChange >= 0 ? "pos" : "neg"}">${c.netMonthlyChange >= 0 ? "+" : ""}${fmt(c.netMonthlyChange)}</strong></div>
+      </div>
+    </div>
+    <div class="mobile-section-heading"><strong>Monthly snapshot</strong><span>Updated just now</span></div>
+    <div class="mobile-snapshot-grid">
+      <div class="mobile-snapshot-card"><span>Income</span><strong>${fmt(c.newIncome)}</strong><small>Across all accounts</small></div>
+      <div class="mobile-snapshot-card"><span>Fixed bills</span><strong>${fmt(c.fixedTotal)}</strong><small>Recurring expenses</small></div>
+      <div class="mobile-snapshot-card"><span>Variable spend</span><strong>${fmt(c.varTotal)}</strong><small>Flexible spending</small></div>
+      <div class="mobile-snapshot-card"><span>Debt payments</span><strong>${fmt(c.ccTotal + c.loanTotal)}</strong><small>Cards and loans</small></div>
+    </div>
+    <div class="mobile-allocation">
+      <div class="mobile-allocation-head"><span>Cash allocation</span><strong>${committed.toFixed(0)}% committed</strong></div>
+      <div class="mobile-allocation-bar">
+        <div class="seg-fixed" style="width:${(c.fixedTotal/mobileBase)*100}%"></div>
+        <div class="seg-var" style="width:${(c.varTotal/mobileBase)*100}%"></div>
+        <div class="seg-cc" style="width:${(c.ccTotal/mobileBase)*100}%"></div>
+        <div class="seg-loan" style="width:${(c.loanTotal/mobileBase)*100}%"></div>
+        <div class="seg-left" style="width:${Math.max(0,(c.endingRollover/mobileBase)*100)}%"></div>
+      </div>
+      <div class="mobile-allocation-legend">
+        <span><i class="seg-fixed"></i>Fixed</span><span><i class="seg-var"></i>Variable</span><span><i class="seg-cc"></i>Debt</span><span><i class="seg-left"></i>Remaining</span>
+      </div>
+    </div>`;
+  if (!document.body.dataset.mobileTabInitialized) { document.body.dataset.mobileTabInitialized = "true"; }
+
+  syncMobileSettingsControls();
+
+  document.getElementById("rollingStrip").innerHTML = yearData.months.map((mo, idx) => {
+    const co = computed[idx];
+    return `
+      <div class="month-pill ${idx === selectedIdx ? "active" : ""}" onclick="selectMonth(${idx})">
+        <div class="m-name">${esc(mo.code)}</div>
+        <div class="m-roll ${co.endingRollover < 0 ? "neg" : ""}">${fmt(co.endingRollover)}</div>
+        <div class="m-sub">In: ${fmt(co.startLeftover)}</div>
+      </div>
+    `;
+  }).join("");
+
+  document.getElementById("midMonthBanner").innerHTML = `
+    <div class="mm-title">
+      <span>🎯 Mid-Month 15th Payday Snapshot (${esc(m.name)})</span>
+    </div>
+    <div class="mm-stats">
+      <div class="mm-stat-item">
+        <span>Spent / Due Before 15th</span>
+        <strong class="warn">${fmt(c.pre15Outflow)}</strong>
+      </div>
+      <div class="mm-stat-item">
+        <span>Buffer Before Paycheck</span>
+        <strong class="${c.pre15Buffer >= 0 ? "pos" : "neg"}">${fmt(c.pre15Buffer)}</strong>
+      </div>
+      <div class="mm-stat-item">
+        <span>Payday Status</span>
+        <strong>${c.pre15Buffer >= 0 ? "🟢 Safe Buffer" : "🔴 Tight / Deficit"}</strong>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("kpiGrid").innerHTML = `
+    <div class="kpi-card">
+      <div class="kpi-label">Rolled In From Last Month</div>
+      <div class="kpi-val ${c.startLeftover >= 0 ? "pos" : "neg"}">${fmt(c.startLeftover)}</div>
+      <div class="kpi-foot">${selectedIdx === 0 ? `${activeYear} Opening Balance` : `Carried from ${esc(yearData.months[selectedIdx - 1].name)}`}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">${esc(m.name)} ${activeYear} Income</div>
+      <div class="kpi-val">${fmt(c.newIncome)}</div>
+      <div class="kpi-foot">CPM: ${fmt(c.cpmIncome)} • USAA: ${fmt(c.usaaIncome)}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Total Cash Available</div>
+      <div class="kpi-val purple-text">${fmt(c.totalAvailable)}</div>
+      <div class="kpi-foot">Rollover + Paychecks</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">${esc(m.name)} Total Outflows</div>
+      <div class="kpi-val warn">${fmt(c.totalOutflow)}</div>
+      <div class="kpi-foot">Net: <span class="${c.netMonthlyChange >= 0 ? "pos" : "neg"}"><strong>${c.netMonthlyChange >= 0 ? "+" : ""}${fmt(c.netMonthlyChange)}</strong></span></div>
+    </div>
+    <div class="kpi-card highlight">
+      <div class="kpi-label">Rolls Into ${esc(nextMonthName)}</div>
+      <div class="kpi-val ${c.endingRollover >= 0 ? "pos" : "neg"}">${fmt(c.endingRollover)}</div>
+      <div class="kpi-foot">Safe-to-spend buffer entering next month</div>
+    </div>
+  `;
+
+  const base = Math.max(c.totalAvailable, c.totalOutflow, 1);
+  document.getElementById("flowBarWrap").innerHTML = `
+    <div class="flow-bar-header">
+      <span><strong>${esc(m.name)} ${activeYear} Allocation</strong> (${((c.totalOutflow / Math.max(c.totalAvailable, 1)) * 100).toFixed(1)}% committed)</span>
+      <span>Ending Rollover: <strong class="${c.endingRollover >= 0 ? "pos" : "neg"}">${fmt(c.endingRollover)}</strong></span>
+    </div>
+    <div class="flow-bar">
+      <div class="seg-fixed" style="width:${(c.fixedTotal/base)*100}%"></div>
+      <div class="seg-var" style="width:${(c.varTotal/base)*100}%"></div>
+      <div class="seg-cc" style="width:${(c.ccTotal/base)*100}%"></div>
+      <div class="seg-loan" style="width:${(c.loanTotal/base)*100}%"></div>
+      <div class="seg-left" style="width:${Math.max(0, (c.endingRollover/base)*100)}%"></div>
+    </div>
+    <div class="legend">
+      <span><i class="dot seg-fixed"></i>Fixed: ${fmt(c.fixedTotal)}</span>
+      <span><i class="dot seg-var"></i>Variable: ${fmt(c.varTotal)}</span>
+      <span><i class="dot seg-cc"></i>Cards: ${fmt(c.ccTotal)}</span>
+      <span><i class="dot seg-loan"></i>Loans: ${fmt(c.loanTotal)}</span>
+      <span><i class="dot seg-left"></i>Surplus: ${fmt(Math.max(0, c.endingRollover))}</span>
+    </div>
+  `;
+
+  document.getElementById("incTotalBadge").textContent = fmt(c.totalAvailable);
+  document.getElementById("acctSplitLabel").textContent = `New Pay: ${fmt(c.newIncome)}`;
+  const canEditStart = (selectedIdx === 0 || !yearData.autoCascade);
+
+  let incHtml = `
+    <tr class="roll-row">
+      <td><strong>Leftover (Rolled In)</strong> ${canEditStart ? "" : '<span style="font-size:0.7rem;color:var(--accent);font-weight:700">(Auto)</span>'}</td>
+      <td class="num">
+        ${canEditStart
+          ? `<input class="inline-input num" type="number" step="0.01" value="${c.startLeftover.toFixed(2)}" onchange="updateStartLeftover(this.value)" />`
+          : `<span class="purple-text"><strong>${fmt(c.startLeftover)}</strong></span>`}
+      </td>
+      <td>—</td>
+      <td></td>
+    </tr>
+  `;
+  incHtml += m.income.map((item, idx) => `
+    <tr>
+      <td><input class="inline-input" value="${esc(item.name)}" onchange="editInc(${idx}, 'name', this.value)" /></td>
+      <td class="num"><input class="inline-input num" aria-label="Income amount" type="number" step="0.01" value="${Number(item.amount ?? ((Number(item.cpm)||0)+(Number(item.usaa)||0))) || 0}" ${(!item.accountId && (Object.hasOwn(item, 'cpm') || Object.hasOwn(item, 'usaa'))) ? 'disabled title="Legacy income awaiting migration"' : ''} onchange="editInc(${idx}, 'amount', this.value)" /></td>
+      <td>${accountPicker("income", idx, item.accountId)}<button class="del-btn" onclick="delItem('income', ${idx})">×</button></td>
+    </tr>
+  `).join("");
+  document.getElementById("incomeBody").innerHTML = incHtml;
+
+  document.getElementById("fixTotalBadge").textContent = fmt(c.fixedTotal);
+  document.getElementById("fixedBody").innerHTML = defaultExpenseRows(m, 'fixed').map(({ entry: item, index: idx }) => `
+    <tr>
+      <td><input class="inline-input" value="${esc(item.name)}" onchange="editExp('fixed', ${idx}, 'name', this.value)" /></td>
+      <td>${dueDayPicker("fixed", idx, item)}</td>
+      <td class="num"><input class="inline-input num" type="number" step="0.01" value="${Number(item.amount) || 0}" onchange="editExp('fixed', ${idx}, 'amount', this.value)" /></td>
+      <td>${accountPicker("fixed", idx, item.accountId)}</td>
+      <td><button class="del-btn" onclick="delItem('fixed', ${idx})">×</button></td>
+    </tr>
+  `).join("");
+
+  document.getElementById("varTotalBadge").textContent = fmt(c.varTotal);
+  document.getElementById("variableBody").innerHTML = defaultExpenseRows(m, 'variable').map(({ entry: item, index: idx }) => `
+    <tr>
+      <td><input class="inline-input" value="${esc(item.name)}" onchange="editExp('variable', ${idx}, 'name', this.value)" /></td>
+      <td>${dueDayPicker("variable", idx, item)}</td>
+      <td class="num"><input class="inline-input num" type="number" step="0.01" value="${Number(item.amount) || 0}" onchange="editExp('variable', ${idx}, 'amount', this.value)" /></td>
+      <td>${accountPicker("variable", idx, item.accountId)}</td>
+      <td><button class="del-btn" onclick="delItem('variable', ${idx})">×</button></td>
+    </tr>
+  `).join("");
+
+  document.getElementById("loanTotalBadge").textContent = fmt(c.loanTotal);
+  document.getElementById("loanBody").innerHTML = m.loans.map((item, idx) => `
+    <tr>
+      <td><input class="inline-input" value="${esc(item.name)}" onchange="editLoan(${idx}, 'name', this.value)" /></td>
+      <td>${dueDayPicker("loans", idx, item)}</td>
+      <td class="num"><input class="inline-input num" type="number" step="0.01" value="${Number(item.balance) || 0}" onchange="editLoan(${idx}, 'balance', this.value)" /></td>
+      <td class="num"><input class="inline-input num sm" type="number" step="0.01" value="${Number(item.apr) || 0}" onchange="editLoan(${idx}, 'apr', this.value)" /></td>
+      <td class="num"><input class="inline-input num" type="number" step="0.01" value="${Number(item.payment) || 0}" onchange="editLoan(${idx}, 'payment', this.value)" /></td>
+      <td>${accountPicker("loans", idx, item.accountId)}</td>
+      <td><button class="del-btn" onclick="delItem('loans', ${idx})">×</button></td>
+    </tr>
+  `).join("");
+
+  document.getElementById("ccTotalBadge").textContent = fmt(c.ccTotal);
+  document.getElementById("ccStmtSummary").textContent = `Total Statement Balances: ${fmt(m.creditCards.reduce((s,x)=>s+(Number(x.statement)||0),0))}`;
+  document.getElementById("ccBody").innerHTML = m.creditCards.map((item, idx) => `
+    <tr>
+      <td><input class="inline-input" value="${esc(item.name)}" onchange="editCC(${idx}, 'name', this.value)" /></td>
+      <td>${dueDayPicker("creditCards", idx, item)}</td>
+      <td class="num"><input class="inline-input num" type="number" step="0.01" value="${Number(item.statement) || 0}" onchange="editCC(${idx}, 'statement', this.value)" /></td>
+      <td class="num"><input class="inline-input num" type="number" step="0.01" value="${Number(item.apr) || 0}" onchange="editCC(${idx}, 'apr', this.value)" /></td>
+      <td class="num"><input class="inline-input num" type="number" step="0.01" value="${Number(item.payment) || 0}" onchange="editCC(${idx}, 'payment', this.value)" /></td>
+      <td>${accountPicker("creditCards", idx, item.accountId)}</td>
+      <td><button class="del-btn" onclick="delItem('creditCards', ${idx})">×</button></td>
+    </tr>
+  `).join("");
+}
+
+function esc(str) { return String(str ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/\x27/g, "&#39;"); }
+function selectMonth(idx) {
+  if (currentUser && accountReadyOwner !== currentUser.id) return;
+  if (!Number.isInteger(idx) || idx < 0 || idx > 11) return;
+  selectedIdx = idx;
+  rememberSelectedMonth(activeYear, idx);
+  render();
+}
+
+document.getElementById("autoRollToggle").addEventListener("change", (e) => {
+  void setAutoCascade(e.target.checked);
+});
+
+async function updateStartLeftover(val) {
+  if (!budgetEditAllowed()) return;
+  db[activeYear].months[selectedIdx].recordedLeftover = parseFloat(val) || 0;
+  await saveDB(); render();
+}
+async function editInc(idx, f, v) { if (!budgetEditAllowed()) return; db[activeYear].months[selectedIdx].income[idx][f] = f==='name'?v:parseFloat(v)||0; await saveDB(); render(); }
+async function addIncome() {
+  if (!budgetEditAllowed()) return;
+  const name = document.getElementById("newIncName").value.trim();
+
+  if (!name) return;
+  const accountId = document.getElementById("newIncAccount").value;
+  const amount = parseFloat(document.getElementById("newIncAmount").value) || 0;
+  if (accountId && !budgetAccounts.some(account => account.id === accountId)) return;
+  db[activeYear].months[selectedIdx].income.push({ name, accountId: accountId || null, amount });
+  document.getElementById("newIncName").value = ""; document.getElementById("newIncAmount").value = "";
+  await saveDB(); render();
+}
+async function editExp(type, idx, f, v) {
+  if (!budgetEditAllowed()) return;
+  const entry = defaultExpenseEntry(db[activeYear].months[selectedIdx], type, idx);
+  if (!entry) return;
+  if (f === 'dueDay') setEntryDueDay(entry, v);
+  else entry[f] = f === 'amount' ? parseFloat(v) || 0 : v;
+  await saveDB(); render();
+}
+async function addExpense(type) {
+  if (!budgetEditAllowed()) return;
+  const p = type === 'fixed' ? 'newFix' : 'newVar';
+  const name = document.getElementById(p + 'Name').value.trim();
+  const dueDay = dueDayModule.parseDueDay(document.getElementById(p + 'Due').value);
+  const amount = parseFloat(document.getElementById(p + 'Amt').value) || 0;
+  if (!name) return;
+  const month = db[activeYear].months[selectedIdx];
+  const entry = { name, dueDay, amount, accountId: document.getElementById(p + 'Account').value || null };
+  if (month.expenseSchemaVersion === 2) {
+    if (!Array.isArray(month.expenses)) return;
+    month.expenses.push({ ...entry, categoryId: type });
+  } else month[type].push(entry);
+  document.getElementById(p + 'Name').value = ""; document.getElementById(p + 'Due').value = ""; document.getElementById(p + 'Amt').value = "";
+  await saveDB(); render();
+}
+async function editLoan(idx, f, v) {
+  if (!budgetEditAllowed()) return;
+  const entry = db[activeYear].months[selectedIdx].loans[idx];
+  if (f === 'dueDay') setEntryDueDay(entry, v);
+  else entry[f] = f === 'name' ? v : parseFloat(v) || 0;
+  await saveDB(); render();
+}
+async function addLoan() {
+  if (!budgetEditAllowed()) return;
+  const name = document.getElementById("newLoanName").value.trim();
+  const dueDay = dueDayModule.parseDueDay(document.getElementById("newLoanDue").value);
+  const balance = parseFloat(document.getElementById("newLoanBal").value) || 0;
+  const payment = parseFloat(document.getElementById("newLoanPay").value) || 0;
+  if (!name) return;
+  db[activeYear].months[selectedIdx].loans.push({ name, dueDay, balance, apr: 0, payment, accountId: document.getElementById('newLoanAccount').value || null });
+  ['newLoanName','newLoanDue','newLoanBal','newLoanPay'].forEach(id => document.getElementById(id).value='');
+  await saveDB(); render();
+}
+async function editCC(idx, f, v) {
+  if (!budgetEditAllowed()) return;
+  const entry = db[activeYear].months[selectedIdx].creditCards[idx];
+  if (f === 'dueDay') setEntryDueDay(entry, v);
+  else entry[f] = f === 'name' ? v : parseFloat(v) || 0;
+  await saveDB(); render();
+}
+async function addCC() {
+  if (!budgetEditAllowed()) return;
+  const name = document.getElementById("newCcName").value.trim();
+  const dueDay = dueDayModule.parseDueDay(document.getElementById("newCcDue").value);
+  const statement = parseFloat(document.getElementById("newCcStmt").value) || 0;
+  const apr = parseFloat(document.getElementById("newCcApr").value) || 0;
+  const payment = parseFloat(document.getElementById("newCcPay").value) || 0;
+  if (!name) return;
+  db[activeYear].months[selectedIdx].creditCards.push({ name, dueDay, statement, apr, payment, accountId: document.getElementById('newCcAccount').value || null });
+  ['newCcName','newCcDue','newCcStmt','newCcApr','newCcPay'].forEach(id => document.getElementById(id).value='');
+  await saveDB(); render();
+}
+async function delItem(list, idx) {
+  if (!budgetEditAllowed()) return;
+  const month = db[activeYear].months[selectedIdx];
+  if ((list === 'fixed' || list === 'variable') && !defaultExpenseEntry(month, list, idx)) return;
+  const entries = (list === 'fixed' || list === 'variable') && month.expenseSchemaVersion === 2
+    ? month.expenses : month[list];
+  if (!Array.isArray(entries) || !entries[idx]) return;
+  entries.splice(idx, 1);
+  await saveDB(); render();
+}
+
+/* Auth Modal & Handlers */
+async function handleAuthClick() {
+  if (currentUser) {
+    if (await rbConfirm('Sign out of your account?', { acceptLabel: 'Sign out' })) {
+      if (!supabaseClient || uiSignOutInProgress) return;
+      uiSignOutInProgress = true;
+      try {
+        const { error } = await supabaseClient.auth.signOut();
+        if (error) throw error;
+        const home = new URL(window.location.pathname.endsWith("/app/") || window.location.pathname.endsWith("/app/index.html") ? "../" : "./", window.location.href).href;
+        window.location.replace(home);
+      } catch (error) {
+        uiSignOutInProgress = false;
+        setAuthMessage("Sign out failed. Please try again.");
+        document.getElementById("authModal").classList.add("open");
+      }
+    }
+  } else {
+    showSignInMode();
+    document.getElementById("authModal").classList.add("open");
+  }
+}
+function closeAuthModal() { document.getElementById("authModal").classList.remove("open"); }
+function setAuthMessage(message, type = "error") {
+  const node = document.getElementById("authMessage");
+  node.textContent = message;
+  node.className = "auth-message visible " + type;
+}
+function clearAuthMessage() {
+  const node = document.getElementById("authMessage");
+  node.textContent = "";
+  node.className = "auth-message";
+}
+function showSignInMode() {
+  isSignUpMode = false;
+  isPasswordResetMode = false;
+  clearAuthMessage();
+  document.getElementById("authModalTitle").textContent = "Welcome back!";
+  document.getElementById("authModalDescription").textContent = "Sign in to pick up where you left off and access your budget across devices.";
+  document.getElementById("authPasswordGroup").hidden = false;
+  document.getElementById("authPassword").autocomplete = "current-password";
+  document.getElementById("authSubmitBtn").textContent = "Sign In";
+  document.getElementById("authModeLink").hidden = false;
+  document.getElementById("authModeLink").textContent = "New to Rolling Budget? Create an account";
+  document.getElementById("authResetLink").hidden = false;
+  document.getElementById("authBackLink").hidden = true;
+}
+function toggleAuthMode() {
+  isSignUpMode = !isSignUpMode;
+  isPasswordResetMode = false;
+  clearAuthMessage();
+  document.getElementById("authModalTitle").textContent = isSignUpMode ? "Create your account" : "Welcome back!";
+  document.getElementById("authModalDescription").textContent = isSignUpMode
+    ? "Start building a clearer picture of your finances. Save your budget and access your plan whenever you need it."
+    : "Sign in to pick up where you left off and access your budget across devices.";
+  document.getElementById("authSubmitBtn").textContent = isSignUpMode ? "Create Account" : "Sign In";
+  document.getElementById("authModeLink").textContent = isSignUpMode
+    ? "Already have an account? Sign in"
+    : "New to Rolling Budget? Create an account";
+  document.getElementById("authResetLink").hidden = isSignUpMode;
+  document.getElementById("authPasswordGroup").hidden = false;
+  document.getElementById("authBackLink").hidden = true;
+}
+function showForgotPassword() {
+  isSignUpMode = false;
+  isPasswordResetMode = true;
+  clearAuthMessage();
+  document.getElementById("authModalTitle").textContent = "Reset your password";
+  document.getElementById("authModalDescription").textContent = "Enter your email address and we'll send you a link to reset your password.";
+  document.getElementById("authPasswordGroup").hidden = true;
+  document.getElementById("authSubmitBtn").textContent = "Send reset link";
+  document.getElementById("authModeLink").hidden = true;
+  document.getElementById("authResetLink").hidden = true;
+  document.getElementById("authBackLink").hidden = false;
+}
+async function submitAuth() {
+  const email = document.getElementById("authEmail").value.trim();
+  const password = document.getElementById("authPassword").value;
+  if (!email) {
+    setAuthMessage("Enter your email address to continue.");
+    document.getElementById("authEmail").focus();
+    return;
+  }
+  if (!supabaseClient) {
+    setAuthMessage("Account services are temporarily unavailable. Please try again later.");
+    return;
+  }
+  try {
+    if (isPasswordResetMode) {
+      const redirectTo = new URL("./reset-password.html", window.location.href).href;
+      const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo });
+      if (error) throw error;
+      setAuthMessage("If an account exists for this email, a password reset link will be sent.", "success");
+      return;
+    }
+    if (!password) {
+      setAuthMessage("Enter your password to continue.");
+      document.getElementById("authPassword").focus();
+      return;
+    }
+    if (isSignUpMode) {
+      const emailRedirectTo = new URL("./auth-confirmation.html", window.location.href).href;
+      const { error } = await supabaseClient.auth.signUp({ email, password, options: { emailRedirectTo } });
+      if (error) throw error;
+      setAuthMessage("Check your inbox for a confirmation link to finish creating your account.", "success");
+    } else {
+      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      closeAuthModal();
+    }
+  } catch (error) {
+    setAuthMessage(error.message || "We couldn't complete that request. Please try again.");
+  }
+}
+
+/* Recurring Rules Manager */
+const RECURRING_FREQUENCIES={monthly:{label:"Monthly",interval:1},"every-2-months":{label:"Every 2 months",interval:2},quarterly:{label:"Quarterly",interval:3},"every-6-months":{label:"Every 6 months",interval:6},annually:{label:"Annually",interval:12}};
+function openRecurringModal(){
+  refreshAccountSelectors();
+  document.querySelectorAll("[data-rec-field='startDate']").forEach(input => { if (!input.value) input.value = new Date().toISOString().slice(0,10); });
+  document.querySelectorAll("[data-recurring-form]").forEach(form=>{form.querySelector("[data-rec-field='category']").value="fixed";form.querySelector("[data-rec-field='frequency']").value="monthly";});
+  toggleRecFields();renderRulesList();renderRecurringSyncStatus();document.body.classList.add("recurring-manager-open");
+}
+function closeRecurringModal(){document.body.classList.remove("recurring-manager-open");}
+function renderRecurringCategoryOptions() {
+  const ownerReady = currentUser && expenseCategoryOwner === currentUser.id;
+  for (const select of document.querySelectorAll('[data-recurring-form] [data-rec-field="category"]')) {
+    const selected = select.value;
+    select.querySelectorAll('option[data-custom-category]').forEach(option => option.remove());
+    if (ownerReady) {
+      for (const category of expenseCategories) {
+        const option = document.createElement('option');
+        option.value = category.id;
+        option.textContent = category.name;
+        option.dataset.customCategory = 'true';
+        select.appendChild(option);
+      }
+    }
+    if ([...select.options].some(option => option.value === selected)) select.value = selected;
+  }
+}
+function toggleRecFields(){document.querySelectorAll("[data-rec-account-group]").forEach(group=>group.style.display="grid");}
+function recurringRuleFrequency(rule){return RECURRING_FREQUENCIES[rule.displayFrequency || rule.frequency]?.label||"Monthly (legacy)";}
+function nextRecurringEffectiveMonth(rule) {
+  const now = new Date();
+  const firstOfNextMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1))
+    .toISOString().slice(0, 10);
+  const ruleStartMonth = rule.startDate.slice(0, 7) + '-01';
+  return ruleStartMonth > firstOfNextMonth ? ruleStartMonth : firstOfNextMonth;
+}
+function renderRulesList(){
+  const rules = loadedRecurringPreview.rules || [];
+  const count = rules.length + ' rule' + (rules.length === 1 ? '' : 's');
+  document.getElementById('desktopRuleCount').textContent = count;
+  document.getElementById('mobileRuleCount').textContent = count;
+  if (!rules.length) {
+    document.getElementById('desktopRulesList').innerHTML = '<tr><td colspan="7">No recurring rules yet. Add your first rule below.</td></tr>';
+    document.getElementById('mobileRulesList').innerHTML = '<p>No recurring rules yet. Add your first rule below.</p>';
+    return;
+  }
+  const startOf = rule => rule.startDate || '—';
+  const futureStatus = rule => {
+    const on = rule.displayActive !== false;
+    const nextOn = rule.upcomingActive !== false;
+    const amount = rule.upcomingAmount ?? rule.displayAmount ?? rule.amount;
+    const frequency = rule.upcomingFrequency || rule.displayFrequency || rule.frequency;
+    const differs = on !== nextOn || Number(amount) !== Number(rule.displayAmount ?? rule.amount) ||
+      frequency !== (rule.displayFrequency || rule.frequency);
+    return { on, nextOn, effective: rule.upcomingEffectiveFrom || nextRecurringEffectiveMonth(rule),
+      notice: differs ? 'Scheduled from ' + (rule.upcomingEffectiveFrom || nextRecurringEffectiveMonth(rule)) +
+        ': ' + (nextOn ? 'Enabled' : 'Disabled') + ', ' + fmt(amount) +
+        ', ' + (RECURRING_FREQUENCIES[frequency]?.label || frequency) : '' };
+  };
+  document.getElementById('desktopRulesList').innerHTML = rules.map((rule, i) => {
+    const status = futureStatus(rule);
+    const pending = status.notice ? '<div class="recurring-pending">' + esc(status.notice) + '</div>' : '';
+    return `<tr><td><strong>${esc(rule.name)}</strong><div>${esc(rule.endDate ? 'Ends ' + rule.endDate : 'No end date')}</div></td><td>${esc(rule.category.toUpperCase())}</td><td>${fmt(rule.displayAmount ?? rule.amount)}</td><td>${esc(recurringRuleFrequency(rule))}</td><td>${esc(startOf(rule))}</td><td><span class="recurring-status ${status.on ? '' : 'disabled'}">${status.on ? 'Enabled' : 'Disabled'}</span>${pending}</td><td><button type="button" onclick="toggleRecurringRule(${i})">${status.nextOn ? 'Disable' : 'Enable'} from ${esc(status.effective)}</button><button type="button" onclick="editRecurringRule(${i})">Edit</button><button type="button" onclick="deleteRecurringRule(${i})">Delete</button></td></tr>`;
+  }).join('');
+  document.getElementById('mobileRulesList').innerHTML = rules.map((rule, i) => {
+    const status = futureStatus(rule);
+    const pending = status.notice ? '<p class="recurring-pending">' + esc(status.notice) + '</p>' : '';
+    return `<article class="recurring-rule-card"><div class="recurring-rule-card-head"><h4>${esc(rule.name)}</h4><span class="recurring-status ${status.on ? '' : 'disabled'}">${status.on ? 'Enabled' : 'Disabled'}</span></div>${pending}<div class="recurring-rule-card-meta"><div>Category<strong>${esc(rule.category.toUpperCase())}</strong></div><div>Amount<strong>${fmt(rule.displayAmount ?? rule.amount)}</strong></div><div>Frequency<strong>${esc(recurringRuleFrequency(rule))}</strong></div><div>Starts<strong>${esc(startOf(rule))}</strong></div></div><button type="button" onclick="toggleRecurringRule(${i})">${status.nextOn ? 'Disable' : 'Enable'} from ${esc(status.effective)}</button><button type="button" onclick="editRecurringRule(${i})">Edit</button><button type="button" onclick="deleteRecurringRule(${i})">Delete rule</button></article>`;
+  }).join('');
+}
+function recurringRuleItem(r){
+  const accountId = r.accountId || r.acct || null;
+  if(r.cat==="income")return {name:r.name,accountId,amount:r.amount,recurringRuleId:r.id};
+  if(r.cat==="fixed"||r.cat==="variable")return{name:r.name,dueDay:dueDayModule.dueDayOf(r),amount:r.amount,accountId,recurringRuleId:r.id};
+  if(r.cat==="loan")return{name:r.name,dueDay:dueDayModule.dueDayOf(r),balance:0,apr:0,payment:r.amount,accountId,recurringRuleId:r.id};
+  if(r.cat==="cc")return{name:r.name,dueDay:dueDayModule.dueDayOf(r),statement:0,apr:0,payment:r.amount,accountId,recurringRuleId:r.id};
+  return null;
+}
+function recurringRuleTargetMonths(r){const interval=RECURRING_FREQUENCIES[r.frequency]?.interval||1,start=Number.isInteger(r.startMonth)?r.startMonth:(Number.isInteger(r.start)?r.start:0),months=[];for(let i=Math.max(0,start);i<12;i+=interval)months.push(i);return months;}
+
+async function backfillSavedRecurringYears(owner, startDate, endDate = null) {
+  if (currentUser?.id !== owner || !supabaseClient) return null;
+  const scope = { startDate, endDate };
+  if (!validRecurringSyncScope(scope)) throw new Error('Invalid recurring sync date range');
+  recordPendingRecurringScope(owner, startDate, endDate);
+  if (!recurringAppService) {
+    const report = { years: [], deferred: [], discoveryFailed: true };
+    recurringSyncLastReport = report;
+    renderRecurringSyncStatus();
+    return report;
+  }
+  // Serialize sync runs as well as individual cloud-year writes. Retry never
+  // reuses a stale preview; every run starts with owner-scoped cloud reads.
+  const operation = recurringSyncQueue.catch(() => {}).then(async () => {
+    if (currentUser?.id !== owner) return null;
+    recurringSyncBusy = true;
+    renderRecurringSyncStatus();
+    const report = { years: [], deferred: [], discoveryFailed: false };
+    try {
+      let years;
+      try {
+        const { data, error } = await supabaseClient.from('budget_ui_years')
+          .select('year,updated_at').eq('user_id', owner);
+        if (error) throw error;
+        years = recurringAppService.selectRecurringCloudYears(data, startDate, endDate);
+      } catch (error) {
+        console.warn('Recurring budget-year discovery failed:', error);
+        report.discoveryFailed = true;
+        return report;
+      }
+      for (const year of years) {
+        if (currentUser?.id !== owner) return null;
+        const key = owner + ':' + year;
+        let cloudCommitted = false;
+        try {
+          await queueCloudSave(key, async () => {
+            if (currentUser?.id !== owner) throw new Error('Recurring sync owner changed');
+            const { data: rows, error: readError } = await supabaseClient.from('budget_ui_years')
+              .select('year,budget_data,updated_at').eq('user_id', owner).eq('year', Number(year));
+            if (readError) throw readError;
+            if (!Array.isArray(rows) || rows.length !== 1 || !validYearData(rows[0].budget_data)) {
+              throw new Error('Saved cloud budget year is missing or invalid');
+            }
+            const source = rows[0];
+            const verifyLocalSnapshot = () => {
+              const raw = localStorage.getItem(storageKey(year));
+              const cached = raw === null ? null : parseLocalBudgetRecord(raw);
+              return recurringAppService.requireRecurringCloudSnapshot({
+                owner, activeOwner: currentUser?.id, cloudRow: source,
+                knownRevision: cloudBudgetVersions.get(key),
+                inMemoryBudget: db[year], cachedBudget: cached?.data,
+                hasLocalCache: raw !== null,
+                conflicted: cloudBudgetConflicts.has(key) ||
+                  localStorage.getItem(conflictStorageKey(year)) === '1'
+              });
+            };
+            verifyLocalSnapshot();
+            const result = await recurringAppService.backfillRecurringYear(
+              supabaseClient, owner, Number(year),
+              { expectedUpdatedAt: source.updated_at, canCommit: verifyLocalSnapshot }
+            );
+            cloudCommitted = Boolean(result.saved);
+            if (currentUser?.id !== owner) return;
+            if (result.saved) cloudBudgetVersions.set(key, result.updatedAt);
+            // Recheck local state after commit; a mismatch remains a conflict.
+            // Never replace newer in-memory edits with the recurring snapshot.
+            if (result.saved) {
+              const raw = localStorage.getItem(storageKey(year));
+              const cached = raw === null ? null : parseLocalBudgetRecord(raw);
+              if (!cached || !recurringAppService.requireRecurringCloudSnapshot({
+                owner, activeOwner: currentUser?.id,
+                cloudRow: { budget_data: source.budget_data, updated_at: source.updated_at },
+                knownRevision: source.updated_at, inMemoryBudget: db[year],
+                cachedBudget: cached.data, hasLocalCache: true,
+                conflicted: cloudBudgetConflicts.has(key) || localStorage.getItem(conflictStorageKey(year)) === '1'
+              })) throw new Error('Local budget changed after recurring cloud commit; reconcile');
+            } else verifyLocalSnapshot();
+            if (result.saved) {
+              localStorage.setItem(storageKey(year), JSON.stringify({
+                data: result.document, updatedAt: result.updatedAt
+              }));
+              db[year] = result.document;
+              cloudBudgetVersions.set(key, result.updatedAt);
+              if (activeYear === year) render();
+            }
+            const ambiguous = (result.ambiguous || []).filter(item =>
+              (result.skipped || []).includes(item.occurrenceId));
+            report.years.push({
+              year, added: result.added || 0, ambiguous: ambiguous.map(item => ({
+                month: item.month, name: item.name
+              })), existing: Math.max(0, (result.skipped || []).length - ambiguous.length)
+            });
+          });
+        } catch (error) {
+          if (currentUser?.id !== owner) return null;
+          console.warn('Automatic recurring backfill deferred for ' + year + ':', error);
+          const reason = String(error?.message || '');
+          if (cloudCommitted || /Local budget differs|unverified or stale|changed since recurring|changed on another device|reconciliation/.test(reason)) {
+            try { markCloudConflict(key, year); }
+            catch (storageError) { console.warn('Could not retain recurring cloud conflict marker:', storageError); }
+            if (activeYear === year) showCloudSaveStatus('Unsynced local changes require reconciliation before recurring synchronization.');
+          }
+          report.deferred.push({
+            year, reason: cloudBudgetConflicts.has(key) ||
+              localStorage.getItem(conflictStorageKey(year)) === '1'
+              ? 'reconcile this year’s cloud changes before retrying'
+              : 'check cloud connectivity and retry'
+          });
+        }
+      }
+      return report;
+    } finally {
+      if (currentUser?.id === owner) {
+        if (!report.discoveryFailed && !report.deferred.length) {
+          recurringSyncScopes = recurringSyncScopes.filter(item =>
+            !recurringSyncScopeMatches(item, scope));
+        }
+        recurringSyncLastReport = report;
+        rememberRecurringSyncScopes(owner);
+        recurringSyncBusy = false;
+        renderRecurringSyncStatus();
+      }
+    }
+  });
+  recurringSyncQueue = operation;
+  return operation;
+}
+async function addRecurringRule(view) {
+  const form = document.querySelector(`[data-recurring-form="${view}"]`);
+  if (!form || !currentUser || !supabaseClient || !recurringAppService) return;
+  const get = name => form.querySelector(`[data-rec-field="${name}"]`).value;
+  const name = get('name').trim(), amount = Number(get('amount'));
+  const startDate = get('startDate'), endDate = get('endDate') || null, frequency = get('frequency');
+  if (!name || !Number.isFinite(amount) || amount < 0 || !/^\d{4}-\d{2}-\d{2}$/.test(startDate) ||
+      (endDate && endDate < startDate) || !RECURRING_FREQUENCIES[frequency]) { void rbAlert('Enter valid recurring dates, amount and frequency.'); return; }
+  try {
+    const owner = currentUser.id, selectedYear = activeYear;
+    await recurringAppService.createRecurringRule(supabaseClient, owner, {
+      id: crypto.randomUUID(), name, amount, category: get('category'),
+      accountId: get('account') || null, frequency, active: true,
+      startDate, endDate
+    });
+    form.querySelectorAll('input').forEach(input => input.value = '');
+    await refreshRecurringPreview();
+    if (currentUser?.id !== owner) return;
+    // Creating a rule is an explicit reason to save the selected eligible year;
+    // do not silently create all other template budget years.
+    if (selectedYear === activeYear && selectedYear >= startDate.slice(0, 4) &&
+        (!endDate || selectedYear <= endDate.slice(0, 4)) &&
+        !cloudBudgetVersions.has(owner + ':' + selectedYear)) {
+      // addRecurringRule performs its own scoped backfill below; do not run it twice.
+      const status = await saveDB({ backfillNewYear: false });
+      if (status !== 'cloud-saved') {
+        renderRulesList();
+        void rbAlert('Recurring rule saved, but the selected budget year could not be synchronized. Resolve the cloud save before retrying.');
+        return;
+      }
+    }
+    await backfillSavedRecurringYears(owner, startDate, endDate);
+    renderRulesList();
+  } catch (error) {
+    console.error('Could not create recurring rule:', error);
+    void rbAlert('Recurring rule could not be saved. Please retry.');
+  }
+}
+async function editRecurringRule(index) {
+  const rule = loadedRecurringPreview.rules[index];
+  if (!rule || !currentUser || !recurringAppService) return;
+  const owner = currentUser.id;
+  const amountInput = await rbPrompt('New recurring amount (future months only):',
+    String(rule.upcomingAmount ?? rule.displayAmount ?? rule.amount));
+  if (amountInput === null) return;
+  const amount = Number(amountInput);
+  if (!Number.isFinite(amount) || amount < 0) { void rbAlert('Enter a valid non-negative amount.'); return; }
+  const frequency = await rbPrompt('Frequency: monthly, every-2-months, quarterly, every-6-months, annually',
+    rule.upcomingFrequency || rule.displayFrequency || rule.frequency);
+  if (frequency === null) return;
+  if (!RECURRING_FREQUENCIES[frequency]) { void rbAlert('Select a supported frequency.'); return; }
+  const effectiveFrom = nextRecurringEffectiveMonth(rule);
+  try {
+    await recurringAppService.editRecurringRule(supabaseClient, owner, rule.id,
+      { amount, frequency }, effectiveFrom);
+    if (currentUser?.id !== owner) return;
+    await refreshRecurringPreview();
+    if (currentUser?.id !== owner) return;
+    await backfillSavedRecurringYears(owner, effectiveFrom, rule.endDate);
+    if (currentUser?.id === owner) renderRulesList();
+  } catch (error) {
+    console.error('Could not edit recurring rule:', error);
+    if (currentUser?.id === owner) void rbAlert('Recurring rule could not be edited.');
+  }
+}
+async function toggleRecurringRule(index) {
+  const rule = loadedRecurringPreview.rules[index];
+  if (!rule || !currentUser || !recurringAppService) return;
+  const owner = currentUser.id;
+  const enabling = !(rule.upcomingActive ?? rule.displayActive);
+  const effectiveFrom = nextRecurringEffectiveMonth(rule);
+  try {
+    await recurringAppService.setRecurringRuleActive(supabaseClient, owner, rule.id, enabling, effectiveFrom);
+    if (currentUser?.id !== owner) return;
+    await refreshRecurringPreview();
+    if (currentUser?.id !== owner) return;
+    // Disabling only changes the rule version. It never deletes or backfills saved entries.
+    if (enabling) await backfillSavedRecurringYears(owner, effectiveFrom, rule.endDate);
+    if (currentUser?.id === owner) renderRulesList();
+  } catch (error) {
+    console.error('Could not update recurring rule:', error);
+    if (currentUser?.id === owner) void rbAlert('Recurring rule could not be updated.');
+  }
+}
+async function deleteRecurringRule(index) {
+  const rule = loadedRecurringPreview.rules[index];
+  if (!rule || !currentUser || !recurringAppService) return;
+  if (!await rbConfirm('Delete this recurring rule? Existing budget transactions will remain unchanged.', { acceptLabel: 'Delete rule' })) return;
+  try {
+    await recurringAppService.removeRecurringRule(supabaseClient, currentUser.id, rule.id);
+    await refreshRecurringPreview();
+    renderRulesList();
+  } catch (error) {
+    console.error('Could not delete recurring rule:', error);
+    void rbAlert('Recurring rule could not be deleted.');
+  }
+}
+
+function toggleMobileSidebar(open) {
+  const sidebar = document.getElementById("mobileSidebar");
+  const backdrop = document.getElementById("mobileSidebarBackdrop");
+  const trigger = document.getElementById("mobileMenuButton");
+  if (!sidebar || !backdrop) return;
+  sidebar.classList.toggle("open", Boolean(open));
+  sidebar.setAttribute("aria-hidden", String(!open));
+  backdrop.hidden = !open;
+  if (trigger) trigger.setAttribute("aria-expanded", String(Boolean(open)));
+}
+const settingsSectionIds = { accounts: "settingsAccounts", categories: "settingsCategories", automation: "settingsAutomation", security: "settingsProfile" };
+let activeSettingsSection = "accounts";
+function showSettingsSection(section) {
+  if (!settingsSectionIds[section]) return;
+  activeSettingsSection = section;
+  for (const [key, id] of Object.entries(settingsSectionIds)) {
+    const panel = document.getElementById(id);
+    if (panel) panel.hidden = key !== section;
+  }
+  document.querySelectorAll("[data-settings-section]").forEach(button => {
+    if (button.dataset.settingsSection === section) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
+  });
+}
+function showMobileSettingsMenu() {
+  document.getElementById("mobileSettingsMenu").hidden = false;
+  document.getElementById("mobileSettingsDetail").hidden = true;
+}
+function showMobileSettingsSection(section) {
+  if (!settingsSectionIds[section]) return;
+  document.querySelectorAll("[data-mobile-settings-section]").forEach(panel => {
+    panel.hidden = panel.dataset.mobileSettingsSection !== section;
+  });
+  document.getElementById("mobileSettingsMenu").hidden = true;
+  document.getElementById("mobileSettingsDetail").hidden = false;
+}
+// One route state is shared by the separate desktop and mobile views.
+const APP_PAGES = ["overview", "budget", "recurring-rules", "settings"];
+let activePage = null;
+function pageFromLocation() {
+  const requested = new URL(window.location.href).searchParams.get("page");
+  return APP_PAGES.includes(requested) ? requested : (window.matchMedia("(max-width: 768px)").matches ? "overview" : "budget");
+}
+function navigatePage(page, options = {}) {
+  if (!APP_PAGES.includes(page)) return;
+  const url = new URL(window.location.href);
+  url.searchParams.set("page", page);
+  if (options.replace) window.history.replaceState(null, "", url);
+  else if (url.href !== window.location.href) window.history.pushState(null, "", url);
+  applyPage(page);
+}
+function applyPage(page) {
+  if (!APP_PAGES.includes(page)) return;
+  activePage = page;
+  const mobile = window.matchMedia("(max-width: 768px)").matches;
+  const tab = page === "budget" ? "plan" : page === "recurring-rules" ? null : page;
+  document.body.classList.remove("mobile-tab-overview", "mobile-tab-plan", "mobile-tab-activity", "mobile-tab-settings");
+  if (tab) document.body.classList.add("mobile-tab-" + tab);
+  document.body.classList.toggle("route-overview", page === "overview");
+  document.body.classList.toggle("route-budget", page === "budget");
+  document.querySelectorAll(".mobile-sidebar-nav button").forEach(button => {
+    const target = button.dataset.mobileTab === "plan" ? "budget" : button.dataset.mobileTab || (button.dataset.mobileAction === "recurring" ? "recurring-rules" : null);
+    const current = target === page;
+    button.classList.toggle("active", current);
+    if (current) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
+  });
+  document.querySelectorAll(".desktop-primary-nav button").forEach(button => {
+    const target = ({ desktopOverviewButton: "overview", desktopBudgetButton: "budget", desktopRecurringButton: "recurring-rules", desktopSettingsButton: "settings" })[button.id];
+    if (target === page) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
+  });
+  toggleMobileSidebar(false);
+  if (page === "recurring-rules") {
+    setDesktopSettings(false);
+    if (db?.[activeYear]) openRecurringModal();
+  } else {
+    closeRecurringModal();
+    setDesktopSettings(page === "settings");
+    if (page === "settings") {
+      if (mobile) showMobileSettingsMenu();
+      else showSettingsSection(activeSettingsSection);
+    }
+    if (page === "budget" && mobile) updateMobileCardToggleAllLabel();
+  }
+}
+function showDesktopPage(page) {
+  navigatePage(page === "recurring" ? "recurring-rules" : page);
+}
+window.addEventListener("popstate", () => applyPage(pageFromLocation()));
+function setDesktopSettings(open) {
+  const enabled = Boolean(open) && !window.matchMedia("(max-width: 768px)").matches;
+  document.body.classList.toggle("desktop-settings-open", enabled);
+  const panel = document.getElementById("desktopSettingsPanel");
+  const settings = document.getElementById("desktopSettingsButton");
+  if (panel) panel.hidden = !enabled;
+  if (settings) settings.setAttribute("aria-expanded", String(enabled));
+}
+function syncMobileSettingsControls() {
+  const currentYear = new Date().getFullYear();
+  const years = [0, 1, 2].map(offset => String(currentYear + offset))
+    .filter(year => Object.hasOwn(db, year));
+  for (const id of ['activeYearSelect', 'mobileActiveYearSelect']) {
+    const select = document.getElementById(id);
+    if (!select) continue;
+    const existing = Array.from(select.options, option => option.value);
+    if (existing.join(',') !== years.join(',')) {
+      select.replaceChildren(...years.map(year => {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year + (cloudBudgetConflicts.has((currentUser?.id || '') + ':' + year) ? ' (Unsynced)' : '');
+        return option;
+      }));
+    } else {
+      for (const option of select.options) {
+        option.textContent = option.value +
+          (cloudBudgetConflicts.has((currentUser?.id || '') + ':' + option.value) ? ' (Unsynced)' : '');
+      }
+    }
+    select.value = activeYear;
+  }
+  const toggle = document.getElementById("mobileAutoRollToggle");
+  if (toggle && db?.[activeYear]) toggle.checked = Boolean(db[activeYear].autoCascade);
+  if (window.matchMedia("(max-width: 768px)").matches) setDesktopSettings(false);
+}
+
+async function setAutoCascade(enabled) {
+  if (!budgetEditAllowed()) return;
+  if (!db?.[activeYear]) return;
+  db[activeYear].autoCascade = Boolean(enabled);
+  document.getElementById("autoRollToggle").checked = Boolean(enabled);
+  document.getElementById("mobileAutoRollToggle").checked = Boolean(enabled);
+  await saveDB();
+  render();
+}
+function setMobileTab(tab) {
+  const page = tab === "plan" ? "budget" : tab;
+  navigatePage(page);
+}
+
+function toggleMobileCard(button) {
+  const card = button.closest(".card");
+  if (!card) return;
+  const collapsed = card.classList.toggle("mobile-collapsed");
+  button.textContent = collapsed ? "Expand" : "Collapse";
+  button.setAttribute("aria-expanded", String(!collapsed));
+  updateMobileCardToggleAllLabel();
+}
+function toggleAllMobileCards() {
+  const cards = Array.from(document.querySelectorAll(".main-grid .card"));
+  const shouldCollapse = cards.some(card => !card.classList.contains("mobile-collapsed"));
+  cards.forEach(card => {
+    card.classList.toggle("mobile-collapsed", shouldCollapse);
+    const button = card.querySelector(".mobile-card-toggle");
+    if (button) {
+      button.textContent = shouldCollapse ? "Expand" : "Collapse";
+      button.setAttribute("aria-expanded", String(!shouldCollapse));
+    }
+  });
+  updateMobileCardToggleAllLabel();
+}
+function updateMobileCardToggleAllLabel() {
+  const button = document.getElementById("toggleAllCards");
+  if (!button) return;
+  const cards = Array.from(document.querySelectorAll(".main-grid .card"));
+  button.textContent = cards.length && cards.every(card => card.classList.contains("mobile-collapsed"))
+    ? "Expand all cards" : "Collapse all cards";
+}
+
+// Keyboard-driven viewport height changes must not reset the active Settings subpage.
+// Reapply the shared route only when crossing the desktop/mobile layout breakpoint.
+let lastViewportMobile = window.matchMedia("(max-width: 768px)").matches;
+window.addEventListener('resize', () => {
+  syncMobileSettingsControls();
+  const mobile = window.matchMedia("(max-width: 768px)").matches;
+  if (mobile !== lastViewportMobile) {
+    lastViewportMobile = mobile;
+    if (activePage) applyPage(activePage);
+  }
+});
+syncMobileSettingsControls();
+applyPage(pageFromLocation());
+initApp();
+</script>
+</body>
+</html>
