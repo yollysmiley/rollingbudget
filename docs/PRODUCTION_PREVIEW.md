@@ -71,3 +71,13 @@ The Supabase connector exposes project metadata and security advisors, but no re
 - **Proposed change only (not applied):** retain the existing legacy redirect during transition and add the exact confirmation and reset callback URLs for the **approved final deployment path**. Avoid broad wildcard allowlisting. The Site URL as supplied is usable; a trailing slash is optional and should not be changed merely for appearance.
 - The user supplied one redirect URL; **whether additional redirect entries exist remains unverified**. Supabase dashboard settings were not independently fetched.
 - No production configuration changes were authorized or made. The release blocker remains until the final deployment path and complete allowlist are reviewed and real callback behavior is tested in an approved safe environment.
+
+### User-confirmed redirect allowlist update (2026-11-21)
+
+The project owner reports having **added** the two exact production callback URLs to Supabase Auth redirect configuration:
+- `https://yollysmiley.github.io/rollingbudget/auth-confirmation.html`
+- `https://yollysmiley.github.io/rollingbudget/reset-password.html`
+
+The production marketing homepage is confirmed as `https://yollysmiley.github.io/rollingbudget/` and the protected application route as `https://yollysmiley.github.io/rollingbudget/app/`. The existing legacy `rollover-budget-app.html` redirect should remain during transition. **This is user-reported configuration, not independently verified through the Supabase connector.** No settings were changed by this PR.
+
+Remaining checks: inspect the saved complete redirect list in the dashboard, confirm confirmation/recovery email templates honor the redirect target, inspect email delivery settings, review the leaked-password protection warning, and run approved isolated end-to-end Auth tests before release. Do not treat synthetic browser tests as proof of live callback delivery.
