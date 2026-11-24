@@ -118,3 +118,8 @@ jobs:
         run: node --test tests/production-preview.test.mjs
       - name: Verify preview navigation and auth isolation contracts
         run: node --test tests/production-preview-navigation.test.mjs
+
+      - name: Build release artifact without deployment
+        run: node scripts/build-production-release.mjs
+      - name: Validate release artifact contracts
+        run: node --test tests/production-release.test.mjs
