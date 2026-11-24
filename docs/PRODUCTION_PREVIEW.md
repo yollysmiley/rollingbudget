@@ -91,3 +91,6 @@ Live validation remains a release gate: use an approved isolated non-production 
 ### Owner decision — staging validation and accepted security limitation
 
 Production CI #65 (45304076583) passed all four jobs at ce88b273b6c492a86b7a31e357094ae176cbbc97. Owner approved staging-only live authentication validation against rollingbudget-staging (phiscfwfuzeptetimdbo). Owner explicitly accepts the leaked-password protection warning because the project is on the Free plan; enabling this paid feature is not a release gate. Revisit only if subscription or owner decision changes. Staging email settings and inbox access must be verified separately; staging results do not independently verify production Auth configuration. No production writes or deployment authorized.
+
+## Phase 2D.8 release preparation
+All eight migration SQL files reviewed; production migration history contains two earlier migrations. See [release runbook](PRODUCTION_RELEASE_RUNBOOK.md) for approval gates and restoration requirements. JSON budget and recurring-version account references and custom category references still require integrity disposition. Owner reports staging desktop authentication complete; 30-minute expiry retest pending. Password validation UX deferred. No production changes or backup rehearsal performed.
