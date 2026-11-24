@@ -58,3 +58,6 @@
 - Added CI coverage for JavaScript syntax, migration regression tests, production auth/database policy contracts, and Chromium smoke tests at desktop and mobile viewport sizes.
 - Replaced the brittle HTML-sink grep with executable security and RLS contract tests.
 - Added least-privilege workflow permissions and concurrency cancellation.
+
+## Unreleased — Phase 2D.8 release preparation
+- Added production migration, backup, verification and rollback runbook and documentation links. No application or schema changes; expanded regression execution remains pending.
