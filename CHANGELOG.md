@@ -1,3 +1,7 @@
+## Unreleased — Encrypted backup recovery regression
+
+- Phase 2D.9B.3 adds a required synthetic encrypted backup regression job to PR CI and shares the verifier with the manual workflow. It checks ciphertext and payload checksums, wrong-key and truncated-ciphertext rejection, restores the fixture role and database into a fresh network-isolated PostgreSQL 17 container, and asserts exact financial and identity fixtures, migration history, FK, grants and two-owner RLS. Fixture identity and RLS are simplified, not managed Auth or full production role recovery. No production secrets, connections or records. Existing migration and browser regressions retained. Runtime validation pending CI.
+
 ## Unreleased — Synthetic backup infrastructure
 
 - Phase 2D.9B.2 introduces a manual synthetic-only backup workflow and contract tests. The script creates a network-isolated PostgreSQL 17 fixture, exports database and roles (without role passwords), encrypts using age, and verifies encrypted and decrypted checksums and dump readability. Disposable key is destroyed; uploaded synthetic artifact is intentionally not recoverable after the run. No production connection or secrets supported. Full encrypted restore and managed Supabase coverage remain pending; existing synthetic restoration regression remains unchanged. GitHub manual dispatch may require workflow presence on default branch; do not merge to enable it. Validate through a separately approved PR CI integration if needed.
