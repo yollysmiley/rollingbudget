@@ -1,3 +1,8 @@
+## 2026-11-23 — Production preview authentication validation
+
+- Recorded owner-confirmed email template placeholder corrections and 1800-second OTP expiry; independent live verification remains pending.
+- Added desktop/mobile synthetic reused-link rejection and standard recovery redirect coverage. No application or production configuration changes.
+
 ## Unreleased — Phase 2D.6 production Auth configuration read-only audit
 - Reviewed live production Supabase project metadata and security advisor, plus preview signup/recovery callback generation. Documented disabled leaked-password protection and unverified production Site URL, redirect allowlist, email settings, and JWT/session configuration as release blockers. No production settings or data modified.
 
