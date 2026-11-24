@@ -67,3 +67,5 @@
 - Added release artifact builder, release regression contracts and manual main-only Pages workflow with exact-commit CI gate.
 - Added release build checks to existing CI; no production deployment or migrations performed.
 - Recorded owner-validated staging recovery expiration and deferred additional database integrity coverage.
+
+- Added synthetic pre/post-migration backup and restoration regression to PostgreSQL CI, retaining existing migration and RLS tests. Actual production backup and restore remain unperformed.
