@@ -1,3 +1,9 @@
+## 2026-11-24 — Phase 2D.9A release readiness documentation (not deployed)
+
+- Verified all four CI #80 jobs at candidate 1de5a5b, including pre/post synthetic backup restoration using native PostgreSQL 17 service-container tools; removed unavailable runner package dependency.
+- Reconciled current release status and documented remaining backup, migration history, write freeze, rollback, integrity disposition and Pages approval gates in the production runbook and preview documentation.
+- Documentation only; no application, regression assertion, migration or production configuration changes. Actual production recovery remains unverified.
+
 ## 2026-11-23 — Production preview authentication validation
 
 - Recorded owner-confirmed email template placeholder corrections and 1800-second OTP expiry; independent live verification remains pending.
