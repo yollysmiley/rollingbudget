@@ -94,3 +94,7 @@ Production CI #65 (45304076583) passed all four jobs at ce88b273b6c492a86b7a31e3
 
 ## Phase 2D.8 release preparation
 All eight migration SQL files reviewed; production migration history contains two earlier migrations. See [release runbook](PRODUCTION_RELEASE_RUNBOOK.md) for approval gates and restoration requirements. JSON budget and recurring-version account references and custom category references still require integrity disposition. Owner reports staging desktop authentication complete; 30-minute expiry retest pending. Password validation UX deferred. No production changes or backup rehearsal performed.
+
+### Release preparation update
+
+Staging recovery expiration retest passed by owner report after waiting; exact elapsed time was not independently logged. Staging authentication validation is complete. Additional database integrity hardening is deferred; restoration rehearsal remains outstanding. The release build reuses preview assets and removes only preview banners, preserving storage namespace and routes. Pages cutover requires separate approval.
