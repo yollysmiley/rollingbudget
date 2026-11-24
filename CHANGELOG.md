@@ -1,3 +1,7 @@
+## Unreleased — Synthetic backup infrastructure
+
+- Phase 2D.9B.2 introduces a manual synthetic-only backup workflow and contract tests. The script creates a network-isolated PostgreSQL 17 fixture, exports database and roles (without role passwords), encrypts using age, and verifies encrypted and decrypted checksums and dump readability. Disposable key is destroyed; uploaded synthetic artifact is intentionally not recoverable after the run. No production connection or secrets supported. Full encrypted restore and managed Supabase coverage remain pending; existing synthetic restoration regression remains unchanged. GitHub manual dispatch may require workflow presence on default branch; do not merge to enable it. Validate through a separately approved PR CI integration if needed.
+
 ## 2026-11-24 — Phase 2D.9A release readiness documentation (not deployed)
 
 - Verified all four CI #80 jobs at candidate 1de5a5b, including pre/post synthetic backup restoration using native PostgreSQL 17 service-container tools; removed unavailable runner package dependency.
