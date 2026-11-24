@@ -1,0 +1,38 @@
+name: Production backup (synthetic only)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  synthetic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install encryption tool
+        run: sudo apt-get update && sudo apt-get install -y age
+      - name: Generate disposable encryption key and encrypted fixture
+        run: |
+          set -euo pipefail
+          umask 077
+          keydir=$(mktemp -d)
+          trap 'rm -rf "$keydir"' EXIT
+          age-keygen -o "$keydir/key" 2>/dev/null
+          export BACKUP_RECIPIENT=$(age-keygen -y "$keydir/key")
+          export BACKUP_OUTPUT="$RUNNER_TEMP/rollingbudget-encrypted-fixture"
+          bash scripts/backup-production.sh synthetic
+          (cd "$BACKUP_OUTPUT" && sha256sum -c backup.tar.age.sha256)
+          mkdir "$keydir/restored"
+          age -d -i "$keydir/key" "$BACKUP_OUTPUT/backup.tar.age" | tar -xf - -C "$keydir/restored"
+          (cd "$keydir/restored" && sha256sum -c SHA256SUMS)
+          docker run --rm -i --network none postgres:17 pg_restore --list < "$keydir/restored/database.dump" > /dev/null
+      - uses: actions/upload-artifact@v4
+        with:
+          name: encrypted-synthetic-backup
+          path: |
+            ${{ runner.temp }}/rollingbudget-encrypted-fixture/backup.tar.age
+            ${{ runner.temp }}/rollingbudget-encrypted-fixture/backup.tar.age.sha256
+          if-no-files-found: error
+          retention-days: 1
