@@ -95,9 +95,11 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
       - name: Validate upgrade script syntax
-        run: bash -n scripts/verify-production-upgrade.sh
-      - name: Replay additive migrations against production-shaped fixture
-        run: bash scripts/verify-production-upgrade.sh
+        run: |
+          bash -n scripts/verify-production-upgrade.sh
+          bash -n scripts/verify-production-restore.sh
+      - name: Replay additive migrations and rehearse synthetic backup restoration
+        run: bash scripts/verify-production-restore.sh
 
   production-preview-build:
     name: Isolated production preview build and auth contracts
