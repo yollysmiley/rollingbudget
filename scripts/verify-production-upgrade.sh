@@ -51,6 +51,13 @@ CREATE TABLE audit_snapshot.before_years AS SELECT user_id,year,budget_data,upda
 CREATE TABLE audit_snapshot.before_legacy AS SELECT user_id,state,updated_at FROM public.budget_data;
 SQL
 
+# Optional synthetic backup checkpoint for the CI restoration rehearsal.
+if [[ -n "${REHEARSAL_DIR:-}" ]]; then
+  pg_dump --format=custom --file="${REHEARSAL_DIR}/before.dump"
+  pg_dump --schema-only --file="${REHEARSAL_DIR}/before.schema"
+  pg_dump --data-only --inserts --file="${REHEARSAL_DIR}/before.data"
+fi
+
 # Explicit, reviewed production upgrade manifest. Never discover draft SQL files.
 migrations=(
   supabase/migrations/20261114192802_harden_public_default_privileges.sql
