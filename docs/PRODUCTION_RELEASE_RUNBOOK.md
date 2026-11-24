@@ -22,10 +22,14 @@ Verify preservation of legacy and year records, RLS and grants on all five appli
 
 ## Deployment and rollback
 
-Retain the previous frontend artifact and commit. Verify old frontend compatibility with the upgraded schema in isolation. Deploy only after database verification and explicit approval. Check desktop/mobile navigation, authentication callbacks, empty new-user state, budget persistence and recurring rules using approved isolated test accounts. Staging recovery expiration retest remains outstanding; password validation UX is deferred and leaked-password protection is an accepted Free-plan limitation.
+Retain the previous frontend artifact and commit. Verify old frontend compatibility with the upgraded schema in isolation. Deploy only after database verification and explicit approval. Check desktop/mobile navigation, authentication callbacks, empty new-user state, budget persistence and recurring rules using approved isolated test accounts. Staging recovery expiration retest passed by owner report; exact elapsed time was not independently verified; password validation UX is deferred and leaked-password protection is an accepted Free-plan limitation.
 
 If deployment fails, prefer reverting the frontend if schema compatibility and preservation of new writes are established. Do not automatically drop new tables or restore an old snapshot. If database restoration is necessary, freeze writes again, preserve the current state, assess intervening writes and obtain explicit approval for the recovery plan. Reconcile migration history and validate before reopening access.
 
 ## Evidence required
 
 Record exact commit, CI run, backup/restore rehearsal results, migration preflight and postflight results, approvals, deployment artifact and rollback rehearsal. Latest reviewed CI #66 passed; this does not establish live migration or restoration readiness. No production backup or restore has yet been performed.
+
+## Manual Pages cutover
+
+Current Pages source is main / root (owner confirmed). Do not merge or switch publishing source until separately approved. At cutover switch to GitHub Actions before merging, configure github-pages environment approval where supported, and verify the exact main commit has successful push CI. Dispatch Production release with DEPLOY only after database verification and owner approval. The workflow retains a release artifact for 90 days; preserve the pre-cutover frontend separately. The workflow does not execute migrations. Additional reference-integrity tests are deferred; restoration rehearsal remains outstanding. CI-first validation is authorized for this increment.
