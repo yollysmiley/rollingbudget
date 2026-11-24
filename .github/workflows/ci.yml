@@ -94,6 +94,17 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+      - name: Install matching PostgreSQL 17 client tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+      - name: Verify PostgreSQL client versions
+        run: |
+          for tool in psql pg_dump pg_restore createdb; do
+            "$tool" --version
+            "$tool" --version | grep -E 'PostgreSQL\) 17\.'
+          done
       - name: Validate upgrade script syntax
         run: |
           bash -n scripts/verify-production-upgrade.sh
