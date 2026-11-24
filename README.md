@@ -52,3 +52,5 @@ The production-only [database upgrade plan](docs/PRODUCTION_DATABASE_UPGRADE.md)
 ## Production preview (Phase 2D.2)
 
 The [production preview guide](docs/PRODUCTION_PREVIEW.md) describes the isolated, build-only redesigned UI. Run `node scripts/build-production-preview.mjs` to generate `production-preview-dist/`. This is not deployed to production.
+
+Production release preparation: [Production release runbook](docs/PRODUCTION_RELEASE_RUNBOOK.md).
