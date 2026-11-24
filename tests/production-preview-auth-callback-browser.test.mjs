@@ -106,3 +106,29 @@ for (const viewport of viewports) {
     });
   });
 }
+
+for (const viewport of viewports) {
+  test('rejected reused email links fail closed even with a restored session (' + viewport.name + ')', async () => {
+    for (const file of ['auth-confirmation.html', 'reset-password.html']) {
+      await scenario(viewport, file, '#error=access_denied&error_code=otp_expired&error_description=Link+already+used', 'confirmed', async page => {
+        await page.getByRole('heading', { name: /invalid or has expired/i }).waitFor();
+        assert.equal(await page.locator('#continueLink').isVisible(), false);
+        if (file === 'reset-password.html') assert.equal(await page.locator('#resetForm').isVisible(), false);
+        assert.deepEqual(await page.evaluate(() => window.__authCalls), []);
+      });
+    }
+  });
+
+  test('standard recovery redirect waits for PASSWORD_RECOVERY event (' + viewport.name + ')', async () => {
+    await scenario(viewport, 'reset-password.html', '#access_token=synthetic&type=recovery', 'event', async page => {
+      await page.getByRole('heading', { name: /create a new password/i }).waitFor();
+      await page.locator('#newPassword').fill('synthetic-password');
+      await page.locator('#confirmPassword').fill('synthetic-password');
+      await page.locator('#submitButton').click();
+      await page.getByRole('heading', { name: /password has been updated/i }).waitFor();
+      const calls = await page.evaluate(() => window.__authCalls);
+      assert.equal(calls.filter(call => call.method === 'verify').length, 0);
+      assert.equal(calls.filter(call => call.method === 'update').length, 1);
+    });
+  });
+}
