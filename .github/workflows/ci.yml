@@ -94,23 +94,31 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
-      - name: Install matching PostgreSQL 17 client tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client-17
-          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
-      - name: Verify PostgreSQL client versions
-        run: |
-          for tool in psql pg_dump pg_restore createdb; do
-            "$tool" --version
-            "$tool" --version | grep -E 'PostgreSQL\) 17\.'
-          done
       - name: Validate upgrade script syntax
         run: |
           bash -n scripts/verify-production-upgrade.sh
           bash -n scripts/verify-production-restore.sh
       - name: Replay additive migrations and rehearse synthetic backup restoration
-        run: bash scripts/verify-production-restore.sh
+        env:
+          POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          set -euo pipefail
+          test -n "$POSTGRES_CONTAINER"
+          docker exec "$POSTGRES_CONTAINER" mkdir -p /tmp/rollingbudget-ci/scripts /tmp/rollingbudget-ci/supabase/migrations
+          docker cp scripts/verify-production-upgrade.sh "$POSTGRES_CONTAINER:/tmp/rollingbudget-ci/scripts/"
+          docker cp scripts/verify-production-restore.sh "$POSTGRES_CONTAINER:/tmp/rollingbudget-ci/scripts/"
+          docker cp supabase/migrations/. "$POSTGRES_CONTAINER:/tmp/rollingbudget-ci/supabase/migrations/"
+          docker exec -i \
+            -e PGHOST=127.0.0.1 -e PGPORT=5432 -e PGUSER=postgres \
+            -e PGPASSWORD=test-only -e PGDATABASE=production_upgrade_test \
+            -w /tmp/rollingbudget-ci "$POSTGRES_CONTAINER" bash -euo pipefail -c '
+              for tool in psql pg_dump pg_restore createdb; do
+                "$tool" --version
+                "$tool" --version | grep -E "PostgreSQL[)] 17[.]"
+              done
+              psql -X -v ON_ERROR_STOP=1 -c "SELECT current_database(), version();"
+              bash scripts/verify-production-restore.sh
+            '
 
   production-preview-build:
     name: Isolated production preview build and auth contracts
