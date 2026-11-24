@@ -61,3 +61,9 @@
 
 ## Unreleased — Phase 2D.8 release preparation
 - Added production migration, backup, verification and rollback runbook and documentation links. No application or schema changes; expanded regression execution remains pending.
+
+### Production release preparation
+
+- Added release artifact builder, release regression contracts and manual main-only Pages workflow with exact-commit CI gate.
+- Added release build checks to existing CI; no production deployment or migrations performed.
+- Recorded owner-validated staging recovery expiration and deferred additional database integrity coverage.
