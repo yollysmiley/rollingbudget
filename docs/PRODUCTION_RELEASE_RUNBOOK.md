@@ -33,3 +33,7 @@ Record exact commit, CI run, backup/restore rehearsal results, migration preflig
 ## Manual Pages cutover
 
 Current Pages source is main / root (owner confirmed). Do not merge or switch publishing source until separately approved. At cutover switch to GitHub Actions before merging, configure github-pages environment approval where supported, and verify the exact main commit has successful push CI. Dispatch Production release with DEPLOY only after database verification and owner approval. The workflow retains a release artifact for 90 days; preserve the pre-cutover frontend separately. The workflow does not execute migrations. Additional reference-integrity tests are deferred; restoration rehearsal remains outstanding. CI-first validation is authorized for this increment.
+
+## Synthetic restoration regression
+
+CI runs scripts/verify-production-restore.sh against the disposable PostgreSQL service. It preserves the existing eight-migration regression, captures pre/post-upgrade custom-format dumps, restores each into a fresh database, compares schema and data dumps, checks legacy record equality, owner isolation and the restored account FK. Dumps are temporary and not uploaded. Roles are shared within the synthetic PostgreSQL cluster; this is not a managed Supabase disaster recovery test. Legacy database contracts are checked, not a live old-frontend rollback. Production backup coverage and actual restoration remain separately gated.
