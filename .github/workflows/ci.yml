@@ -144,3 +144,20 @@ jobs:
         run: node scripts/build-production-release.mjs
       - name: Validate release artifact contracts
         run: node --test tests/production-release.test.mjs
+
+  encrypted-backup-regression:
+    name: Synthetic encrypted backup restoration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install encryption tool
+        run: sudo apt-get update && sudo apt-get install -y age
+      - name: Validate backup script syntax
+        run: |
+          bash -n scripts/backup-production.sh
+          bash -n scripts/verify-encrypted-backup.sh
+      - name: Verify encrypted backup restoration
+        run: bash scripts/verify-encrypted-backup.sh
