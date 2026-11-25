@@ -72,3 +72,7 @@ Phase 2D.9B.3 adds a required synthetic encrypted backup regression job to PR CI
 ## PR #3 synchronization
 
 Main baseline afe49dca9447ec5a192bccf19a5f561686493f5e includes the standalone legacy security migration, not yet applied live. CI rehearses it before the eight additive migrations, retaining pre-hardening and post-upgrade restore checkpoints, exact legacy IDs, guard rollback tests, owner/JWT checks and both browser suites. Docker copies the legacy runtime SQL dependency. All five CI jobs retained; fresh combined CI required. PR #6 remains separate; private storage, key recovery and actual recovery gates remain outstanding. Do not apply the legacy migration twice; verify its ledger entry and effective privileges before the eight-file sequence. No merge or deployment authorized.
+
+## CI #107 integration corrections
+
+CI #107 passed four jobs but failed PostgreSQL regression after all nine migrations applied to synthetic fixtures. Correct three malformed SQL block delimiters and the reverse four-column legacy comparison. Static contracts now check matching delimiters and bidirectional primary-key-inclusive comparisons; PostgreSQL runtime remains authoritative. Require all five jobs to pass before release review. No live database operations authorized.

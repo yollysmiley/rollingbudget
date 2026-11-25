@@ -1,3 +1,7 @@
+## Unreleased — PR #5 CI #107 regression corrections
+
+- Repair three corrupted SQL dollar delimiters and the reverse legacy restoration comparison; add static regression contracts. All migration files and security assertions unchanged. Fresh CI required.
+
 ## Unreleased — PR #5 synchronization
 
 - Inherit merged PR #3 security baseline, retain pre/post restoration checkpoints and expanded owner/JWT tests, copy legacy runtime SQL into Docker CI, compare legacy primary keys on restore. Combined CI pending.
