@@ -66,7 +66,7 @@ jobs:
       - name: Verify recurring backfill, idempotency and cloud conflict hardening
         run: node --test tests/production-preview-recurring-hardening.test.mjs
       - name: Verify synthetic authenticated session and desktop/mobile navigation
-        run: node --test tests/production-preview-session-navigation-browser.test.mjs
+        run: node --test tests/production-preview-session-navigation-browser.test.mjs tests/production-preview-category-browser.test.mjs
 
   production-schema-upgrade:
     name: Production-shaped PostgreSQL upgrade regression

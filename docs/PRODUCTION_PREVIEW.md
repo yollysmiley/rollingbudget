@@ -95,3 +95,5 @@ All eight migration SQL files reviewed; production migration history contains tw
 ### Release preparation update
 
 Staging recovery expiration retest passed by owner report after waiting; exact elapsed time was not independently logged. Staging authentication validation is complete. Additional database integrity hardening is deferred; synthetic restoration rehearsal passed in CI #80. The release build reuses preview assets and removes only preview banners, preserving storage namespace and routes. Pages cutover requires separate approval.
+
+Phase 3C.2H.1 adds desktop/mobile category CRUD acceptance with real storage service and isolated mocked Supabase rows, reload persistence, cancellation and foreign-key conflict feedback. Further budget-card and owner isolation scenarios remain pending.

@@ -135,3 +135,5 @@
 - Phase 3C.2G: expanded category concurrency scenarios, rollback assertions and failure cleanup.
 
 - Correct 3C.2G reference-removal race expectations: accept immediate foreign key rejection or lock wait, retry after committed removal, verify rollback preserves dependencies.
+
+- Phase 3C.2H.1: desktop/mobile category manager browser CRUD and conflict acceptance.

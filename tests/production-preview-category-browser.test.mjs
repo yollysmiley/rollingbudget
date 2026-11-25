@@ -1,0 +1,115 @@
+import test, { before, after } from 'node:test';
+import assert from 'node:assert/strict';
+import { chromium } from 'playwright';
+import { createServer } from 'node:http';
+import { readFile } from 'node:fs/promises';
+import { resolve, relative, sep } from 'node:path';
+
+const root = resolve('production-preview-dist');
+let server;
+let baseUrl;
+before(async () => {
+  server = createServer(async (req, res) => {
+    const pathname = new URL(req.url, 'http://localhost').pathname;
+    const target = resolve(root, '.' + (pathname.endsWith('/') ? pathname + 'index.html' : pathname));
+    const rel = relative(root, target);
+    if (rel === '..' || rel.startsWith('..' + sep)) return void res.writeHead(403).end();
+    try {
+      const body = await readFile(target);
+      const type = target.endsWith('.mjs') ? 'text/javascript' : target.endsWith('.css') ? 'text/css' : 'text/html';
+      res.writeHead(200, { 'content-type': type }).end(body);
+    } catch { res.writeHead(404).end(); }
+  });
+  await new Promise(done => server.listen(0, '127.0.0.1', done));
+  baseUrl = 'http://127.0.0.1:' + server.address().port;
+});
+after(async () => { if (server) await new Promise(done => server.close(done)); });
+
+
+for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: 'mobile', width: 390, height: 844 }]) {
+  test('category CRUD through real storage service on ' + viewport.name, async () => {
+    const browser = await chromium.launch({ headless: true });
+    try {
+      const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height } });
+      await page.addInitScript(() => {
+        const user = { id: 'synthetic-category-owner', email: 'category@example.invalid' };
+        const key = 'synthetic-category-rows';
+        const rows = JSON.parse(sessionStorage.getItem(key) || '[]');
+        const state = window.__categoryFixture = { rows, deletes: 0, blocked: false };
+        const persist = () => sessionStorage.setItem(key, JSON.stringify(rows));
+        const queryFor = table => {
+          let operation = 'select', payload, filters = [];
+          const run = () => {
+            if (table !== 'budget_expense_categories') return { data: [], error: null };
+            const matches = rows.filter(row => filters.every(([field, value]) => row[field] === value));
+            if (operation === 'insert') {
+              if (payload.user_id !== user.id) throw new Error('Wrong owner');
+              rows.push({ ...payload, updated_at: new Date().toISOString() }); persist();
+              return { data: null, error: null };
+            }
+            if (!filters.some(([field,value]) => field === 'user_id' && value === user.id)) throw new Error('Missing owner filter');
+            if (operation === 'update') { matches.forEach(row => Object.assign(row,payload)); persist(); }
+            if (operation === 'delete') {
+              state.deletes++;
+              if (state.blocked) return { data: null, error: { code: '23503' } };
+              matches.forEach(row => rows.splice(rows.indexOf(row),1)); persist();
+            }
+            return { data: matches.map(row => ({ ...row })), error: null };
+          };
+          return {
+            select() { return this; }, eq(field,value) { filters.push([field,value]); return this; },
+            in() { return this; }, order() { return this; }, limit() { return this; },
+            insert(value) { operation='insert'; payload=value; return this; },
+            update(value) { operation='update'; payload=value; return this; },
+            delete() { operation='delete'; return this; },
+            single() { return Promise.resolve({ data:null,error:null }); },
+            maybeSingle() { return Promise.resolve({ data:null,error:null }); },
+            then(resolve,reject) { return Promise.resolve().then(run).then(resolve,reject); }
+          };
+        };
+        window.supabase = { createClient: () => ({
+          auth: { getUser: async () => ({ data:{user},error:null }), onAuthStateChange: () => ({ data:{subscription:{unsubscribe(){}}} }) },
+          from: queryFor
+        }) };
+      });
+      await page.route('https://cdn.jsdelivr.net/**', route => route.abort());
+      const open = async () => {
+        await page.locator('html.budget-authenticated').waitFor({ timeout:12000 });
+        await page.waitForFunction(() => expenseCategoryOwner === currentUser?.id && !!expenseCategoryService);
+        await page.locator(viewport.name === 'desktop' ? '[data-settings-section="categories"]' : 'button[onclick="showMobileSettingsSection(\'categories\')"]').click();
+      };
+      await page.goto(baseUrl + '/app/?page=settings', { waitUntil:'domcontentloaded' });
+      await open();
+      const root = page.locator(viewport.name === 'desktop' ? '#desktopExpenseCategoriesManager' : '#mobileExpenseCategoriesManager');
+      const row = root.locator('[data-expense-category-id]');
+      const form = root.locator('[data-expense-category-create]');
+      assert.equal(await row.count(),0);
+      await form.locator('input').fill('Synthetic Travel');
+      await form.locator('button').click();
+      await row.filter({hasText:'Synthetic Travel'}).waitFor();
+      const id = await row.getAttribute('data-expense-category-id');
+      await row.locator('[data-expense-category-action="rename"]').click();
+      await row.locator('input').fill('Renamed Travel');
+      await row.locator('button[type="submit"]').click();
+      await row.filter({hasText:'Renamed Travel'}).waitFor();
+      assert.equal(await row.getAttribute('data-expense-category-id'),id);
+      await page.reload({waitUntil:'domcontentloaded'});
+      await open();
+      await row.filter({hasText:'Renamed Travel'}).waitFor();
+      assert.equal(await row.getAttribute('data-expense-category-id'),id);
+      await row.locator('[data-expense-category-action="delete"]').click();
+      await page.locator('#rbDialogCancel').click();
+      assert.equal(await page.evaluate(() => window.__categoryFixture.deletes),0);
+      await page.evaluate(() => { window.__categoryFixture.blocked=true; });
+      await row.locator('[data-expense-category-action="delete"]').click();
+      await page.locator('#rbDialogAccept').click();
+      await root.getByRole('status').filter({hasText:'Category is in use by a saved budget or recurring rule'}).waitFor();
+      assert.equal(await row.count(),1);
+      await page.evaluate(() => { window.__categoryFixture.blocked=false; });
+      await row.locator('[data-expense-category-action="delete"]').click();
+      await page.locator('#rbDialogAccept').click();
+      await row.waitFor({state:'detached'});
+      assert.equal(await page.evaluate(() => window.__categoryFixture.rows.length),0);
+    } finally { await browser.close(); }
+  });
+}
