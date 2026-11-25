@@ -143,3 +143,17 @@ test('category reference extractor matches supported database shapes', async()=>
  for(const entry of [{},{categoryId:null},{categoryId:'a',category_id:'b'}]) assert.throws(()=>extractBudgetCategoryRefs({months:[{expenses:[entry]}]}));
  assert.equal(canDeleteExpenseCategory('history',{2026:{recurringRules:[{category:'history'}]}},[]),false);
 });
+
+test('account inventory covers custom expenses, historical rules and legacy income without seeding empty accounts', async () => {
+  const { extractBudgetAccountRefs, extractRuleAccountRefs, requiredLegacyAccounts, canRemoveAccount } = await import('../production-next/scripts/account-model.mjs');
+  const year = { months: [{ income: [{ cpm: 0, usaa: 0 }, { accountId: null }], expenses: [{ accountId: 'custom' }], loans: [{ account_id: 'loan-account' }] }], recurringRules: [{ acct: 'current', versions: [{ accountId: 'historic' }, { accountId: 'usaa' }] }] };
+  assert.deepEqual([...extractBudgetAccountRefs(year)].sort(), ['cpm','current','custom','historic','loan-account','usaa']);
+  assert.deepEqual(requiredLegacyAccounts({2026:year}).map(account => account.id), ['usaa']);
+  assert.deepEqual(requiredLegacyAccounts({2026:{months:[{income:[{cpm:0,usaa:0}]}]}}), []);
+  assert.deepEqual(requiredLegacyAccounts({}), []);
+  assert.deepEqual([...extractRuleAccountRefs([{accountId:null,versions:[{acct:'old'}]}])], ['old']);
+  for (const id of ['custom','historic','loan-account','cpm']) assert.equal(canRemoveAccount(id,{2026:year}),false);
+  assert.equal(canRemoveAccount('unused',{2026:year}),true);
+  assert.equal(canRemoveAccount('unused',{2026:{months:[{expenses:null}]}}),false);
+  assert.throws(() => extractBudgetAccountRefs({months:[{expenses:[{accountId:42}]}]}), /Invalid account reference/);
+});

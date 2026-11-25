@@ -99,3 +99,5 @@ Phase 3C.2F: apply `supabase/migrations/20261125123000_optimize_category_referen
 Phase 3C.2G: extend the disposable category race runner to budget updates, recurring creation/reassignment, historical versions, rollback, final reference removal, owner isolation and unchanged dependencies. Preserve failure logs and clean synthetic fixtures on exit. The existing upgrade CI job owns this coverage.
 
 Category browser acceptance complements the PostgreSQL category reference and concurrency suite. Both must pass in the existing six-job preview CI gate; mocked browser responses do not replace database runtime enforcement or managed Supabase rehearsal.
+
+Phase 3C.3A: shared account inventory includes all six budget collections, account aliases and nested recurring versions. Zero-valued legacy income fields remain conservative deletion references but do not seed accounts. Malformed inventories fail closed. Database enforcement and global historical references remain subsequent increments.
