@@ -119,3 +119,5 @@
 - Repair standalone SQL fixture dollar quoting and validate standalone DO block delimiters in unit tests.
 
 - Phase 3C.1D: document administrative access boundaries and add shared database and frontend artifact credential regression checks; managed rehearsal remains required.
+
+- Phase 3C.2A: align reserved category identifiers and strengthen category reference validation; add regression coverage.

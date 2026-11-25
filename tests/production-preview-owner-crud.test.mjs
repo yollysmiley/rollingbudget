@@ -106,3 +106,23 @@ for (const viewport of ['desktop', 'mobile']) {
     assert.ok(client.calls.some(call => call.table === 'budget_recurring_rules' && call.owner === b));
   });
 }
+
+test('category reference contract reserves all built-in identifiers and preserves stable IDs', async () => {
+  const { normalizeExpenseCategories, renameExpenseCategory, canDeleteExpenseCategory, RESERVED_CATEGORY_IDS } = await import('../production-next/scripts/expense-category-model.mjs');
+  const { normalizeRecurringRule } = await import('../production-next/scripts/recurring-foundation.mjs');
+  for (const id of RESERVED_CATEGORY_IDS) {
+    assert.throws(() => normalizeExpenseCategories([{ id, name: 'Custom' }]), /IDs/);
+    assert.equal(canDeleteExpenseCategory(id, {}, []), false);
+    assert.equal(normalizeRecurringRule({id:'rule',name:'Bill',category:id,amount:1,startDate:'2026-01-01'}).category,id);
+  }
+  const categories = normalizeExpenseCategories([{id:'custom',name:'Custom'}]);
+  assert.equal(renameExpenseCategory(categories,'custom','Renamed')[0].id,'custom');
+  assert.equal(canDeleteExpenseCategory('custom',{},[]),true);
+  assert.equal(canDeleteExpenseCategory('custom',{},[{category:'fixed',versions:[{categoryId:'custom'}]}]),false);
+  assert.equal(canDeleteExpenseCategory('custom',{},[{versions:{}}]),false);
+  assert.equal(canDeleteExpenseCategory('custom',{},[null]),false);
+  assert.equal(canDeleteExpenseCategory('custom',{2026:{months:[{fixed:[],variable:[],expenses:[{categoryId:'custom'}]}]}},[]),false);
+  assert.equal(canDeleteExpenseCategory('custom',{2026:{months:[{fixed:[{category_id:'custom'}],variable:[]}]}},[]),false);
+  assert.equal(canDeleteExpenseCategory('custom',{2026:{months:[{fixed:[],variable:[],expenses:{}}]}},[]),false);
+  assert.throws(()=>normalizeRecurringRule({id:'rule',name:'Bill',category:'missing',amount:1,startDate:'2026-01-01'}),/Unsupported recurring category/);
+});

@@ -5,9 +5,11 @@ export const BUILTIN_EXPENSE_CATEGORIES = Object.freeze([
   Object.freeze({ id: 'variable', name: 'Variable & One-Time Expenses', builtin: true })
 ]);
 
+export const RESERVED_CATEGORY_IDS = Object.freeze(['income', 'fixed', 'variable', 'loan', 'cc']);
+
 export function normalizeExpenseCategories(rows = []) {
   if (!Array.isArray(rows)) throw new Error('Expense categories must be an array');
-  const seenIds = new Set(BUILTIN_EXPENSE_CATEGORIES.map(category => category.id));
+  const seenIds = new Set(RESERVED_CATEGORY_IDS);
   const seenNames = new Set(BUILTIN_EXPENSE_CATEGORIES.map(category => category.name.toLocaleLowerCase()));
   return rows.map(row => {
     const id = typeof row?.id === 'string' ? row.id.trim() : '';
@@ -37,9 +39,10 @@ export function renameExpenseCategory(categories, id, name) {
 // Fail closed: deletion requires a complete owner-scoped inventory of saved years
 // and global recurring rules. The caller must verify those reads succeeded.
 export function canDeleteExpenseCategory(id, yearDocuments, recurringRules) {
-  if (!id || BUILTIN_EXPENSE_CATEGORIES.some(category => category.id === id)) return false;
+  if (!id || RESERVED_CATEGORY_IDS.includes(id)) return false;
   if (!yearDocuments || typeof yearDocuments !== 'object' ||
-      !Array.isArray(recurringRules)) return false;
+      Array.isArray(yearDocuments) || !Array.isArray(recurringRules)) return false;
+  if (recurringRules.some(rule => !rule || typeof rule !== 'object' || (rule.versions != null && (!Array.isArray(rule.versions) || rule.versions.some(version => !version || typeof version !== 'object'))))) return false;
   if (recurringRules.some(rule => rule?.categoryId === id || rule?.category_id === id ||
       rule?.category === id || rule?.versions?.some(version =>
         version?.categoryId === id || version?.category_id === id || version?.category === id))) return false;
