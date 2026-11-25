@@ -30,3 +30,30 @@ test("production backup compresses the tar stream before Age encryption", () => 
     artifactDir + "/backup.tar.gz.age.sha256",
   ]);
 });
+
+test("connection diagnostics reject invalid configuration without leaking credentials", () => {
+  const base = "postgresql://postgres.awalptqpsjflrahkrjzk:fixture-secret@fixture.pooler.supabase.com:5432/postgres?sslmode=require";
+  const cases = [
+    [base.replace("postgresql:", "http:"), "invalid connection protocol"],
+    [base.replace("awalptqpsjflrahkrjzk", "staging"), "incorrect production project username"],
+    [base.replace("fixture.pooler.supabase.com", "example.invalid"), "invalid session pooler hostname"],
+    [base.replace(":5432", ":6543"), "expected session pooler port 5432"],
+    [base.replace("/postgres?", "/other?"), "incorrect database name"],
+    [base.replace(":fixture-secret@", "@"), "missing password"],
+    [base.replace("sslmode=require", "sslmode=disable"), "expected sslmode=require"],
+    [base + "&extra=fixture-secret", "expected sslmode=require"],
+    [base.replace(":5432", ":fixture-secret"), "malformed connection string"],
+  ];
+  for (const [url, reason] of cases) {
+    const result = spawnSync("bash", ["scripts/export-production-backup.sh"], {
+      encoding: "utf8",
+      env: {...process.env, GITHUB_REF:"refs/heads/main", GITHUB_EVENT_NAME:"workflow_dispatch",
+        BACKUP_CONFIRMATION:"BACKUP", PRODUCTION_DB_URL:url, BACKUP_RECIPIENT:"invalid",
+        BACKUP_OUTPUT:"unused-diagnostic-output"}
+    });
+    assert.equal(result.status, 1);
+    assert.equal(result.stdout, "");
+    assert.ok(result.stderr.includes("Unexpected production connection configuration: " + reason));
+    assert.doesNotMatch(result.stderr, /fixture-secret|postgresql:\/\/|Traceback/);
+  }
+});
