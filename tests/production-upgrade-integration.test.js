@@ -81,3 +81,5 @@ test("historical category integrity migration is included",()=>{
 });
 
 test("category synchronization delta migration is included",()=>{const path="supabase/migrations/20261125123000_optimize_category_reference_sync.sql";assert.ok(upgrade.includes(path));assert.match(readFileSync(path,"utf8"),/NOT EXISTS/);assert.ok(readFileSync("tests/default-privileges-runtime.sql","utf8").includes("DO $sync_probe$"));});
+
+test("category concurrency runner verifies lock waits, rollback and cleanup",()=>{const script=readFileSync("scripts/verify-category-concurrency.sh","utf8");for(const marker of ["wait_event_type='Lock'","23503","ROLLBACK success","trap cleanup EXIT","pg_terminate_backend","delete-before-reassign","historical-first","final-year-ref","rollback-removal"]) assert.ok(script.includes(marker),marker);});
