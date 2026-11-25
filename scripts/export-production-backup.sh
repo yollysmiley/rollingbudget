@@ -11,9 +11,13 @@ u=urllib.parse.urlsplit(os.environ['PRODUCTION_DB_URL'])
 if not (u.scheme in ('postgres','postgresql') and u.username=='postgres.awalptqpsjflrahkrjzk' and u.hostname and u.hostname.endswith('.pooler.supabase.com') and u.port==5432 and u.path=='/postgres' and u.password and urllib.parse.parse_qs(u.query)=={'sslmode':['require']}):
     raise SystemExit('Unexpected production connection configuration')
 PY
+# Validate the recipient before connecting to the database.
+printf '' | age -r "$BACKUP_RECIPIENT" >/dev/null
+# Require a fresh output directory to prevent publishing stale artifacts.
+[[ ! -e "$BACKUP_OUTPUT" ]] || exit 1
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
-mkdir -p "$BACKUP_OUTPUT"
+mkdir "$work/encrypted"
 # Suppress tool output: errors may contain connection details or row data.
 dump() {
   if ! supabase db dump --db-url "$PRODUCTION_DB_URL" "$@" >"$work/tool.log" 2>&1; then
@@ -31,5 +35,6 @@ for f in "${files[@]}"; do test -s "$work/$f"; done
 printf '%s\n' 'Logical export; separate snapshots require a verified write freeze for cutover consistency. Auth configuration, storage objects and managed schema customizations require separate verification.' > "$work/coverage.txt"
 files+=(coverage.txt)
 (cd "$work" && sha256sum "${files[@]}" > SHA256SUMS)
-tar -C "$work" -cf - "${files[@]}" SHA256SUMS | age -r "$BACKUP_RECIPIENT" -o "$BACKUP_OUTPUT/backup.tar.age"
-(cd "$BACKUP_OUTPUT" && sha256sum backup.tar.age > backup.tar.age.sha256)
+tar -C "$work" -cf - "${files[@]}" SHA256SUMS | age -r "$BACKUP_RECIPIENT" -o "$work/encrypted/backup.tar.age"
+(cd "$work/encrypted" && sha256sum backup.tar.age > backup.tar.age.sha256)
+mv "$work/encrypted" "$BACKUP_OUTPUT"
