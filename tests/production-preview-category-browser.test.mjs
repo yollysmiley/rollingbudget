@@ -139,7 +139,11 @@ for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: '
       await row.waitFor({state:'detached'});
       assert.equal(await page.evaluate(() => window.__categoryFixture.rows.length),0);
       await goBudget();
-      assert.equal(await card.count(),0);
+      assert.equal(await card.count(),0, 'deleted category card must be removed without reload');
+      await page.reload({waitUntil:'domcontentloaded'});
+      await page.locator('html.budget-authenticated').waitFor({timeout:12000});
+      await page.waitForFunction(() => expenseCategoryOwner === currentUser?.id && accountReadyOwner === currentUser?.id);
+      assert.equal(await card.count(),0, 'deleted category card must remain absent after reload');
     } finally { await browser.close(); }
   });
 }

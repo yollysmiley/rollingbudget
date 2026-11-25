@@ -1397,6 +1397,7 @@ async function confirmDeleteExpenseCategory(id) {
     if (currentUser?.id !== owner) return;
     expenseCategories = fresh;
     expenseCategoryMessage = 'Expense category deleted.';
+    render();
   } catch (error) {
     if (currentUser?.id === owner) expenseCategoryMessage = error.message || 'Category could not be deleted.';
   } finally {

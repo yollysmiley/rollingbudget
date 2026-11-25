@@ -139,3 +139,5 @@
 - Phase 3C.2H.1: desktop/mobile category manager browser CRUD and conflict acceptance.
 
 - Phase 3C.2H.2: custom expense card and persisted budget reference browser acceptance.
+
+- Fix stale custom expense cards after successful category deletion; retain desktop/mobile regression assertions and verify absence after refresh.
