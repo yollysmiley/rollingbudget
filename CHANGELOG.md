@@ -6,7 +6,10 @@
 
 - Added a pinned Supabase CLI 2.79.0 export and encrypted restoration rehearsal against disposable PostgreSQL 17 fixtures with simplified Auth schema, migration history and two-owner RLS checks. CI #95 passed on 1028dc6; managed Supabase compatibility and real recovery remain unverified.
 
-- Synchronize with merged PR #3, preserve all security and backup regressions; combined CI pending.
+- Synchronized with merged PR #3. Production CI #110 passed all four jobs on R1.1 commit `5747478`, including the synthetic Age round trip and pinned CLI restoration rehearsal. [Production CI #110](https://github.com/yollysmiley/rollingbudget/actions/runs/45550963906)
+- Retain the seven-day GitHub Actions encrypted artifact workflow. The [backup guide](docs/PRODUCTION_BACKUP.md) documents secure manual download, offline retention, manual recovery-point protection and owner-controlled private key recovery.
+- The [database upgrade guide](docs/PRODUCTION_DATABASE_UPGRADE.md) requires pre-release backup verification and blocks release and DDL until a failed backup gate is resolved and the release owner records clearance. Isolated managed Supabase recovery, including Auth and Storage coverage, and a production write-freeze rehearsal remain outstanding.
+- Defer Cloudflare R2 integration, storage quotas, operation limits, automated retention, purge and automated recovery-point management.
 
 ## Unreleased — Legacy budget access hardening
 
