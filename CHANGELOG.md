@@ -1,12 +1,16 @@
 ## Unreleased — Legacy budget access hardening
 
+- Phase 3F.2: consolidate release documentation, record CI #103 (5eaf024, all three jobs passed), and document downstream integration and recovery gates. Documentation-only increment requires fresh CI; no migration or application changes.
+
 - Correct CI #102 direct-column remediation expectation; add inherited-column and independent membership rejection, exact diagnostics and full rollback snapshots.
 
 - Add fail-closed column, delegation, role and administrative guards and negative rollback regressions; match production FK cascade.
 
-- CI #96 passed on 799fbe7; add rollback and isolated browser cloud compatibility regression (fresh CI pending).
+- CI #96 passed on 799fbe7; add rollback and isolated browser cloud compatibility regression (subsequently validated by CI #103).
 
 - Restrict legacy table grants and policies, verify effective privileges transactionally, and exercise synthetic owner CRUD before and after the eight additive migrations. Production application pending separate approval.
+
+- Correct legacy rollback SQL delimiters after CI #97 and strengthen ACL, identity, year preservation and service-role checks; subsequently validated by CI #103.
 
 ## Unreleased — Phase 2D.1 (PR preparation)
 
@@ -31,5 +35,3 @@
 - Added CI coverage for JavaScript syntax, migration regression tests, production auth/database policy contracts, and Chromium smoke tests at desktop and mobile viewport sizes.
 - Replaced the brittle HTML-sink grep with executable security and RLS contract tests.
 - Added least-privilege workflow permissions and concurrency cancellation.
-
-- Correct legacy rollback regression SQL delimiters and strengthen ACL, record identity, year preservation and service-role checks after CI #97. Validation pending.

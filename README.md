@@ -13,7 +13,7 @@ A responsive, multi-year budgeting application with separate desktop and mobile 
 ## Production data model
 The redesigned application stores one row per user and budget year in `public.budget_ui_years`. Each row contains a validated 12-month budget document. The table uses `(user_id, year)` as its primary key and RLS policies restrict access to the owning authenticated user.
 
-The old `public.budget_data` table was migrated into the year-by-year structure. The migration verified the 12-month shape, all 17 paycheck records, all 209 expense records, and all 18 recurring rules before removing the legacy row. User accounts and authentication identities were not deleted.
+The retained `public.budget_data` table supports legacy conversion into year-based storage. Verified conversion precedes removal of a legacy row; authentication identities are retained.
 
 Legacy source fields and records that do not have a direct field in the new UI are retained under `legacyMetadata`, `legacyPaycheck`, `legacyExpense`, and `legacyRecurring` in the destination JSON so historical details are not discarded.
 
@@ -45,10 +45,10 @@ node --test tests/browser-smoke.test.mjs
 ```
 
 ## Supabase setup
-Apply the migration in `supabase/migrations/20261114010000_create_budget_ui_years.sql` to provision the year-based table and owner-scoped RLS policies in a new environment. Production already has this migration applied.
+Apply the migration in `supabase/migrations/20261114010000_create_budget_ui_years.sql` to provision the year-based table and owner-scoped RLS policies in a new environment. Production already has the equivalent schema, recorded under migration version `20261114170248`. Do not replay the repository fixture against production.
 
-## Phase 2D.1 — Database compatibility preparation
+## Documentation
 
-The production-only [database upgrade plan](docs/PRODUCTION_DATABASE_UPGRADE.md) documents eight **unapplied** additive migrations and a disposable PostgreSQL regression. The `production-schema-upgrade` CI job validates a production-shaped upgrade without connecting to production. No production schema or data changes are authorized by this preparation PR.
+- [Database upgrade plan](docs/PRODUCTION_DATABASE_UPGRADE.md): migration ordering and disposable regression.
+- [Legacy security hardening runbook](docs/PRODUCTION_SECURITY_HARDENING.md): security baseline, validation and release gates.
 
-[Legacy security hardening runbook](docs/PRODUCTION_SECURITY_HARDENING.md).

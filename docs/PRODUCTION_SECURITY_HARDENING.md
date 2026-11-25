@@ -1,26 +1,47 @@
-# Legacy security hardening
+# Legacy security hardening — PR #3
 
-PR #3 is preparation only. No production migration or merge is authorized. Verify PostgreSQL 17, exact policy and effective grants, service role access, migration ledger and approved recovery point before execution. Capture existing ACL and policy definitions for reviewed rollback; do not automatically restore anonymous access. Apply only the named legacy migration after separate approval, then verify effective grants, RLS, owner CRUD and unchanged records. Stop on unexpected permissions or lock timeout. CI uses synthetic users and rolls back test writes; no production credentials. Existing browser smoke tests are retained; live Auth and managed API behavior require separate staging validation.
+## Current status and scope
 
-CI #96 passed all three jobs on 799fbe7. Added a deliberate policy-guard failure with ACL, policy and row rollback assertions, plus mocked browser cloud migration/save/reload at both viewports. These are not live API tests; new-user database isolation is covered by SQL regression. Fresh CI pending.
+Phase 3F.1 review complete; Phase 3F.2 documentation preparation. Core migration and regression code unchanged from validated commit `5eaf024f42e0ad797b901f43bcbbb8f9d900e60d`. [Production CI #103](https://github.com/yollysmiley/rollingbudget/actions/runs/45541939452) passed unit/syntax/security contracts, desktop/mobile browser smoke, and PostgreSQL 17 upgrade regression. Fresh CI is required for this documentation increment. No merge or production execution authorized. Production execution remains NO-GO pending verified recovery and separate approval.
 
-CI #97 failed in rollback verification because the SQL dollar delimiters were malformed; the intentional migration failure guard fired correctly. Corrected named delimiters, bidirectional ACL comparisons, legacy primary-key and year snapshots, and synthetic BYPASSRLS service-role read/update checks. Fresh CI required.
+The one-time migration `20261114190000_tighten_legacy_budget_data_access.sql` changes only legacy table grants and policies. It uses a transaction and five-second lock timeout, removes anonymous access, retains authenticated owner CRUD, rejects unexpected effective privileges, delegation and role escalation, and checks administrative access. It does not modify financial rows or the year table. It is not idempotent.
 
-## Phase 3D staging verification
+## Validation evidence
 
-Production CI #98 (915b5e8) passed all three jobs. Staging PostgreSQL 17.11 already has the four authenticated owner policies and intended effective table and column permissions; service_role retains all eight table privileges and BYPASSRLS. All eight redesign migrations are present. Do not replay the non-idempotent legacy policy migration against staging: the named policies already exist. No staging DDL was executed. Live transactional synthetic-user SQL checks passed for empty legacy records, owner insert/update/delete, spoof rejection, cross-owner read/update/delete denial, service-role read and anonymous read denial. Independent post-rollback query confirmed both synthetic users and budget records absent. SQL role simulation is not managed Auth or browser verification. Live desktop/mobile acceptance remains pending; no production changes or merge authorized.
+- Phase 3D: staging PostgreSQL 17.11 already had the four intended owner policies, effective client grants and service_role privileges/BYPASSRLS; eight redesign migrations present. No staging DDL executed. Transactional synthetic SQL checks passed for empty legacy records, owner CRUD, spoof rejection, cross-owner read/update/delete denial, service read and anonymous read denial. Post-rollback absence of synthetic users and records confirmed.
+- Owner reported six successful live staging acceptance checks: sign-in, empty new-user budget, entry creation, refresh persistence, desktop/mobile consistency and sign-out protection. This is owner-reported, not agent-executed browser testing.
+- Phase 3E catalog-only production inspection: PostgreSQL 17.11, postgres table owner, RLS enabled, four expected PUBLIC policies, eight effective table privileges for each client role, no grant options, separate column ACLs, other role memberships, superuser or BYPASSRLS for clients. Service role retained all eight privileges and BYPASSRLS. UUID primary key and unique owner FK with ON DELETE CASCADE; fixture corrected to match. No locks observed at inspection time. No financial records queried.
+- Live ledger: 20260502135627 enable_rls_budget_data and 20261114170248 create_production_budget_ui_years. Repository year fixture 20261114010000 is not the live ledger version. Do not replay it or bulk-push migrations.
+- CI #103 validates direct column grant remediation, inherited privilege rejection, delegation, membership, BYPASSRLS, missing service grants, unexpected policies, transactional rollback snapshots and preservation of synthetic records through the eight additive migrations. Browser tests simulate legacy conversion/save/reload using mocked Supabase at both viewports. Local execution was unavailable; CI is not managed Auth/API or actual recovery verification.
 
-### Phase 3D completion
-Owner confirmed all six live staging acceptance checks passed: sign-in, empty new-user budget, entry creation, refresh persistence, desktop/mobile consistency, and sign-out protection. This is owner-reported browser acceptance, not agent-executed browser testing. Phase 3D staging verification complete.
+## Historical corrections
 
-### Phase 3E proposed read-only production preflight
-Pending separate approval. Inspect PostgreSQL version, migration ledger, table and column grants, role membership and RLS bypass, owner and service privileges, policy definitions, schema dependencies and lock contention using catalog-only queries. Compare with the exact PR migration and synthetic CI baseline. Review backup/recovery readiness and prepare a narrow rollback plan without executing it. No financial records, credentials, DDL, DML, migration application, merge or deployment. Report discrepancies and go/no-go; unresolved effective column grants or role escalation risks must be addressed before release.
+CI #96 passed before rollback/browser extensions. CI #97 exposed malformed dollar delimiters; corrected and strengthened snapshots and service-role checks, with CI #98 passing. CI #100 passed before final privilege guards. CI #102 exposed incorrect expectation that direct column grants survive table REVOKE; corrected to successful remediation, added inherited column-only and independent membership rejection, full rollback snapshots and distinct diagnostics. CI #103 passed the corrected suite.
 
-## Phase 3E results — 2026-11-24
-Catalog-only production inspection: PostgreSQL 17.11; legacy table owner postgres, RLS enabled, four expected PUBLIC policies. Both client roles have all eight table privileges, no grant options, no separate column ACLs, no other role memberships, no superuser or BYPASSRLS. Service role has all eight privileges and BYPASSRLS. UUID primary key and unique owner FK match fixture except live FK ON DELETE CASCADE. No table locks observed at inspection time. Ledger contains 20260502135627 enable_rls_budget_data and 20261114170248 create_production_budget_ui_years; repository year fixture version differs. Do not replay year fixture or bulk-push migrations. Exact PR migration matches observed policy names and server version. CI #100 passed on c5a9512. No production rows queried or changes made.
+## Merge checklist
 
-NO-GO for deployment pending approved recovery point and final guard improvements: check column privileges, grant options, role escalation and administrative access within migration transaction; add synthetic negative regressions and match FK cascade fixture. PR6 recovery runbook still describes public-repository encrypted artifacts; private storage, owner key recovery and actual isolated restore not verified. Proposed recovery: capture ACL/policy definitions immediately before execution, verify recovery point, apply only named migration with bounded lock and transaction, stop on error and verify unchanged catalog; after commit prefer forward correction, separately approve any narrowly scoped policy restoration without automatically restoring excessive client privileges. No backup, rollback, migration or merge executed.
+- [x] Core code review and CI #103 evidence.
+- [x] Staging acceptance and catalog-only production preflight.
+- [ ] Fresh CI on documentation commit; verify exact head and required branch checks.
+- [ ] Confirm no unexpected diff or conflicts; obtain separate explicit merge approval.
+- [ ] Do not dispatch deployment or apply SQL as part of merge.
 
-Phase 3E.1: fail closed on unexpected effective column privileges, grant options, client role membership or elevated attributes, and missing administrative access. Fixture now matches production ON DELETE CASCADE. Negative tests exercise column grants, delegation, inherited service access, BYPASSRLS and missing service grants, checking rollback. No production execution; CI pending.
+## Production execution checklist (separate approval)
 
-CI #102 correction: direct anonymous column grants are remediated by table REVOKE, not rejected. Test successful remediation once, inherited column-only rejection, independent role membership, exact failure messages and full per-fixture ACL/policy/row rollback snapshots. Separate column delegation diagnostics. No live execution.
+- [ ] Verify private recovery destination, owner key recovery, backup coverage and isolated restore; approve consistent recovery point and write-freeze procedure.
+- [ ] Refresh catalog preflight immediately before execution: server version, exact policies, table/column ACLs, role membership/attributes, owner/service grants, dependencies, lock contention and migration ledger. Capture ACL/policy definitions for reviewed rollback.
+- [ ] Confirm exact migration file, execution role and ledger recording method. Apply only the named legacy migration after explicit approval; do not replay staging or bulk-push.
+- [ ] Stop on error or lock timeout; verify unchanged catalog after rollback. After commit prefer forward correction; any narrow policy restoration requires separate approval. Never automatically restore excessive client access.
+- [ ] Verify effective grants, RLS, owner CRUD, administrative access and record preservation using approved isolated checks without exposing financial records. Verify managed API and desktop/mobile behavior. Record evidence before reopening writes.
+
+## Downstream synchronization
+
+PR #5 (redesign) and PR #6 (backup) remain drafts on the earlier main baseline. No changes to either branch in Phase 3F.2.
+
+PR #5: combine upgrade scripts without losing restoration checkpoints, expanded owner/JWT tests or PR #3 guards. Its Docker CI must create a tests directory and copy tests/legacy-budget-access-runtime.sql into the container. Preserve browser tests, all five CI jobs, and update release runbook to identify the preceding legacy migration separately from the eight additive migrations. Rehearse combined restore and upgrade; resolve manifest/ledger and old frontend compatibility gates.
+
+PR #6: inherit PR #3 tests and preserve all four CI jobs including backup runtime. Administrative export compatibility is expected but combined CI not yet run. Public-repository encrypted artifact destination, owner key recovery, managed Auth/config coverage and actual isolated restore remain unresolved. Prefer approved private storage before real export. No credentials, backup dispatch or production writes authorized.
+
+## Residual review limitations
+
+Policy count guard relies on explicit policy creation in the same transaction; exact definition assertions, total statement timeout, additional administrative ACL comparisons and explicit anonymous mutation/missing-JWT mutation tests are optional defensive improvements, not implemented here. Combined-branch compatibility is source-reviewed only. No fresh live inspection or local execution in Phase 3F.2.
