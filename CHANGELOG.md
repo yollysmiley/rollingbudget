@@ -1,5 +1,7 @@
 ## Unreleased — Legacy budget access hardening
 
+- Add fail-closed column, delegation, role and administrative guards and negative rollback regressions; match production FK cascade.
+
 - CI #96 passed on 799fbe7; add rollback and isolated browser cloud compatibility regression (fresh CI pending).
 
 - Restrict legacy table grants and policies, verify effective privileges transactionally, and exercise synthetic owner CRUD before and after the eight additive migrations. Production application pending separate approval.

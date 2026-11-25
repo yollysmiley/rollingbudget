@@ -61,5 +61,14 @@ BEGIN
  FOREACH p IN ARRAY ARRAY['SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER','MAINTAIN'] LOOP
   IF has_table_privilege('anon','public.budget_data',p) OR has_table_privilege('authenticated','public.budget_data',p) <> (p IN ('SELECT','INSERT','UPDATE','DELETE')) THEN RAISE EXCEPTION 'Unexpected effective privilege: %',p; END IF;
  END LOOP;
+ IF EXISTS (SELECT 1 FROM pg_roles a WHERE a.rolname IN ('anon','authenticated') AND (a.rolsuper OR a.rolbypassrls OR a.rolcreaterole OR EXISTS (SELECT 1 FROM pg_roles b WHERE b.oid<>a.oid AND pg_has_role(a.oid,b.oid,'MEMBER')))) THEN RAISE EXCEPTION 'Unexpected client role escalation'; END IF;
+ IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='service_role' AND rolbypassrls) OR (SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='public.budget_data'::regclass) <> 'postgres' THEN RAISE EXCEPTION 'Unexpected administrative role'; END IF;
+ FOREACH p IN ARRAY ARRAY['SELECT','INSERT','UPDATE','REFERENCES'] LOOP
+  IF has_any_column_privilege('anon','public.budget_data',p) OR has_any_column_privilege('authenticated','public.budget_data',p) <> (p <> 'REFERENCES') OR has_any_column_privilege('authenticated','public.budget_data',p||' WITH GRANT OPTION') THEN RAISE EXCEPTION 'Unexpected column privilege: %',p; END IF;
+ END LOOP;
+ FOREACH p IN ARRAY ARRAY['SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER','MAINTAIN'] LOOP
+  IF has_table_privilege('authenticated','public.budget_data',p||' WITH GRANT OPTION') THEN RAISE EXCEPTION 'Unexpected grant option: %',p; END IF;
+  IF NOT has_table_privilege('service_role','public.budget_data',p) THEN RAISE EXCEPTION 'Missing service privilege: %',p; END IF;
+ END LOOP;
 END $check$;
 COMMIT;

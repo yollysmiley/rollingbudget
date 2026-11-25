@@ -25,7 +25,7 @@ CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS
 GRANT USAGE ON SCHEMA auth TO authenticated;
 CREATE TABLE public.budget_data (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid UNIQUE NOT NULL REFERENCES auth.users(id),
+  user_id uuid UNIQUE NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   state jsonb NOT NULL DEFAULT '{}'::jsonb,
   updated_at timestamptz DEFAULT now()
 );
@@ -85,6 +85,37 @@ BEGIN
 END $rollback$;
 DROP POLICY fixture_unexpected ON public.budget_data;
 SQL
+
+# Each negative fixture must fail for the intended reason and leave original policies intact.
+expect_guard_failure() {
+  if psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261114190000_tighten_legacy_budget_data_access.sql >"$failure" 2>&1; then
+    echo 'Unexpected migration success' >&2; exit 1
+  fi
+  if ! grep -Fq "$1" "$failure"; then cat "$failure" >&2; exit 1; fi
+  psql -X -v ON_ERROR_STOP=1 <<'SQL'
+DO $negative$
+BEGIN
+ IF (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND tablename='budget_data' AND roles=ARRAY['public']::name[]) <> 4
+ OR NOT has_table_privilege('anon','public.budget_data','TRUNCATE')
+ THEN RAISE EXCEPTION 'Negative fixture did not roll back'; END IF;
+END $negative$;
+SQL
+}
+psql -X -v ON_ERROR_STOP=1 -c 'GRANT SELECT(state) ON public.budget_data TO anon'
+expect_guard_failure 'Unexpected column privilege'
+psql -X -v ON_ERROR_STOP=1 -c 'REVOKE SELECT(state) ON public.budget_data FROM anon'
+psql -X -v ON_ERROR_STOP=1 -c 'GRANT DELETE ON public.budget_data TO authenticated WITH GRANT OPTION'
+expect_guard_failure 'Unexpected grant option'
+psql -X -v ON_ERROR_STOP=1 -c 'REVOKE GRANT OPTION FOR DELETE ON public.budget_data FROM authenticated'
+psql -X -v ON_ERROR_STOP=1 -c 'GRANT service_role TO authenticated'
+expect_guard_failure 'Unexpected effective privilege'
+psql -X -v ON_ERROR_STOP=1 -c 'REVOKE service_role FROM authenticated'
+psql -X -v ON_ERROR_STOP=1 -c 'ALTER ROLE authenticated BYPASSRLS'
+expect_guard_failure 'Unexpected client role escalation'
+psql -X -v ON_ERROR_STOP=1 -c 'ALTER ROLE authenticated NOBYPASSRLS'
+psql -X -v ON_ERROR_STOP=1 -c 'REVOKE MAINTAIN ON public.budget_data FROM service_role'
+expect_guard_failure 'Missing service privilege'
+psql -X -v ON_ERROR_STOP=1 -c 'GRANT MAINTAIN ON public.budget_data TO service_role'
 
 # Apply the standalone legacy security migration before the redesign sequence.
 psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261114190000_tighten_legacy_budget_data_access.sql
