@@ -1,0 +1,3 @@
+# Legacy security hardening
+
+PR #3 is preparation only. No production migration or merge is authorized. Verify PostgreSQL 17, exact policy and effective grants, service role access, migration ledger and approved recovery point before execution. Capture existing ACL and policy definitions for reviewed rollback; do not automatically restore anonymous access. Apply only the named legacy migration after separate approval, then verify effective grants, RLS, owner CRUD and unchanged records. Stop on unexpected permissions or lock timeout. CI uses synthetic users and rolls back test writes; no production credentials. Existing browser smoke tests are retained; live Auth and managed API behavior require separate staging validation.

@@ -18,10 +18,12 @@ The old `public.budget_data` table was migrated into the year-by-year structure.
 Legacy source fields and records that do not have a direct field in the new UI are retained under `legacyMetadata`, `legacyPaycheck`, `legacyExpense`, and `legacyRecurring` in the destination JSON so historical details are not discarded.
 
 ## Development and tests
-The application is a static HTML/JavaScript project. A single GitHub Actions workflow, **Production CI**, runs on pull requests targeting `main`, pushes to `main`, and manual dispatch. It has two jobs:
+The application is a static HTML/JavaScript project. A single GitHub Actions workflow, **Production CI**, runs on pull requests targeting `main`, pushes to `main`, and manual dispatch. It has three jobs:
 
 - **Unit, syntax, and security contracts:** validates JavaScript syntax and runs migration regression, application contract, and Supabase RLS policy tests.
 - **Desktop and mobile browser smoke tests:** installs the pinned Playwright version and Chromium, then checks the application at desktop and mobile viewport sizes.
+
+- **Production-shaped PostgreSQL upgrade:** executes legacy permission hardening and additive migration regression in disposable PostgreSQL 17.
 
 The separate legacy security workflow has been retired because its checks are included in the primary CI workflow. CI uses read-only repository permissions, requires no production credentials, and does not deploy.
 
@@ -44,3 +46,9 @@ node --test tests/browser-smoke.test.mjs
 
 ## Supabase setup
 Apply the migration in `supabase/migrations/20261114010000_create_budget_ui_years.sql` to provision the year-based table and owner-scoped RLS policies in a new environment. Production already has this migration applied.
+
+## Phase 2D.1 — Database compatibility preparation
+
+The production-only [database upgrade plan](docs/PRODUCTION_DATABASE_UPGRADE.md) documents eight **unapplied** additive migrations and a disposable PostgreSQL regression. The `production-schema-upgrade` CI job validates a production-shaped upgrade without connecting to production. No production schema or data changes are authorized by this preparation PR.
+
+[Legacy security hardening runbook](docs/PRODUCTION_SECURITY_HARDENING.md).

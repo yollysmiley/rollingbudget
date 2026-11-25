@@ -9,7 +9,7 @@ const migration = readFileSync(
 
 test("legacy budget hardening removes anonymous and elevated table grants", () => {
   assert.match(migration, /REVOKE ALL PRIVILEGES[\s\S]*FROM PUBLIC, anon/i);
-  assert.match(migration, /REVOKE TRUNCATE, REFERENCES, TRIGGER[\s\S]*FROM authenticated/i);
+  assert.match(migration, /REVOKE TRUNCATE, REFERENCES, TRIGGER, MAINTAIN[\s\S]*FROM authenticated/i);
   assert.match(migration, /GRANT SELECT, INSERT, UPDATE, DELETE[\s\S]*TO authenticated/i);
 });
 
@@ -29,3 +29,5 @@ test("legacy budget hardening never changes or deletes financial records", () =>
   assert.doesNotMatch(migration, /\b(TRUNCATE TABLE|DELETE FROM|DROP TABLE|ALTER TABLE)\b/i);
   assert.doesNotMatch(migration, /(?:FROM|ON|TABLE)\s+public\.budget_ui_years/i);
 });
+
+test("migration checks effective grants before commit",()=>{assert.match(migration,/has_table_privilege/);assert.match(migration,/SET LOCAL lock_timeout/);assert.match(migration,/relrowsecurity/);});

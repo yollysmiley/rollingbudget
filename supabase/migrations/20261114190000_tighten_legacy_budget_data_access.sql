@@ -3,6 +3,8 @@
 -- delete users, or alter the new public.budget_ui_years storage table.
 
 BEGIN;
+SET LOCAL lock_timeout = '5s';
+LOCK TABLE public.budget_data IN ACCESS EXCLUSIVE MODE;
 
 -- Anonymous clients must not access legacy financial records.
 REVOKE ALL PRIVILEGES
@@ -11,7 +13,7 @@ REVOKE ALL PRIVILEGES
 
 -- Authenticated users retain ordinary row operations, but cannot truncate the
 -- table, create triggers, or create references against it.
-REVOKE TRUNCATE, REFERENCES, TRIGGER
+REVOKE TRUNCATE, REFERENCES, TRIGGER, MAINTAIN
     ON TABLE public.budget_data
     FROM authenticated;
 
@@ -51,4 +53,13 @@ CREATE POLICY budget_data_delete_own
     TO authenticated
     USING (user_id = (SELECT auth.uid()));
 
+DO $check$
+DECLARE p text;
+BEGIN
+ IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid='public.budget_data'::regclass) THEN RAISE EXCEPTION 'RLS disabled'; END IF;
+ IF (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND tablename='budget_data') <> 4 THEN RAISE EXCEPTION 'Unexpected policies'; END IF;
+ FOREACH p IN ARRAY ARRAY['SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER','MAINTAIN'] LOOP
+  IF has_table_privilege('anon','public.budget_data',p) OR has_table_privilege('authenticated','public.budget_data',p) <> (p IN ('SELECT','INSERT','UPDATE','DELETE')) THEN RAISE EXCEPTION 'Unexpected effective privilege: %',p; END IF;
+ END LOOP;
+END $check$;
 COMMIT;
