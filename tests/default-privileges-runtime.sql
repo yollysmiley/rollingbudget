@@ -214,20 +214,22 @@ END $sync_probe$;
 ROLLBACK;
 
 -- Account reference runtime checks use an isolated synthetic owner.
+BEGIN;
 INSERT INTO auth.users(id) VALUES ('00000000-0000-4000-8000-000000000108');
 INSERT INTO public.budget_accounts(user_id,id,name) VALUES ('00000000-0000-4000-8000-000000000108','acct-test','Account test');
-INSERT INTO public.budget_ui_years(user_id,year,budget_data) VALUES ('00000000-0000-4000-8000-000000000108',2060,'{"months":[{"income":[{"cpm":0,"usaa":"0"}],"expenses":[{"accountId":"acct-test"},{"accountId":null}]}]}');
+INSERT INTO public.budget_expense_categories(user_id,id,name) VALUES ('00000000-0000-4000-8000-000000000108','acct-category','Account fixture category');
+INSERT INTO public.budget_ui_years(user_id,year,budget_data) VALUES ('00000000-0000-4000-8000-000000000108',2060,'{"months":[{"income":[{"cpm":0,"usaa":"0"}],"expenses":[{"categoryId":"acct-category","accountId":"acct-test"},{"categoryId":"acct-category","accountId":null}]}]}');
 INSERT INTO public.budget_recurring_rules(user_id,id,name,category,amount,frequency,start_date,versions) VALUES ('00000000-0000-4000-8000-000000000108','acct-rule','Account rule','fixed',1,'monthly','2026-01-01','[{"accountId":"acct-test"}]');
 DO $account_probe$
 DECLARE owner_id uuid:='00000000-0000-4000-8000-000000000108';
 BEGIN
  IF (SELECT count(*) FROM budget_internal.year_account_refs WHERE user_id=owner_id)<>1 OR (SELECT count(*) FROM budget_internal.rule_account_refs WHERE user_id=owner_id)<>1 THEN RAISE EXCEPTION 'Account inventory missing'; END IF;
  BEGIN DELETE FROM public.budget_accounts WHERE user_id=owner_id; RAISE EXCEPTION 'Referenced deletion accepted'; EXCEPTION WHEN foreign_key_violation THEN NULL; END;
- BEGIN UPDATE public.budget_ui_years SET budget_data='{"months":[{"expenses":[{"accountId":"missing"}]}]}' WHERE user_id=owner_id; RAISE EXCEPTION 'Missing account accepted'; EXCEPTION WHEN foreign_key_violation THEN NULL; END;
+ BEGIN UPDATE public.budget_ui_years SET budget_data='{"months":[{"expenses":[{"categoryId":"acct-category","accountId":"missing"}]}]}' WHERE user_id=owner_id; RAISE EXCEPTION 'Missing account accepted'; EXCEPTION WHEN foreign_key_violation THEN NULL; END;
  DELETE FROM public.budget_ui_years WHERE user_id=owner_id;
  BEGIN DELETE FROM public.budget_accounts WHERE user_id=owner_id; RAISE EXCEPTION 'Historical deletion accepted'; EXCEPTION WHEN foreign_key_violation THEN NULL; END;
  DELETE FROM public.budget_recurring_rules WHERE user_id=owner_id;
  DELETE FROM public.budget_accounts WHERE user_id=owner_id;
  IF has_table_privilege('authenticated','budget_internal.year_account_refs','INSERT') OR has_table_privilege('authenticated','budget_internal.rule_account_refs','UPDATE') THEN RAISE EXCEPTION 'Private account refs exposed'; END IF;
 END $account_probe$;
-DELETE FROM auth.users WHERE id='00000000-0000-4000-8000-000000000108';
+ROLLBACK;
