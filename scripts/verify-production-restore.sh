@@ -61,7 +61,8 @@ SET ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000101',false);
 DO $$
 BEGIN
- IF (SELECT count(*) FROM public.budget_accounts) <> 1 OR
+ IF (SELECT count(*) FROM public.budget_accounts) <> 2 OR
+    NOT EXISTS (SELECT 1 FROM public.budget_accounts WHERE id='cpm' AND name='CPM Federal' AND included) OR
     (SELECT count(*) FROM public.budget_expense_categories) <> 1 OR
     (SELECT count(*) FROM public.budget_recurring_rules) <> 1 OR
     NOT EXISTS (SELECT 1 FROM public.budget_recurring_rules WHERE id='pet-food' AND account_id='checking' AND amount=25) THEN

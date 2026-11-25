@@ -153,3 +153,5 @@
 - Phase 3C.3B: owner-scoped embedded account foreign keys, transactional reference synchronization, aligned zero legacy income semantics and runtime regression fixtures.
 
 - Final release-readiness increment: essential account concurrency, stale budget revision and legacy income compatibility regression coverage; no new features or migration changes.
+
+- Release blocker: initialize referenced legacy accounts before embedded account FK backfill; pre-upgrade fixtures and restore assertions preserve original financial documents and exclude unused legacy accounts.

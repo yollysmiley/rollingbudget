@@ -56,8 +56,8 @@ SQL
 psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261114010000_create_budget_ui_years.sql >/dev/null
 psql -X -v ON_ERROR_STOP=1 <<'SQL'
 INSERT INTO public.budget_ui_years(user_id,year,budget_data) VALUES
- ('00000000-0000-4000-8000-000000000101',2026,'{"months":[{"owner":"a"}],"sentinel":"untouched-a"}'),
- ('00000000-0000-4000-8000-000000000102',2027,'{"months":[{"owner":"b"}],"sentinel":"untouched-b"}');
+ ('00000000-0000-4000-8000-000000000101',2026,'{"months":[{"owner":"a","income":[{"cpm":"125.50","usaa":0},{"cpm":25,"usaa":0}]}],"recurringRules":[{"category":"fixed","versions":[{"accountId":"cpm"}]}],"sentinel":"untouched-a"}'),
+ ('00000000-0000-4000-8000-000000000102',2027,'{"months":[{"owner":"b","income":[{"cpm":0,"usaa":"0"}]}],"sentinel":"untouched-b"}');
 CREATE SCHEMA audit_snapshot;
 CREATE TABLE audit_snapshot.before_years AS SELECT user_id,year,budget_data,updated_at FROM public.budget_ui_years;
 CREATE TABLE audit_snapshot.before_legacy AS SELECT id,user_id,state,updated_at FROM public.budget_data;
@@ -193,10 +193,11 @@ migrations=(
   supabase/migrations/20261125121000_protect_embedded_category_refs.sql
   supabase/migrations/20261125122000_complete_category_references.sql
   supabase/migrations/20261125123000_optimize_category_reference_sync.sql
+  supabase/migrations/20261125123500_initialize_required_legacy_accounts.sql
   supabase/migrations/20261125124000_protect_embedded_account_refs.sql
 )
-if [[ "${#migrations[@]}" -ne 13 ]]; then
-  echo "Expected exactly twelve approved migrations" >&2
+if [[ "${#migrations[@]}" -ne 14 ]]; then
+  echo "Expected exactly fourteen approved migrations" >&2
   exit 1
 fi
 for migration in "${migrations[@]}"; do
@@ -208,6 +209,17 @@ for migration in "${migrations[@]}"; do
   psql -X -v ON_ERROR_STOP=1 -f "${migration}" >/dev/null
 done
 
+psql -X -v ON_ERROR_STOP=1 <<'SQL'
+DO $legacy_initialization$
+BEGIN
+ IF (SELECT count(*) FROM public.budget_accounts) <> 1 OR NOT EXISTS (
+ SELECT 1 FROM public.budget_accounts WHERE user_id='00000000-0000-4000-8000-000000000101' AND id='cpm' AND name='CPM Federal' AND included
+ ) THEN RAISE EXCEPTION 'Legacy initialization did not create exactly the required account'; END IF;
+ IF (SELECT count(*) FROM budget_internal.year_account_refs) <> 1 OR NOT EXISTS (
+ SELECT 1 FROM budget_internal.year_account_refs WHERE user_id='00000000-0000-4000-8000-000000000101' AND year=2026 AND account_id='cpm'
+ ) THEN RAISE EXCEPTION 'Legacy reference backfill failed'; END IF;
+END $legacy_initialization$;
+SQL
 psql -X -v ON_ERROR_STOP=1 -f tests/default-privileges-runtime.sql
 
 psql -X -v ON_ERROR_STOP=1 <<'SQL'
@@ -258,7 +270,7 @@ BEGIN
  IF (SELECT count(*) FROM public.budget_ui_years) <> 1 THEN
    RAISE EXCEPTION 'Year isolation failed';
  END IF;
- IF (SELECT count(*) FROM public.budget_accounts) <> 1 THEN
+ IF (SELECT count(*) FROM public.budget_accounts) <> 2 THEN
    RAISE EXCEPTION 'Account isolation failed';
  END IF;
 END $$;

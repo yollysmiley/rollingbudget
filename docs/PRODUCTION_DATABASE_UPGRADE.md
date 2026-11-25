@@ -14,7 +14,7 @@ The repository year-table fixture `20261114010000_create_budget_ui_years.sql` mu
 7. `20261117071637_remove_expense_category_kind.sql`
 8. `20261117071639_allow_custom_recurring_categories.sql`
 
-The regression runner applies the standalone legacy security migration, then an explicit eight-file additive manifest. The former draft grant migration has been replaced by the named security migration. A missing manifest file fails the test before executing that file.
+The regression runner applies the standalone legacy security migration, then an explicit fourteen-file additive manifest. The former draft grant migration has been replaced by the named security migration. A missing manifest file fails the test before executing that file.
 
 The eight additive migrations add three owner-scoped tables, constraints and foreign keys, explicit client grants and RLS, and default privilege hardening. The eight additive migrations do not modify existing budget tables; the preceding legacy migration changes grants and policies only.
 
@@ -104,4 +104,4 @@ Phase 3C.3A: shared account inventory includes all six budget collections, accou
 
 Phase 3C.3B adds private transactional account dependency tables for year documents and recurring versions, preserving the existing top-level FK. Zero legacy amounts do not create dependencies; conflicting nonempty aliases and malformed amounts fail closed. Existing unresolved references abort the migration; no automatic account creation or document rewrite is performed. Retained legacy budget_data compatibility and preflight inventory must be assessed before production execution. Concurrency and expanded acceptance follow in 3C.3C–D.
 
-Final release readiness: the existing disposable concurrency runner additionally checks account write/delete in both orders, historical recurring references and competing budget revision CAS. Legacy fixtures verify nonzero income references, unchanged documents, cross-owner rejection and empty new-owner catalogs. Actual legacy account catalog reconciliation remains a managed rehearsal gate: do not apply the manifest to production if nonzero legacy references lack owner accounts. No automatic financial rewrite or account creation is authorized by this increment.
+Final release readiness: the existing disposable concurrency runner additionally checks account write/delete in both orders, historical recurring references and competing budget revision CAS. Legacy fixtures verify nonzero income references, unchanged documents, cross-owner rejection and empty new-owner catalogs. The owner-approved additive migration 20261125123500 initializes only referenced recognized legacy accounts before 20261125124000. The managed rehearsal must verify the exact required owner/account pairs, preserve financial documents, and stop on unknown or malformed references. No financial rewrite is authorized.
