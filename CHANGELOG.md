@@ -1,6 +1,7 @@
 ## Unreleased — Authorized production backup preparation
 
 - Add protected manual Supabase logical export with Age encryption and contract tests. No application changes or production execution.
+- Validate encryption recipient before export, publish completed ciphertext only, and add synthetic runtime regression with mocked CLI and real Age. Production CI #91 passed on b635e99; actual CLI compatibility, artifact access and owner key recovery remain separate gates.
 
 ## Unreleased — Phase 2D.1 (PR preparation)
 
