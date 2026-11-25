@@ -175,6 +175,7 @@ for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: '
       assert.equal(await card.count(),0);
       await page.evaluate(() => window.__categoryFixture.switchOwner(0));
       await page.waitForFunction(() => currentUser?.id === 'synthetic-category-owner' && expenseCategoryOwner === currentUser.id && accountReadyOwner === currentUser.id);
+      await open();
       await row.filter({hasText:'Renamed Travel'}).waitFor();
       await row.locator('[data-expense-category-action="delete"]').click();
       await page.locator('#rbDialogAccept').click();
