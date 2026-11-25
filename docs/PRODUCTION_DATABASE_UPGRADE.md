@@ -93,3 +93,5 @@ Apply `supabase/migrations/20261125121000_protect_embedded_category_refs.sql` af
 Phase 3C.2D: category deletion maps SQLSTATE 23503 to actionable feedback. Existing browser inventories remain advisory. The disposable concurrency runner uses two independent authenticated sessions, observes lock contention, and requires SQLSTATE 23503 for the losing transaction in both write/delete orders. Managed rehearsal remains mandatory.
 
 Phase 3C.2E: apply `supabase/migrations/20261125122000_complete_category_references.sql` after the preceding category migrations. Explicit historical version and embedded recurring references are indexed without changing scheduling semantics. Missing custom expense identifiers and malformed reference inventories abort migration; investigate rather than rewrite records.
+
+Phase 3C.2F: apply `supabase/migrations/20261125123000_optimize_category_reference_sync.sql` after 3C.2E. Synchronize dependency deltas and preserve unchanged rows. Parent identity is immutable. Category deletion relies on owner-scoped foreign keys and revision checks, not downloaded inventories.

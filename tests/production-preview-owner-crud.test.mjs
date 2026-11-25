@@ -135,3 +135,11 @@ for (const viewport of ['desktop','mobile']) {
   await assert.rejects(deleteExpenseCategory(client,'owner',[{...row,updatedAt:row.updated_at}],'custom'),/Category is in use by a saved budget or recurring rule/);
  });
 }
+
+test('category reference extractor matches supported database shapes', async()=>{
+ const {extractBudgetCategoryRefs,canDeleteExpenseCategory}=await import('../production-next/scripts/expense-category-model.mjs');
+ assert.deepEqual([...extractBudgetCategoryRefs({months:[{}]})],[]);
+ assert.deepEqual([...extractBudgetCategoryRefs({recurringRules:[{versions:[{category:'history'}]}],months:[{expenses:[{categoryId:'custom'}]}]})],['history','custom']);
+ for(const entry of [{},{categoryId:null},{categoryId:'a',category_id:'b'}]) assert.throws(()=>extractBudgetCategoryRefs({months:[{expenses:[entry]}]}));
+ assert.equal(canDeleteExpenseCategory('history',{2026:{recurringRules:[{category:'history'}]}},[]),false);
+});

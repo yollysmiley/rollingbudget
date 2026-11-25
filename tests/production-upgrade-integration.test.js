@@ -79,3 +79,5 @@ test("historical category integrity migration is included",()=>{
  assert.match(readFileSync(path,"utf8"),/FOREIGN KEY\(user_id,category_id\)/);
  assert.ok(readFileSync("tests/default-privileges-runtime.sql","utf8").includes("DO $historical_refs$"));
 });
+
+test("category synchronization delta migration is included",()=>{const path="supabase/migrations/20261125123000_optimize_category_reference_sync.sql";assert.ok(upgrade.includes(path));assert.match(readFileSync(path,"utf8"),/NOT EXISTS/);assert.ok(readFileSync("tests/default-privileges-runtime.sql","utf8").includes("DO $sync_probe$"));});

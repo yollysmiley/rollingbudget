@@ -199,4 +199,16 @@ BEGIN
  IF NOT FOUND THEN RAISE EXCEPTION 'Unused historical category not deleted'; END IF;
 END $historical_refs$;
 RESET ROLE;
+INSERT INTO public.budget_expense_categories(user_id,id,name) VALUES ('00000000-0000-4000-8000-000000000105','sync-a','Sync A'),('00000000-0000-4000-8000-000000000105','sync-b','Sync B');
+INSERT INTO public.budget_ui_years(user_id,year,budget_data) VALUES ('00000000-0000-4000-8000-000000000105',2043,'{"months":[{"expenses":[{"categoryId":"sync-a"}]}]}');
+DO $sync_probe$
+DECLARE before_tid tid; after_tid tid;
+BEGIN
+ SELECT ctid INTO STRICT before_tid FROM budget_internal.year_category_refs WHERE user_id='00000000-0000-4000-8000-000000000105' AND year=2043 AND category_id='sync-a';
+ UPDATE public.budget_ui_years SET budget_data=budget_data || '{"note":"changed"}' WHERE user_id='00000000-0000-4000-8000-000000000105' AND year=2043;
+ SELECT ctid INTO STRICT after_tid FROM budget_internal.year_category_refs WHERE user_id='00000000-0000-4000-8000-000000000105' AND year=2043 AND category_id='sync-a';
+ IF before_tid IS DISTINCT FROM after_tid THEN RAISE EXCEPTION 'Unchanged dependency rewritten'; END IF;
+ UPDATE public.budget_ui_years SET budget_data='{"months":[{"expenses":[{"categoryId":"sync-b"}]}]}' WHERE user_id='00000000-0000-4000-8000-000000000105' AND year=2043;
+ IF EXISTS(SELECT 1 FROM budget_internal.year_category_refs WHERE user_id='00000000-0000-4000-8000-000000000105' AND year=2043 AND category_id='sync-a') OR NOT EXISTS(SELECT 1 FROM budget_internal.year_category_refs WHERE user_id='00000000-0000-4000-8000-000000000105' AND year=2043 AND category_id='sync-b') THEN RAISE EXCEPTION 'Dependency delta incorrect'; END IF;
+END $sync_probe$;
 ROLLBACK;

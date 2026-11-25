@@ -192,9 +192,10 @@ migrations=(
   supabase/migrations/20261125120000_enforce_recurring_category_owner.sql
   supabase/migrations/20261125121000_protect_embedded_category_refs.sql
   supabase/migrations/20261125122000_complete_category_references.sql
+  supabase/migrations/20261125123000_optimize_category_reference_sync.sql
 )
-if [[ "${#migrations[@]}" -ne 11 ]]; then
-  echo "Expected exactly eleven approved migrations" >&2
+if [[ "${#migrations[@]}" -ne 12 ]]; then
+  echo "Expected exactly twelve approved migrations" >&2
   exit 1
 fi
 for migration in "${migrations[@]}"; do

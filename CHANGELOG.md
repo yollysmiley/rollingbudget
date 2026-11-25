@@ -129,3 +129,5 @@
 - Phase 3C.2D: category conflict feedback and independent-session concurrency regression in existing schema CI job.
 
 - Phase 3C.2E: protect historical and embedded recurring category references and reject missing expense category IDs.
+
+- Phase 3C.2F: align category extraction, simplify deletion and synchronize dependency deltas.
