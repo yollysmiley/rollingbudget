@@ -1,3 +1,7 @@
+## Unreleased — Authorized production backup preparation
+
+- Add protected manual Supabase logical export with Age encryption and contract tests. No application changes or production execution.
+
 ## Unreleased — Phase 2D.1 (PR preparation)
 
 - Staged eight reviewed, additive staging-derived SQL migrations for production accounts, recurring rules, custom expense categories, RLS and privilege hardening; **not applied to production**.
