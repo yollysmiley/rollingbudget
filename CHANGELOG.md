@@ -115,3 +115,5 @@
 - Exercise schema-local default grants for tables, views, sequences and functions after upgrade and restoration; preserve existing migrations.
 
 - Correct SQL delimiters and CI fixture copying; expand positive controls, ownership and new-user security checks.
+
+- Repair standalone SQL fixture dollar quoting and validate standalone DO block delimiters in unit tests.

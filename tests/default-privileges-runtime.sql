@@ -1,9 +1,9 @@
 -- Disposable PostgreSQL fixture only; all probe objects are rolled back.
-DO $ BEGIN
+DO $fixture_guard$ BEGIN
  IF current_user <> 'postgres' OR current_database() NOT IN ('production_upgrade_test','production_upgrade_test_restore_after') THEN
   RAISE EXCEPTION 'Default privilege probe requires disposable postgres fixture';
  END IF;
-END $;
+END $fixture_guard$;
 BEGIN;
 CREATE TABLE public.fixture_default_acl (id integer, user_id uuid);
 ALTER TABLE public.fixture_default_acl ENABLE ROW LEVEL SECURITY;
@@ -30,15 +30,15 @@ INSERT INTO public.fixture_default_acl VALUES (1,'00000000-0000-4000-8000-000000
 CREATE POLICY fixture_read ON public.fixture_default_acl FOR SELECT TO authenticated USING (auth.uid()=user_id);
 SET ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000101',true);
-DO $$ BEGIN
+DO $fixture_check_1$ BEGIN
  IF (SELECT array_agg(id ORDER BY id) FROM public.fixture_default_acl) IS DISTINCT FROM ARRAY[1] THEN
   RAISE EXCEPTION 'Explicit grant did not preserve RLS';
  END IF;
-END $$;
+END $fixture_check_1$;
 SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000102',true);
-DO $$ BEGIN
+DO $fixture_check_2$ BEGIN
  IF (SELECT array_agg(id ORDER BY id) FROM public.fixture_default_acl) IS DISTINCT FROM ARRAY[2] THEN RAISE EXCEPTION 'Second owner isolation failed'; END IF;
-END $$;
+END $fixture_check_2$;
 RESET ROLE;
 DO $grants$
 DECLARE t text; p text;
@@ -54,10 +54,10 @@ END $grants$;
 INSERT INTO auth.users(id) VALUES ('00000000-0000-4000-8000-000000000103');
 SET ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000103',true);
-DO $$ BEGIN
+DO $fixture_check_3$ BEGIN
  IF EXISTS (SELECT 1 FROM public.budget_data) OR EXISTS (SELECT 1 FROM public.budget_ui_years)
  OR EXISTS (SELECT 1 FROM public.budget_accounts) OR EXISTS (SELECT 1 FROM public.budget_recurring_rules)
  OR EXISTS (SELECT 1 FROM public.budget_expense_categories) THEN RAISE EXCEPTION 'New user sees existing records'; END IF;
-END $$;
+END $fixture_check_3$;
 RESET ROLE;
 ROLLBACK;

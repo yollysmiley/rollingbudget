@@ -38,3 +38,14 @@ test("upgrade checks fixtures before database execution", () => {
  assert.ok(upgrade.indexOf('test -r "$fixture"') < upgrade.indexOf("psql -X"));
  assert.ok(restore.includes('test -r "$fixture"'));
 });
+
+test("standalone SQL fixtures retain matching DO block delimiters", () => {
+  const { readdirSync } = require("node:fs");
+  for (const name of readdirSync("tests").filter(name => name.endsWith(".sql"))) {
+    const sql = readFileSync("tests/" + name, "utf8");
+    assert.doesNotMatch(sql, /(?:^\s*DO\s+\$(?![\w$])|\bEND\s+\$;)/m, name);
+    const opens = [...sql.matchAll(/^\s*DO\s+(\$(?:[A-Za-z_]\w*)?\$)/gm)].map(m => m[1]);
+    const closes = [...sql.matchAll(/\bEND\s+(\$(?:[A-Za-z_]\w*)?\$);/g)].map(m => m[1]);
+    assert.deepEqual(opens, closes, name);
+  }
+});
