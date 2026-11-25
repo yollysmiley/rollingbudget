@@ -3,7 +3,23 @@
 - Add protected manual Supabase logical export with Age encryption and contract tests. No application changes or production execution.
 - Validate encryption recipient before export, publish completed ciphertext only, and add synthetic runtime regression with mocked CLI and real Age. Production CI #91 passed on b635e99; actual CLI compatibility, artifact access and owner key recovery remain separate gates.
 
-- Added a pinned Supabase CLI 2.79.0 export and encrypted restoration rehearsal against disposable PostgreSQL 17 fixtures with simplified Auth schema, migration history and two-owner RLS checks. CI evidence pending; managed Supabase compatibility and real recovery remain unverified.
+- Added a pinned Supabase CLI 2.79.0 export and encrypted restoration rehearsal against disposable PostgreSQL 17 fixtures with simplified Auth schema, migration history and two-owner RLS checks. CI #95 passed on 1028dc6; managed Supabase compatibility and real recovery remain unverified.
+
+- Synchronize with merged PR #3, preserve all security and backup regressions; combined CI pending.
+
+## Unreleased — Legacy budget access hardening
+
+- Phase 3F.2: consolidate release documentation, record CI #103 (5eaf024, all three jobs passed), and document downstream integration and recovery gates. Documentation-only increment requires fresh CI; no migration or application changes.
+
+- Correct CI #102 direct-column remediation expectation; add inherited-column and independent membership rejection, exact diagnostics and full rollback snapshots.
+
+- Add fail-closed column, delegation, role and administrative guards and negative rollback regressions; match production FK cascade.
+
+- CI #96 passed on 799fbe7; add rollback and isolated browser cloud compatibility regression (subsequently validated by CI #103).
+
+- Restrict legacy table grants and policies, verify effective privileges transactionally, and exercise synthetic owner CRUD before and after the eight additive migrations. Production application pending separate approval.
+
+- Correct legacy rollback SQL delimiters after CI #97 and strengthen ACL, identity, year preservation and service-role checks; subsequently validated by CI #103.
 
 ## Unreleased — Phase 2D.1 (PR preparation)
 
