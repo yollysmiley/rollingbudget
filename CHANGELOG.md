@@ -143,3 +143,5 @@
 - Fix stale custom expense cards after successful category deletion; retain desktop/mobile regression assertions and verify absence after refresh.
 
 - Phase 3C.2H.3: category revision conflicts, name validation and owner isolation browser coverage.
+
+- Phase 3C.2H.4: targeted desktop/mobile category layout and actionable-control acceptance, mobile card collapse/expand, and validation documentation.

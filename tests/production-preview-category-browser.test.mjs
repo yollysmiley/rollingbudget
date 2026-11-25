@@ -95,6 +95,21 @@ for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: '
       await form.locator('input').fill('Synthetic Travel');
       await form.locator('button').click();
       await row.filter({hasText:'Synthetic Travel'}).waitFor();
+      const assertFits = async (locator, label) => {
+        await locator.scrollIntoViewIfNeeded();
+        const bounds = await locator.boundingBox();
+        assert.ok(bounds && bounds.width > 0 && bounds.height > 0, label + ' must be visible');
+        assert.ok(bounds.x >= -1 && bounds.x + bounds.width <= viewport.width + 1, label + ' must fit viewport horizontally');
+      };
+      await assertFits(row,'Category row');
+      for (const action of ['rename','delete']) {
+        const control = row.locator('[data-expense-category-action="' + action + '"]');
+        await assertFits(control,action);
+        assert.ok(await control.isEnabled(),action + ' must be enabled');
+        await control.click({trial:true});
+      }
+      await assertFits(form.locator('input'),'Category name input');
+      await assertFits(form.locator('button'),'Add category button');
       const id = await row.getAttribute('data-expense-category-id');
       const goBudget = async () => {
         if (viewport.name === 'mobile') { await page.locator('#mobileMenuButton').click(); await page.locator('[data-mobile-tab="plan"]').click(); }
@@ -108,12 +123,25 @@ for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: '
       await goBudget();
       const card = page.locator('[data-custom-expense-card="' + id + '"]');
       await card.waitFor();
+      await assertFits(card,'Custom expense card');
+      await assertFits(card.getByLabel('New expense name'),'Expense name input');
+      await assertFits(card.getByLabel('New expense amount'),'Expense amount input');
+      await assertFits(card.locator('form button[type="submit"]'),'Add expense button');
+      await card.locator('form button[type="submit"]').click({trial:true});
       await page.waitForFunction(() => accountReadyOwner === currentUser?.id);
       await card.getByLabel('New expense name').fill('Synthetic Train');
       await card.getByLabel('New expense amount').fill('42.50');
       await card.locator('form button[type="submit"]').click();
       await page.waitForFunction(id => window.__categoryFixture.years.some(year => year.budget_data.months.some(month => month.expenses?.some(entry => entry.categoryId === id && entry.name === 'Synthetic Train' && entry.amount === 42.5))), id);
       await card.getByLabel('Expense name', {exact:true}).waitFor();
+      if (viewport.name === 'mobile') {
+        const toggle = card.locator('.mobile-card-toggle');
+        await assertFits(toggle,'Mobile collapse control');
+        await toggle.click();
+        assert.equal(await toggle.getAttribute('aria-expanded'),'false');
+        await toggle.click();
+        assert.equal(await toggle.getAttribute('aria-expanded'),'true');
+      }
       await goSettings();
       await row.locator('[data-expense-category-action="rename"]').click();
       await row.locator('input').fill('Renamed Travel');

@@ -101,3 +101,6 @@ Phase 3C.2H.1 adds desktop/mobile category CRUD acceptance with real storage ser
 H.2 extends category acceptance with synthetic budget-year writes through the actual revision service, stable category IDs, refresh persistence and reference-aware deletion. The mock models foreign key rejection; PostgreSQL runtime tests remain authoritative.
 
 H.3 covers invalid names, stale category revisions, synthetic recurring reference deletion rejection, and category owner switching across reload. Recurring reference fixtures simulate database rejection; the PostgreSQL suite validates actual enforcement.
+
+### Category acceptance (H.4)
+The existing browser smoke job runs category acceptance at 1280×900 and 390×844. It checks visible horizontal bounds and actionable category controls, custom expense form controls, and mobile collapse/expand state, in addition to CRUD, revision conflicts, owner switching and persistence. These checks are targeted responsive acceptance, not a comprehensive accessibility audit. Synthetic recurring references model rejection; database integrity is tested independently. H.4 requires successful CI before acceptance.

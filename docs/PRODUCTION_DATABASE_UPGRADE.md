@@ -97,3 +97,5 @@ Phase 3C.2E: apply `supabase/migrations/20261125122000_complete_category_referen
 Phase 3C.2F: apply `supabase/migrations/20261125123000_optimize_category_reference_sync.sql` after 3C.2E. Synchronize dependency deltas and preserve unchanged rows. Parent identity is immutable. Category deletion relies on owner-scoped foreign keys and revision checks, not downloaded inventories.
 
 Phase 3C.2G: extend the disposable category race runner to budget updates, recurring creation/reassignment, historical versions, rollback, final reference removal, owner isolation and unchanged dependencies. Preserve failure logs and clean synthetic fixtures on exit. The existing upgrade CI job owns this coverage.
+
+Category browser acceptance complements the PostgreSQL category reference and concurrency suite. Both must pass in the existing six-job preview CI gate; mocked browser responses do not replace database runtime enforcement or managed Supabase rehearsal.
