@@ -2,6 +2,8 @@
 
 Status: preparation only. No production migration or deployment is authorized by this document.
 
+Release governance is defined in [Release management](RELEASE_MANAGEMENT.md). The active release PR description is the authoritative checklist; dated status sections below are historical evidence, not current release status. Use the exact approved candidate migration manifest and current CI evidence rather than historical migration counts or run IDs.
+
 ## Approval gates
 
 Obtain explicit owner approval separately for production write freeze, backup handling, migration execution, merge/deployment, and any restoration. Keep PR #5 draft until release approval. Do not use real production accounts in the preview.
@@ -9,14 +11,14 @@ Obtain explicit owner approval separately for production write freeze, backup ha
 ## Preflight and backup
 
 - Confirm the production project and repository commit, actual schema, migration history, table grants and RLS. Resolve unexpected differences before proceeding.
-- Review the eight-file manifest in scripts/verify-production-upgrade.sh. Production migration history currently records the original RLS and year-table migrations under different timestamps from the repository fixture; reconcile history deliberately rather than blindly pushing all files.
+- Review the current candidate migration manifest in scripts/verify-production-upgrade.sh. Production migration history currently records the original RLS and year-table migrations under different timestamps from the repository fixture; reconcile history deliberately rather than blindly pushing all files.
 - Establish an enforceable write freeze covering existing clients and API writes, not merely a maintenance banner. Verify it before taking the final backup.
 - Use an approved encrypted logical backup procedure compatible with the actual Supabase plan and database connection. Include application schema/data, required Auth data and configuration inventory; verify coverage of managed schemas, roles and any storage separately. Never commit dumps, credentials or user records.
 - Restore into a disposable isolated environment and verify schema, owner isolation, counts and document equality. Do not consider a backup usable until restoration succeeds. Record backup location, checksum, timestamp and authorized custodian without exposing secrets.
 
 ## Migration
 
-Use the exact eight-file manifest in the upgrade regression, in order. Confirm execution role and migration-history recording method before release. Each file has its own transaction; the entire sequence is not atomic. Stop on the first failure, record completed migrations and investigate before resuming. Do not blindly rerun non-idempotent files or repair history to conceal failures.
+Use the exact approved candidate manifest in the upgrade regression, in order. Confirm execution role and migration-history recording method before release. Each file has its own transaction; the entire sequence is not atomic. Stop on the first failure, record completed migrations and investigate before resuming. Do not blindly rerun non-idempotent files or repair history to conceal failures.
 
 Verify preservation of legacy and year records, RLS and grants on all five application tables, owner-scoped CRUD, the validated recurring account FK, and new table API accessibility. Verify account/category references in budget JSON and recurring versions; application preflight checks alone do not guarantee atomic reference integrity. Resolve or explicitly disposition these risks before release.
 

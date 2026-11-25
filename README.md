@@ -53,6 +53,7 @@ Apply the migration in `supabase/migrations/20261114010000_create_budget_ui_year
 
 ## Documentation
 
+- [Release management policy](docs/RELEASE_MANAGEMENT.md): scope, change control, release candidates and validation governance.
 - [Database upgrade plan](docs/PRODUCTION_DATABASE_UPGRADE.md): migration ordering and disposable regression.
 - [Legacy security hardening runbook](docs/PRODUCTION_SECURITY_HARDENING.md): security baseline, validation and release gates.
 - [Production preview guide](docs/PRODUCTION_PREVIEW.md): isolated build and acceptance.

@@ -147,3 +147,5 @@
 - Phase 3C.2H.4: targeted desktop/mobile category layout and actionable-control acceptance, mobile card collapse/expand, and validation documentation.
 
 - Phase 3C.3A: shared account reference inventory and regression coverage for custom expenses, historical versions and legacy seeding.
+
+- Added release management governance covering scope freeze, change control, defect classification, fixed staging candidates, dependency and database readiness, regression review, CI and a single authoritative release PR checklist.
