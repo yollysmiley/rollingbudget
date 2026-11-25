@@ -1,10 +1,10 @@
 # Phase 2D.1 — Production database compatibility
 
 ## Scope and safety
-This PR **only stages SQL migration files and a disposable-database regression test**. No migration is applied to production, no user record is copied, and no production frontend is deployed. Production currently has `budget_data` and `budget_ui_years` with two saved year documents. The eight additional SQL files are adapted unchanged from the validated staging schema.
+This PR **only stages SQL migration files and a disposable-database regression test**. No migration is applied to production, no user record is copied, and no production frontend is deployed. Production currently has `budget_data` and `budget_ui_years`. The eight additional SQL files are adapted unchanged from the validated staging schema.
 
 ## Upgrade sequence
-The existing production year-table migration `20261114010000_create_budget_ui_years.sql` must **not** be replayed. The eight new migrations, sorted by timestamp, are:
+The repository year-table fixture `20261114010000_create_budget_ui_years.sql` must **not** be replayed in production; the live ledger records `20261114170248_create_production_budget_ui_years`. PR #3's standalone legacy security migration `20261114190000_tighten_legacy_budget_data_access.sql` precedes the eight additive migrations and requires separate approval. The eight new migrations, sorted by timestamp, are:
 1. `20261114192802_harden_public_default_privileges.sql`
 2. `20261114221703_create_budget_accounts.sql`
 3. `20261115043822_create_budget_recurring_rules.sql`
@@ -14,12 +14,14 @@ The existing production year-table migration `20261114010000_create_budget_ui_ye
 7. `20261117071637_remove_expense_category_kind.sql`
 8. `20261117071639_allow_custom_recurring_categories.sql`
 
-The regression runner uses an explicit eight-file manifest and deliberately ignores other SQL files in the migrations directory, including `draft-tighten-budget-data-grants.sql`. The draft is not part of Phase 2D.1 and remains unchanged. A missing manifest file fails the test before executing that file.\n\nThey add three owner-scoped tables, constraints and foreign keys, explicit client grants and RLS, and default privilege hardening. The existing production budget tables are not modified by these migrations.
+The regression runner applies the standalone legacy security migration, then an explicit eight-file additive manifest. The former draft grant migration has been replaced by the named security migration. A missing manifest file fails the test before executing that file.
+
+The eight additive migrations add three owner-scoped tables, constraints and foreign keys, explicit client grants and RLS, and default privilege hardening. The eight additive migrations do not modify existing budget tables; the preceding legacy migration changes grants and policies only.
 
 ## Regression impact and verification
 Reviewed `tests/ci-contract.test.js`, the existing production desktop/mobile smoke suite, and staging `scripts/verify-clean-migration-replay.sh` and `scripts/verify-b3-upgrade.sh`. Existing production UI tests are unaffected by this schema-only PR; they remain required.
 
-New `scripts/verify-production-upgrade.sh` creates an isolated local Postgres 17 database fixture matching the two production budget tables, seeds two synthetic owners and their budget-year/legacy documents, applies only the eight additive migrations, and checks:
+New `scripts/verify-production-upgrade.sh` creates an isolated local Postgres 17 database fixture matching the two production budget tables, seeds two synthetic owners and their budget-year/legacy documents, tests security guard rejection and rollback, applies the standalone legacy migration followed by the eight additive migrations, and checks:
 - Exact preservation of both original tables' seeded records
 - Five RLS-enabled application tables and twelve new-table ownership policies
 - Validated owner-scoped recurring-account foreign key
