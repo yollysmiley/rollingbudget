@@ -1,0 +1,42 @@
+name: Authorized production backup
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type BACKUP to authorize export
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: authorized-production-backup
+  cancel-in-progress: false
+jobs:
+  backup:
+    if: github.ref == 'refs/heads/main' && inputs.confirmation == 'BACKUP'
+    environment: production-backup
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.79.0
+      - run: sudo apt-get update && sudo apt-get install -y age
+      - name: Export and encrypt
+        env:
+          PRODUCTION_DB_URL: ${{ secrets.PRODUCTION_DB_URL }}
+          BACKUP_RECIPIENT: ${{ vars.BACKUP_RECIPIENT }}
+          BACKUP_CONFIRMATION: ${{ inputs.confirmation }}
+          BACKUP_OUTPUT: ${{ runner.temp }}/encrypted-production-backup
+        run: bash scripts/export-production-backup.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: encrypted-production-backup
+          path: |
+            ${{ runner.temp }}/encrypted-production-backup/backup.tar.age
+            ${{ runner.temp }}/encrypted-production-backup/backup.tar.age.sha256
+          retention-days: 7
+          if-no-files-found: error
