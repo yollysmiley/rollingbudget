@@ -45,3 +45,12 @@ PR #6: inherit PR #3 tests and preserve all four CI jobs including backup runtim
 ## Residual review limitations
 
 Policy count guard relies on explicit policy creation in the same transaction; exact definition assertions, total statement timeout, additional administrative ACL comparisons and explicit anonymous mutation/missing-JWT mutation tests are optional defensive improvements, not implemented here. Combined-branch compatibility is source-reviewed only. No fresh live inspection or local execution in Phase 3F.2.
+
+## Phase 3C.1D administrative access contract (PR #5)
+
+After authorized cutover, all five application tables must be owned by postgres and RLS enabled. Anonymous access is denied; authenticated receives owner-scoped CRUD only. Preserve existing service_role privileges on budget_data and budget_ui_years for compatibility; no service_role grants on accounts, recurring rules or categories. postgres retains administrative access. Do not alter supabase_admin or managed Auth/Storage roles or their defaults. New application objects must be created by postgres with explicit grants. The global postgres function default revocation requires managed compatibility verification.
+
+The shared disposable upgrade/restore fixture checks ownership, RLS, effective grants, client role attributes, membership and schema CREATE permissions. Preview and release tests scan shipped text assets for privileged JWTs, secret key markers and database connection URLs without printing credential values. These checks are not exhaustive secret detection or managed API validation. The authorized backup uses a protected PostgreSQL connection, not a service API key. Before production execution verify actual managed role attributes, schema permissions, Auth/API behavior, backup and recovery on an isolated managed target; preserve the write-freeze and separate approval gates.
+
+## Phase 3C.2A category contract
+Custom IDs reserve income, fixed, variable, loan and cc. Stable IDs survive renames. Legacy fixed/variable arrays and current expenses arrays are supported. Malformed dependency inventories block deletion. Existing orphaned or reserved-ID records must be reported and resolved explicitly before database enforcement; never silently rewrite or delete financial records. Browser checks are advisory until database enforcement is added in 3C.2B/C.

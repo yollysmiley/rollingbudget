@@ -1,0 +1,61 @@
+name: Production release
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type DEPLOY after owner approval and database verification'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-pages-release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main' && inputs.confirmation == 'DEPLOY'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require successful main CI for this exact commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          result=$(gh run list --workflow ci.yml --branch main --commit "$RELEASE_SHA" --event push --limit 1 --json conclusion,status,headSha)
+          jq -e --arg sha "$RELEASE_SHA" 'length == 1 and .[0].headSha == $sha and .[0].status == "completed" and .[0].conclusion == "success"' <<< "$result"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/build-production-release.mjs
+      - run: node --test tests/production-release.test.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: production-release-${{ github.sha }}
+          path: production-release-dist/
+          include-hidden-files: true
+          retention-days: 90
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: production-release-dist/
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main' && inputs.confirmation == 'DEPLOY'
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy approved artifact
+        id: deployment
+        uses: actions/deploy-pages@v4

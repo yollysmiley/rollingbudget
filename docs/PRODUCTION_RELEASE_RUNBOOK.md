@@ -1,0 +1,86 @@
+# Production release runbook
+
+Status: preparation only. No production migration or deployment is authorized by this document.
+
+Release governance is defined in [Release management](RELEASE_MANAGEMENT.md). The active release PR description is the authoritative checklist; dated status sections below are historical evidence, not current release status. Use the exact approved candidate migration manifest and current CI evidence rather than historical migration counts or run IDs.
+
+## Approval gates
+
+Obtain explicit owner approval separately for production write freeze, backup handling, migration execution, merge/deployment, and any restoration. Keep PR #5 draft until release approval. Do not use real production accounts in the preview.
+
+## Preflight and backup
+
+- Confirm the production project and repository commit, actual schema, migration history, table grants and RLS. Resolve unexpected differences before proceeding.
+- Review the current candidate migration manifest in scripts/verify-production-upgrade.sh. Production migration history currently records the original RLS and year-table migrations under different timestamps from the repository fixture; reconcile history deliberately rather than blindly pushing all files.
+- Establish an enforceable write freeze covering existing clients and API writes, not merely a maintenance banner. Verify it before taking the final backup.
+- Use an approved encrypted logical backup procedure compatible with the actual Supabase plan and database connection. Include application schema/data, required Auth data and configuration inventory; verify coverage of managed schemas, roles and any storage separately. Never commit dumps, credentials or user records.
+- Restore into a disposable isolated environment and verify schema, owner isolation, counts and document equality. Do not consider a backup usable until restoration succeeds. Record backup location, checksum, timestamp and authorized custodian without exposing secrets.
+
+## Migration
+
+Use the exact approved candidate manifest in the upgrade regression, in order. Confirm execution role and migration-history recording method before release. Each file has its own transaction; the entire sequence is not atomic. Stop on the first failure, record completed migrations and investigate before resuming. Do not blindly rerun non-idempotent files or repair history to conceal failures.
+
+Verify preservation of legacy and year records, RLS and grants on all five application tables, owner-scoped CRUD, the validated recurring account FK, and new table API accessibility. Verify account/category references in budget JSON and recurring versions; application preflight checks alone do not guarantee atomic reference integrity. Resolve or explicitly disposition these risks before release.
+
+## Deployment and rollback
+
+Retain the previous frontend artifact and commit. Verify old frontend compatibility with the upgraded schema in isolation. Deploy only after database verification and explicit approval. Check desktop/mobile navigation, authentication callbacks, empty new-user state, budget persistence and recurring rules using approved isolated test accounts. Staging recovery expiration retest passed by owner report; exact elapsed time was not independently verified; password validation UX is deferred and leaked-password protection is an accepted Free-plan limitation.
+
+If deployment fails, prefer reverting the frontend if schema compatibility and preservation of new writes are established. Do not automatically drop new tables or restore an old snapshot. If database restoration is necessary, freeze writes again, preserve the current state, assess intervening writes and obtain explicit approval for the recovery plan. Reconcile migration history and validate before reopening access.
+
+## Evidence required
+
+Record exact commit, CI run, backup/restore rehearsal results, migration preflight and postflight results, approvals, deployment artifact and rollback rehearsal. CI #80 (45504570472), candidate 1de5a5b0128964c69a2da18716f92598691842ff: all four jobs passed, including native PostgreSQL 17 pre/post migration restoration. Documentation-only follow-up commits require fresh CI.  this does not establish live migration or restoration readiness. No production backup or restore has yet been performed.
+
+## Manual Pages cutover
+
+Current Pages source is main / root (owner confirmed). Do not merge or switch publishing source until separately approved. At cutover switch to GitHub Actions before merging, configure github-pages environment approval where supported, and verify the exact main commit has successful push CI. Dispatch Production release with DEPLOY only after database verification and owner approval. The workflow retains a release artifact for 90 days; preserve the pre-cutover frontend separately. The workflow does not execute migrations. Additional reference-integrity tests are deferred; synthetic restoration rehearsal passed in CI #80. CI-first validation is authorized for this increment.
+
+## Synthetic restoration regression
+
+CI runs scripts/verify-production-restore.sh against the disposable PostgreSQL service. It preserves the existing eight-migration regression, captures pre/post-upgrade custom-format dumps, restores each into a fresh database, compares schema and data dumps, checks legacy record equality, owner isolation and the restored account FK. Dumps are temporary and not uploaded. Roles are shared within the synthetic PostgreSQL cluster; this is not a managed Supabase disaster recovery test. Legacy database contracts are checked, not a live old-frontend rollback. Production backup coverage and actual restoration remain separately gated.
+
+## Phase 2D.9A — Current release decision (2026-11-24)
+
+**NO-GO for production cutover.** CI #80 (45504570472), candidate 1de5a5b0128964c69a2da18716f92598691842ff: all four jobs passed, including native PostgreSQL 17 pre/post migration restoration. Documentation-only follow-up commits require fresh CI.
+
+### Completed evidence
+- [x] Candidate CI, desktop/mobile regressions, release artifact contracts.
+- [x] Eight-migration synthetic upgrade and pre/post backup restoration; schema/data equivalence, owner isolation and FK checks.
+- [x] Owner-reported staging desktop/mobile authentication, recovery and expiry validation; exact expiry elapsed time not independently logged.
+- [x] Read-only production catalog: budget_data and budget_ui_years exist with RLS enabled and four policies each; three new tables absent.
+
+### Required before cutover
+- [ ] Owner disposition of embedded JSON/version account references, custom category ownership/existence, concurrent deletion races and unpinned CDN dependency. Additional integrity hardening deferred, not silently accepted.
+- [ ] Approve backup method and custodian; verify actual production backup coverage and isolated restoration, including managed Auth/configuration limitations.
+- [ ] Reconcile live migration history (20260502135627 enable_rls_budget_data; 20261114170248 create_production_budget_ui_years) with repository year fixture 20261114010000. Do not blindly push or mark migrations applied.
+- [ ] Verify old frontend compatibility with upgraded schema and retain previous frontend artifact.
+- [ ] Approve and verify enforceable write freeze; capture final consistent backup and verify recoverability before migrations.
+- [ ] Confirm production Auth settings and delivery readiness from dashboard; owner reports exact callbacks and ConfirmationURL templates, 1800-second OTP; live production callback smoke remains pending.
+- [ ] Approve and execute eight migrations in order; record each result and verify data preservation, grants, RLS, API exposure and owner CRUD.
+- [ ] Separately approve Pages source switch from main/root to GitHub Actions before merge; verify environment approval where supported and exact main push CI. DEPLOY input is operator acknowledgment, not database verification.
+- [ ] Separately approve release dispatch; validate production desktop/mobile and Auth with dedicated approved test accounts before reopening access. Plan controlled test access during freeze without allowing ordinary writes.
+
+No production mutations, backup, restore, merge or deployment authorized by this documentation update. Phase 2D.9B is backup preparation, not execution approval.
+
+## Phase 2D.9B.2 — Synthetic backup infrastructure
+
+Phase 2D.9B.2 introduces a manual synthetic-only backup workflow and contract tests. The script creates a network-isolated PostgreSQL 17 fixture, exports database and roles (without role passwords), encrypts using age, and verifies encrypted and decrypted checksums and dump readability. Disposable key is destroyed; uploaded synthetic artifact is intentionally not recoverable after the run. No production connection or secrets supported. Full encrypted restore and managed Supabase coverage remain pending; existing synthetic restoration regression remains unchanged. GitHub manual dispatch may require workflow presence on default branch; do not merge to enable it. Validate through a separately approved PR CI integration if needed.
+
+## Phase 2D.9B.3 — Encrypted backup recovery regression
+
+Phase 2D.9B.3 adds a required synthetic encrypted backup regression job to PR CI and shares the verifier with the manual workflow. It checks ciphertext and payload checksums, wrong-key and truncated-ciphertext rejection, restores the fixture role and database into a fresh network-isolated PostgreSQL 17 container, and asserts exact financial and identity fixtures, migration history, FK, grants and two-owner RLS. Fixture identity and RLS are simplified, not managed Auth or full production role recovery. No production secrets, connections or records. Existing migration and browser regressions retained. Runtime validation pending CI.
+
+## PR #3 synchronization
+
+Main baseline afe49dca9447ec5a192bccf19a5f561686493f5e includes the standalone legacy security migration, not yet applied live. CI rehearses it before the eight additive migrations, retaining pre-hardening and post-upgrade restore checkpoints, exact legacy IDs, guard rollback tests, owner/JWT checks and both browser suites. Docker copies the legacy runtime SQL dependency. All five CI jobs retained; fresh combined CI required. PR #6 remains separate; private storage, key recovery and actual recovery gates remain outstanding. Do not apply the legacy migration twice; verify its ledger entry and effective privileges before the eight-file sequence. No merge or deployment authorized.
+
+## CI #107 integration corrections
+
+CI #107 passed four jobs but failed PostgreSQL regression after all nine migrations applied to synthetic fixtures. Correct three malformed SQL block delimiters and the reverse four-column legacy comparison. Static contracts now check matching delimiters and bidirectional primary-key-inclusive comparisons; PostgreSQL runtime remains authoritative. Require all five jobs to pass before release review. No live database operations authorized.
+
+## Phase 3C.1D administrative access contract (PR #5)
+
+After authorized cutover, all five application tables must be owned by postgres and RLS enabled. Anonymous access is denied; authenticated receives owner-scoped CRUD only. Preserve existing service_role privileges on budget_data and budget_ui_years for compatibility; no service_role grants on accounts, recurring rules or categories. postgres retains administrative access. Do not alter supabase_admin or managed Auth/Storage roles or their defaults. New application objects must be created by postgres with explicit grants. The global postgres function default revocation requires managed compatibility verification.
+
+The shared disposable upgrade/restore fixture checks ownership, RLS, effective grants, client role attributes, membership and schema CREATE permissions. Preview and release tests scan shipped text assets for privileged JWTs, secret key markers and database connection URLs without printing credential values. These checks are not exhaustive secret detection or managed API validation. The authorized backup uses a protected PostgreSQL connection, not a service API key. Before production execution verify actual managed role attributes, schema permissions, Auth/API behavior, backup and recovery on an isolated managed target; preserve the write-freeze and separate approval gates.

@@ -31,3 +31,11 @@ test("production year storage migration enforces owner-scoped row security", () 
   assert.match(migration, /user_id\s*=\s*\(SELECT auth\.uid\(\)\)/i);
   assert.doesNotMatch(migration, /TO\s+PUBLIC\s+USING/i);
 });
+
+require("node:test")("database CI copies all runtime SQL fixtures", () => {
+ const ci = require("node:fs").readFileSync(".github/workflows/ci.yml","utf8");
+ for (const name of ["legacy-budget-access-runtime.sql","default-privileges-runtime.sql"]) {
+  require("node:assert/strict").ok(ci.includes("docker cp tests/" + name + " "));
+  require("node:assert/strict").ok(require("node:fs").existsSync("tests/" + name));
+ }
+});

@@ -12,6 +12,67 @@
 - The [database upgrade guide](docs/PRODUCTION_DATABASE_UPGRADE.md) requires pre-release backup verification and blocks release and DDL until a failed backup gate is resolved and the release owner records clearance. Isolated managed Supabase recovery, including Auth and Storage coverage, and a production write-freeze rehearsal remain outstanding.
 - Defer Cloudflare R2 integration, storage quotas, operation limits, automated retention, purge and automated recovery-point management.
 
+## Unreleased — PR #5 preview and validation (not deployed)
+
+### Unreleased — PR #5 CI #107 regression corrections
+
+- Repair three corrupted SQL dollar delimiters and the reverse legacy restoration comparison; add static regression contracts. All migration files and security assertions unchanged. Fresh CI required.
+
+### Unreleased — PR #5 synchronization
+
+- Inherit merged PR #3 security baseline, retain pre/post restoration checkpoints and expanded owner/JWT tests, copy legacy runtime SQL into Docker CI, compare legacy primary keys on restore. Combined CI pending.
+
+### Unreleased — Encrypted backup recovery regression
+
+- Phase 2D.9B.3 adds a required synthetic encrypted backup regression job to PR CI and shares the verifier with the manual workflow. It checks ciphertext and payload checksums, wrong-key and truncated-ciphertext rejection, restores the fixture role and database into a fresh network-isolated PostgreSQL 17 container, and asserts exact financial and identity fixtures, migration history, FK, grants and two-owner RLS. Fixture identity and RLS are simplified, not managed Auth or full production role recovery. No production secrets, connections or records. Existing migration and browser regressions retained. Runtime validation pending CI.
+
+### Unreleased — Synthetic backup infrastructure
+
+- Phase 2D.9B.2 introduces a manual synthetic-only backup workflow and contract tests. The script creates a network-isolated PostgreSQL 17 fixture, exports database and roles (without role passwords), encrypts using age, and verifies encrypted and decrypted checksums and dump readability. Disposable key is destroyed; uploaded synthetic artifact is intentionally not recoverable after the run. No production connection or secrets supported. Full encrypted restore and managed Supabase coverage remain pending; existing synthetic restoration regression remains unchanged. GitHub manual dispatch may require workflow presence on default branch; do not merge to enable it. Validate through a separately approved PR CI integration if needed.
+
+### 2026-11-24 — Phase 2D.9A release readiness documentation (not deployed)
+
+- Verified all four CI #80 jobs at candidate 1de5a5b, including pre/post synthetic backup restoration using native PostgreSQL 17 service-container tools; removed unavailable runner package dependency.
+- Reconciled current release status and documented remaining backup, migration history, write freeze, rollback, integrity disposition and Pages approval gates in the production runbook and preview documentation.
+- Documentation only; no application, regression assertion, migration or production configuration changes. Actual production recovery remains unverified.
+
+### 2026-11-23 — Production preview authentication validation
+
+- Recorded owner-confirmed email template placeholder corrections and 1800-second OTP expiry; independent live verification remains pending.
+- Added desktop/mobile synthetic reused-link rejection and standard recovery redirect coverage. No application or production configuration changes.
+
+### Unreleased — Phase 2D.6 production Auth configuration read-only audit
+- Reviewed live production Supabase project metadata and security advisor, plus preview signup/recovery callback generation. Documented disabled leaked-password protection and unverified production Site URL, redirect allowlist, email settings, and JWT/session configuration as release blockers. No production settings or data modified.
+
+### Unreleased — Phase 2D.6 expired-session restoration guard (not deployed)
+- Extended existing desktop/mobile protected-route regression to reject expired restored sessions despite stale owner-scoped local budget cache, with no cloud table reads; documented unverified live Auth redirect allowlist.
+
+### Unreleased — Phase 2D.6 authentication callback regression (not deployed)
+- Added CI-required synthetic desktop/mobile browser tests for email confirmation session gating, expired callbacks, verified recovery tokens, password validation and update failures. Live production Auth redirect settings and real token delivery remain unverified.
+
+### Unreleased — Phase 2D.6 RLS and owner isolation audit (not deployed)
+- Audited existing production RLS policies read-only; new account, recurring and expense-category tables are not yet deployed. Security advisor identified leaked-password protection disabled.
+- Expanded isolated PostgreSQL migration regression with cross-owner update/delete, owner-spoofing inserts/updates, and missing-JWT checks. No live schema or production data changes.
+
+### Unreleased — Phase 2D.5 preview acceptance (not deployed)
+- Added CI-required synthetic integration tests for recurring backfill idempotency, duplicate holds, historical entry preservation, failed cloud writes, stale and concurrent revision rejection, and owner/local-conflict cancellation.
+- Corrected recurring browser acceptance setup to navigate to the canonical `recurring-rules` SPA route and assert its URL before testing visible desktop/mobile rule controls (CI #46 regression).
+- Added desktop/mobile recurring-rule manager browser acceptance for future-dated edits, enable/disable, cancel/delete confirmation, and historical rule version preservation using synthetic fixtures.
+- Added desktop/mobile browser acceptance for account creation, renaming, budget inclusion toggling and confirmed deletion through the rendered account manager, using an isolated synthetic account service.
+- Extended synthetic desktop/mobile acceptance tests with two owner-specific saved budget documents, account isolation after switching and refresh, and protected-route rejection after real application sign-out.
+- Added isolated owner-scoped account create/update/delete and recurring-rule create/read/edit/disable/re-enable/delete service regressions, including future-dated version and account dependency assertions, with a required CI step.
+- Updated desktop/mobile sign-out acceptance to click the corresponding visible application controls. These tests use mocked cloud data, not live Supabase.
+- Updated production preview release blockers to distinguish synthetic coverage from outstanding live auth, RLS, CRUD UI and recovery verification.
+
+### Unreleased — Phase 2D.4 preview acceptance (not deployed)
+- Added synthetic authenticated desktop/mobile browser regression tests for route restoration, history navigation, and refresh; registered them in production CI. These tests use an in-memory Supabase mock and do not validate live database isolation.
+
+### Unreleased — Phase 2D.2 production preview
+
+- Added an isolated production-configured preview of the redesigned staging frontend under `production-next/`, without changing live entry points.
+- Added a build-only CI job, auth/isolation contracts, and desktop/mobile public homepage and password-recovery dialog browser acceptance tests.
+- Documented deployment blockers, callback configuration and database prerequisites; no deployment or live Supabase changes.
+
 ## Unreleased — Legacy budget access hardening
 
 - Phase 3F.2: consolidate release documentation, record CI #103 (5eaf024, all three jobs passed), and document downstream integration and recovery gates. Documentation-only increment requires fresh CI; no migration or application changes.
@@ -49,3 +110,48 @@
 - Added CI coverage for JavaScript syntax, migration regression tests, production auth/database policy contracts, and Chromium smoke tests at desktop and mobile viewport sizes.
 - Replaced the brittle HTML-sink grep with executable security and RLS contract tests.
 - Added least-privilege workflow permissions and concurrency cancellation.
+
+### Phase 3C.1 — Security regression coverage
+- Exercise schema-local default grants for tables, views, sequences and functions after upgrade and restoration; preserve existing migrations.
+
+- Correct SQL delimiters and CI fixture copying; expand positive controls, ownership and new-user security checks.
+
+- Repair standalone SQL fixture dollar quoting and validate standalone DO block delimiters in unit tests.
+
+- Phase 3C.1D: document administrative access boundaries and add shared database and frontend artifact credential regression checks; managed rehearsal remains required.
+
+- Phase 3C.2A: align reserved category identifiers and strengthen category reference validation; add regression coverage.
+
+- Phase 3C.2B: add owner-scoped recurring category foreign key and reserved ID constraint, with upgrade/restore regression probes.
+
+- Phase 3C.2C: maintain private year category dependencies transactionally; add upgrade and restore regression probes.
+
+- Phase 3C.2D: category conflict feedback and independent-session concurrency regression in existing schema CI job.
+
+- Phase 3C.2E: protect historical and embedded recurring category references and reject missing expense category IDs.
+
+- Phase 3C.2F: align category extraction, simplify deletion and synchronize dependency deltas.
+
+- Phase 3C.2G: expanded category concurrency scenarios, rollback assertions and failure cleanup.
+
+- Correct 3C.2G reference-removal race expectations: accept immediate foreign key rejection or lock wait, retry after committed removal, verify rollback preserves dependencies.
+
+- Phase 3C.2H.1: desktop/mobile category manager browser CRUD and conflict acceptance.
+
+- Phase 3C.2H.2: custom expense card and persisted budget reference browser acceptance.
+
+- Fix stale custom expense cards after successful category deletion; retain desktop/mobile regression assertions and verify absence after refresh.
+
+- Phase 3C.2H.3: category revision conflicts, name validation and owner isolation browser coverage.
+
+- Phase 3C.2H.4: targeted desktop/mobile category layout and actionable-control acceptance, mobile card collapse/expand, and validation documentation.
+
+- Phase 3C.3A: shared account reference inventory and regression coverage for custom expenses, historical versions and legacy seeding.
+
+- Added release management governance covering scope freeze, change control, defect classification, fixed staging candidates, dependency and database readiness, regression review, CI and a single authoritative release PR checklist.
+
+- Phase 3C.3B: owner-scoped embedded account foreign keys, transactional reference synchronization, aligned zero legacy income semantics and runtime regression fixtures.
+
+- Final release-readiness increment: essential account concurrency, stale budget revision and legacy income compatibility regression coverage; no new features or migration changes.
+
+- Release blocker: initialize referenced legacy accounts before embedded account FK backfill; pre-upgrade fixtures and restore assertions preserve original financial documents and exclude unused legacy accounts.

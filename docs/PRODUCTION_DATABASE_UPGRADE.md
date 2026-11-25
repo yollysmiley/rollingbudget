@@ -14,7 +14,7 @@ The repository year-table fixture `20261114010000_create_budget_ui_years.sql` mu
 7. `20261117071637_remove_expense_category_kind.sql`
 8. `20261117071639_allow_custom_recurring_categories.sql`
 
-The regression runner applies the standalone legacy security migration, then an explicit eight-file additive manifest. The former draft grant migration has been replaced by the named security migration. A missing manifest file fails the test before executing that file.
+The regression runner applies the standalone legacy security migration, then an explicit fourteen-file additive manifest. The former draft grant migration has been replaced by the named security migration. A missing manifest file fails the test before executing that file.
 
 The eight additive migrations add three owner-scoped tables, constraints and foreign keys, explicit client grants and RLS, and default privilege hardening. The eight additive migrations do not modify existing budget tables; the preceding legacy migration changes grants and policies only.
 
@@ -72,3 +72,36 @@ backup checks. [Production CI #110](https://github.com/yollysmiley/rollingbudget
 
 Cloudflare R2 integration, storage quotas, operation limits, automated
 retention, purge and automated recovery-point management are deferred.
+
+## Phase 3C.1 default privilege regression
+The disposable upgrade fixture seeds schema-local client and service-role default grants, then verifies newly created objects have no implicit access after hardening. Explicit authenticated access is checked with RLS. The same transactional probe runs after restoration. Managed-role defaults and managed Supabase rehearsal remain separate release gates.
+
+The fixture also checks insecure pre-migration defaults, explicit two-owner RLS, actual application table grants and empty new-user visibility. CI copies both runtime SQL fixtures explicitly.
+
+## Phase 3C.1D administrative access contract (PR #5)
+
+After authorized cutover, all five application tables must be owned by postgres and RLS enabled. Anonymous access is denied; authenticated receives owner-scoped CRUD only. Preserve existing service_role privileges on budget_data and budget_ui_years for compatibility; no service_role grants on accounts, recurring rules or categories. postgres retains administrative access. Do not alter supabase_admin or managed Auth/Storage roles or their defaults. New application objects must be created by postgres with explicit grants. The global postgres function default revocation requires managed compatibility verification.
+
+The shared disposable upgrade/restore fixture checks ownership, RLS, effective grants, client role attributes, membership and schema CREATE permissions. Preview and release tests scan shipped text assets for privileged JWTs, secret key markers and database connection URLs without printing credential values. These checks are not exhaustive secret detection or managed API validation. The authorized backup uses a protected PostgreSQL connection, not a service API key. Before production execution verify actual managed role attributes, schema permissions, Auth/API behavior, backup and recovery on an isolated managed target; preserve the write-freeze and separate approval gates.
+
+## Phase 3C.2B candidate migration
+After the existing eight redesign migrations, apply `supabase/migrations/20261125120000_enforce_recurring_category_owner.sql` only after separate cutover approval and managed rehearsal. Reserved category collisions or orphaned recurring categories cause transactional failure; do not rewrite records. The generated column excludes built-ins; the composite foreign key protects disabled rules as well. Embedded budget dependencies remain Phase 3C.2C. The generated column is read-only; clients must continue sending explicit writable fields.
+
+## Phase 3C.2C candidate migration
+Apply `supabase/migrations/20261125121000_protect_embedded_category_refs.sql` after 3C.2B only with separate production approval. The private dependency table is populated from existing year documents without changing their financial data. Missing legacy collections are tolerated; present malformed collections or invalid explicit references abort the transaction. Foreign keys protect concurrent category deletion; independent-session concurrency tests and managed rehearsal remain required.
+
+Phase 3C.2D: category deletion maps SQLSTATE 23503 to actionable feedback. Existing browser inventories remain advisory. The disposable concurrency runner uses two independent authenticated sessions, observes lock contention, and requires SQLSTATE 23503 for the losing transaction in both write/delete orders. Managed rehearsal remains mandatory.
+
+Phase 3C.2E: apply `supabase/migrations/20261125122000_complete_category_references.sql` after the preceding category migrations. Explicit historical version and embedded recurring references are indexed without changing scheduling semantics. Missing custom expense identifiers and malformed reference inventories abort migration; investigate rather than rewrite records.
+
+Phase 3C.2F: apply `supabase/migrations/20261125123000_optimize_category_reference_sync.sql` after 3C.2E. Synchronize dependency deltas and preserve unchanged rows. Parent identity is immutable. Category deletion relies on owner-scoped foreign keys and revision checks, not downloaded inventories.
+
+Phase 3C.2G: extend the disposable category race runner to budget updates, recurring creation/reassignment, historical versions, rollback, final reference removal, owner isolation and unchanged dependencies. Preserve failure logs and clean synthetic fixtures on exit. The existing upgrade CI job owns this coverage.
+
+Category browser acceptance complements the PostgreSQL category reference and concurrency suite. Both must pass in the existing six-job preview CI gate; mocked browser responses do not replace database runtime enforcement or managed Supabase rehearsal.
+
+Phase 3C.3A: shared account inventory includes all six budget collections, account aliases and nested recurring versions. Zero-valued legacy income fields remain conservative deletion references but do not seed accounts. Malformed inventories fail closed. Database enforcement and global historical references remain subsequent increments.
+
+Phase 3C.3B adds private transactional account dependency tables for year documents and recurring versions, preserving the existing top-level FK. Zero legacy amounts do not create dependencies; conflicting nonempty aliases and malformed amounts fail closed. Existing unresolved references abort the migration; no automatic account creation or document rewrite is performed. Retained legacy budget_data compatibility and preflight inventory must be assessed before production execution. Concurrency and expanded acceptance follow in 3C.3C–D.
+
+Final release readiness: the existing disposable concurrency runner additionally checks account write/delete in both orders, historical recurring references and competing budget revision CAS. Legacy fixtures verify nonzero income references, unchanged documents, cross-owner rejection and empty new-owner catalogs. The owner-approved additive migration 20261125123500 initializes only referenced recognized legacy accounts before 20261125124000. The managed rehearsal must verify the exact required owner/account pairs, preserve financial documents, and stop on unknown or malformed references. No financial rewrite is authorized.

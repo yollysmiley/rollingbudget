@@ -1,0 +1,27 @@
+name: Production backup (synthetic only)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  synthetic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install encryption tool
+        run: sudo apt-get update && sudo apt-get install -y age
+      - name: Verify encrypted backup restoration
+        env:
+          BACKUP_OUTPUT: ${{ runner.temp }}/rollingbudget-encrypted-fixture
+        run: bash scripts/verify-encrypted-backup.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: encrypted-synthetic-backup
+          path: |
+            ${{ runner.temp }}/rollingbudget-encrypted-fixture/backup.tar.age
+            ${{ runner.temp }}/rollingbudget-encrypted-fixture/backup.tar.age.sha256
+          if-no-files-found: error
+          retention-days: 1
