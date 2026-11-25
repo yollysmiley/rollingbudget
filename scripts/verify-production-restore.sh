@@ -51,6 +51,7 @@ END $$;
 RESET ROLE;
 SQL
   if [[ "$phase" == after ]]; then
+    psql -X --dbname="$target" -v ON_ERROR_STOP=1 -f tests/default-privileges-runtime.sql
     psql -X --dbname="$target" -v ON_ERROR_STOP=1 <<'SQL'
 SET ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000101',false);

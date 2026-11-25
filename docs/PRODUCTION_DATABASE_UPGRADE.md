@@ -72,3 +72,6 @@ backup checks. [Production CI #110](https://github.com/yollysmiley/rollingbudget
 
 Cloudflare R2 integration, storage quotas, operation limits, automated
 retention, purge and automated recovery-point management are deferred.
+
+## Phase 3C.1 default privilege regression
+The disposable upgrade fixture seeds schema-local client and service-role default grants, then verifies newly created objects have no implicit access after hardening. Explicit authenticated access is checked with RLS. The same transactional probe runs after restoration. Managed-role defaults and managed Supabase rehearsal remain separate release gates.

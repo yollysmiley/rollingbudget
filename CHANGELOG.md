@@ -110,3 +110,6 @@
 - Added CI coverage for JavaScript syntax, migration regression tests, production auth/database policy contracts, and Chromium smoke tests at desktop and mobile viewport sizes.
 - Replaced the brittle HTML-sink grep with executable security and RLS contract tests.
 - Added least-privilege workflow permissions and concurrency cancellation.
+
+### Phase 3C.1 — Security regression coverage
+- Exercise schema-local default grants for tables, views, sequences and functions after upgrade and restoration; preserve existing migrations.

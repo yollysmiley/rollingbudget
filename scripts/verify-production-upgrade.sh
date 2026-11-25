@@ -18,6 +18,10 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='authenticated') THEN CREATE ROLE authenticated NOLOGIN; END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='service_role') THEN CREATE ROLE service_role NOLOGIN BYPASSRLS; END IF;
 END $$;
+-- Reproduce Supabase-style schema-local defaults before hardening.
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON FUNCTIONS TO anon, authenticated, service_role;
 CREATE SCHEMA auth;
 CREATE TABLE auth.users (id uuid PRIMARY KEY);
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS
@@ -174,8 +178,10 @@ for migration in "${migrations[@]}"; do
   psql -X -v ON_ERROR_STOP=1 -f "${migration}" >/dev/null
 done
 
+psql -X -v ON_ERROR_STOP=1 -f tests/default-privileges-runtime.sql
+
 psql -X -v ON_ERROR_STOP=1 <<'SQL'
-DO $$
+DO $
 DECLARE n integer;
 BEGIN
   IF EXISTS (SELECT user_id,year,budget_data,updated_at FROM public.budget_ui_years

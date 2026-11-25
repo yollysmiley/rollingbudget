@@ -24,3 +24,11 @@ test("legacy restoration compares all four columns in both directions", () => {
   assert.ok(restore.includes("SELECT " + columns + " FROM audit_snapshot.before_legacy EXCEPT SELECT " + columns + " FROM public.budget_data"));
   assert.doesNotMatch(restore, /SELECT user_id,state,updated_at FROM (?:audit_snapshot\.before_legacy|public\.budget_data)/);
 });
+
+
+test("default privilege probes run after upgrade and restoration", () => {
+  const fs = require("node:fs");
+  for (const path of ["scripts/verify-production-upgrade.sh", "scripts/verify-production-restore.sh"]) {
+    require("node:assert/strict").match(fs.readFileSync(path, "utf8"), /-f tests\/default-privileges-runtime\.sql/);
+  }
+});
