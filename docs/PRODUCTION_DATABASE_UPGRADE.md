@@ -34,10 +34,41 @@ The test **refuses any remote PGHOST** or database name other than `production_u
 
 ## Required before any production deployment
 - Review the production migration ledger for version collisions, actual database privileges and grants, and the exact migration ordering
-- Verify a usable backup/restore path and establish a recovery point before any DDL
+- Complete the mandatory pre-release backup gate below before deployment or any DDL
 - Verify production Supabase Auth redirect allowlists and the separate production frontend build
 - Require passing PR CI and branch-protected checks, then a separate explicit approval to merge
 - Require another explicit approval before applying any migration to production
 - Post-migration verify schemas, RLS, account isolation and unchanged budget-year records without reading or exposing private user data
 
 Database migrations are forward-only; a frontend rollback does not undo schema changes. Do not reset or delete production records to recover.
+
+## Mandatory pre-release backup gate
+
+Follow the [production backup guide](PRODUCTION_BACKUP.md) for the approved
+manual workflow. Freeze production writes across the separate logical exports
+and verification for a consistent cutover. Confirm the successful `main` run,
+securely download the Age-encrypted archive and SHA-256 sidecar within seven
+days, and verify the outer checksum, decryption with the owner-recovered
+private identity, and the inner SHA-256 manifest. Record the run and
+verification in the private recovery inventory, copy both encrypted artifact
+files to owner-controlled offline storage, recheck the copy and manually
+protect the recovery point through the rollback window. Keep the identity and
+its recovery copy separate from artifacts and outside GitHub.
+
+Stop the release and all production DDL if the backup is failed, skipped,
+missing, expired before verified download, unverifiable, or unavailable for
+recovery, or if the write freeze or offline protection cannot be confirmed.
+Record the blocker, notify the release owner, and preserve prior recovery
+points. Resume only after remediation, verification and protection of a
+fresh authorized backup and documented release-owner clearance. If writes
+resume before cutover, repeat the gate under a renewed freeze.
+
+Managed Supabase recovery still requires an isolated rehearsal. Verify
+managed Auth and Storage schema customizations, Auth and project settings,
+and actual Storage objects separately. The disposable PostgreSQL rehearsal
+uses simplified fixtures. Production CI #110 passed all four jobs on R1.1
+commit `5747478`, including the production-shaped upgrade and synthetic
+backup checks. [Production CI #110](https://github.com/yollysmiley/rollingbudget/actions/runs/45550963906)
+
+Cloudflare R2 integration, storage quotas, operation limits, automated
+retention, purge and automated recovery-point management are deferred.
