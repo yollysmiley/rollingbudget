@@ -32,11 +32,17 @@ for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: '
     try {
       const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height } });
       await page.addInitScript(() => {
-        const user = { id: 'synthetic-category-owner', email: 'category@example.invalid' };
+        const owners = [{ id:'synthetic-category-owner', email:'category@example.invalid' }, { id:'synthetic-category-owner-b', email:'category-b@example.invalid' }];
+        let user = owners.find(owner => owner.id === sessionStorage.getItem('category-owner')) || owners[0];
+        let listener;
         const key = 'synthetic-category-rows';
         const rows = JSON.parse(sessionStorage.getItem(key) || '[]');
         const years = JSON.parse(sessionStorage.getItem(key + '-years') || '[]');
-        const state = window.__categoryFixture = { rows, years, deletes: 0, blocked: false };
+        const rules = JSON.parse(sessionStorage.getItem(key + '-rules') || '[]');
+        const state = window.__categoryFixture = { rows, years, rules, deletes: 0, blocked: false,
+          switchOwner(index) { user = owners[index]; sessionStorage.setItem('category-owner',user.id); listener('SIGNED_IN',{user}); },
+          persistRules() { sessionStorage.setItem(key + '-rules',JSON.stringify(rules)); }
+        };
         const persist = () => { sessionStorage.setItem(key, JSON.stringify(rows)); sessionStorage.setItem(key + '-years', JSON.stringify(years)); };
         const queryFor = table => {
           let operation = 'select', payload, filters = [];
@@ -53,7 +59,7 @@ for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: '
             if (operation === 'update') { matches.forEach(row => Object.assign(row,payload)); persist(); }
             if (operation === 'delete') {
               state.deletes++;
-              if (state.blocked || years.some(year => year.budget_data.months?.some(month => month.expenses?.some(entry => matches.some(row => row.id === entry.categoryId))))) return { data: null, error: { code: '23503' } };
+              if (state.blocked || rules.some(rule => matches.some(row => row.user_id === rule.user_id && row.id === rule.category)) || years.some(year => year.budget_data.months?.some(month => month.expenses?.some(entry => matches.some(row => row.id === entry.categoryId))))) return { data: null, error: { code: '23503' } };
               matches.forEach(row => records.splice(records.indexOf(row),1)); persist();
             }
             return { data: matches.map(row => ({ ...row })), error: null };
@@ -70,7 +76,7 @@ for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: '
           };
         };
         window.supabase = { createClient: () => ({
-          auth: { getUser: async () => ({ data:{user},error:null }), onAuthStateChange: () => ({ data:{subscription:{unsubscribe(){}}} }) },
+          auth: { getUser: async () => ({ data:{user},error:null }), onAuthStateChange: callback => { listener=callback; return { data:{subscription:{unsubscribe(){}}} }; } },
           from: queryFor
         }) };
       });
@@ -118,6 +124,25 @@ for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: '
       await open();
       await row.filter({hasText:'Renamed Travel'}).waitFor();
       assert.equal(await row.getAttribute('data-expense-category-id'),id);
+      // Validation must reject invalid names before any new row is stored.
+      await form.locator('input').fill('Renamed Travel');
+      await form.locator('button').click();
+      await root.getByRole('status').filter({hasText:'nonblank and unique'}).waitFor();
+      await form.locator('input').fill('   ');
+      await form.locator('button').click();
+      await root.getByRole('status').filter({hasText:'nonblank and unique'}).waitFor();
+      assert.equal(await page.evaluate(() => window.__categoryFixture.rows.length),1);
+      // Simulate another device updating the authoritative revision.
+      await page.evaluate(() => { const record=window.__categoryFixture.rows[0]; record.updated_at=new Date(Date.parse(record.updated_at)+1000).toISOString(); });
+      await row.locator('[data-expense-category-action="rename"]').click();
+      await row.locator('input').fill('Stale overwrite');
+      await row.locator('button[type="submit"]').click();
+      await root.getByRole('status').filter({hasText:'Category changed on another device; reload'}).waitFor();
+      assert.equal(await page.evaluate(() => window.__categoryFixture.rows[0].name),'Renamed Travel');
+      await page.evaluate(() => sessionStorage.setItem('synthetic-category-rows',JSON.stringify(window.__categoryFixture.rows)));
+      await page.reload({waitUntil:'domcontentloaded'});
+      await open();
+      await row.filter({hasText:'Renamed Travel'}).waitFor();
       await row.locator('[data-expense-category-action="delete"]').click();
       await page.locator('#rbDialogCancel').click();
       assert.equal(await page.evaluate(() => window.__categoryFixture.deletes),0);
@@ -134,6 +159,23 @@ for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: '
       await card.getByRole('button',{name:'Delete expense'}).click();
       await page.waitForFunction(id => window.__categoryFixture.years.every(year => year.budget_data.months.every(month => !month.expenses?.some(entry => entry.categoryId === id))),id);
       await goSettings();
+      await page.evaluate(id => { const f=window.__categoryFixture; f.rules.push({user_id:currentUser.id,category:id}); f.persistRules(); },id);
+      await row.locator('[data-expense-category-action="delete"]').click();
+      await page.locator('#rbDialogAccept').click();
+      await root.getByRole('status').filter({hasText:'Category is in use by a saved budget or recurring rule'}).waitFor();
+      assert.equal(await row.count(),1);
+      await page.evaluate(() => { const f=window.__categoryFixture; f.rules.splice(0); f.persistRules(); });
+      await page.evaluate(() => window.__categoryFixture.switchOwner(1));
+      await page.waitForFunction(() => currentUser?.id === 'synthetic-category-owner-b' && expenseCategoryOwner === currentUser.id && accountReadyOwner === currentUser.id);
+      assert.equal(await row.count(),0);
+      assert.equal(await card.count(),0);
+      await page.reload({waitUntil:'domcontentloaded'});
+      await open();
+      assert.equal(await row.count(),0);
+      assert.equal(await card.count(),0);
+      await page.evaluate(() => window.__categoryFixture.switchOwner(0));
+      await page.waitForFunction(() => currentUser?.id === 'synthetic-category-owner' && expenseCategoryOwner === currentUser.id && accountReadyOwner === currentUser.id);
+      await row.filter({hasText:'Renamed Travel'}).waitFor();
       await row.locator('[data-expense-category-action="delete"]').click();
       await page.locator('#rbDialogAccept').click();
       await row.waitFor({state:'detached'});

@@ -99,3 +99,5 @@ Staging recovery expiration retest passed by owner report after waiting; exact e
 Phase 3C.2H.1 adds desktop/mobile category CRUD acceptance with real storage service and isolated mocked Supabase rows, reload persistence, cancellation and foreign-key conflict feedback. Further budget-card and owner isolation scenarios remain pending.
 
 H.2 extends category acceptance with synthetic budget-year writes through the actual revision service, stable category IDs, refresh persistence and reference-aware deletion. The mock models foreign key rejection; PostgreSQL runtime tests remain authoritative.
+
+H.3 covers invalid names, stale category revisions, synthetic recurring reference deletion rejection, and category owner switching across reload. Recurring reference fixtures simulate database rejection; the PostgreSQL suite validates actual enforcement.
