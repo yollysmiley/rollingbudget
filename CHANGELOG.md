@@ -133,3 +133,5 @@
 - Phase 3C.2F: align category extraction, simplify deletion and synchronize dependency deltas.
 
 - Phase 3C.2G: expanded category concurrency scenarios, rollback assertions and failure cleanup.
+
+- Correct 3C.2G reference-removal race expectations: accept immediate foreign key rejection or lock wait, retry after committed removal, verify rollback preserves dependencies.
