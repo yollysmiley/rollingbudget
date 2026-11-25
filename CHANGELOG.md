@@ -1,5 +1,7 @@
 ## Unreleased — Legacy budget access hardening
 
+- CI #96 passed on 799fbe7; add rollback and isolated browser cloud compatibility regression (fresh CI pending).
+
 - Restrict legacy table grants and policies, verify effective privileges transactionally, and exercise synthetic owner CRUD before and after the eight additive migrations. Production application pending separate approval.
 
 ## Unreleased — Phase 2D.1 (PR preparation)

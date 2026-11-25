@@ -55,6 +55,30 @@ CREATE TABLE audit_snapshot.before_years AS SELECT user_id,year,budget_data,upda
 CREATE TABLE audit_snapshot.before_legacy AS SELECT user_id,state,updated_at FROM public.budget_data;
 SQL
 
+# Force the final policy-count guard to fail after grants and policies are changed.
+psql -X -v ON_ERROR_STOP=1 <<'SQL'
+CREATE POLICY fixture_unexpected ON public.budget_data FOR SELECT USING (false);
+CREATE TABLE audit_snapshot.before_acl AS SELECT relacl,relrowsecurity FROM pg_class WHERE oid='public.budget_data'::regclass;
+CREATE TABLE audit_snapshot.before_policies AS SELECT * FROM pg_policies WHERE schemaname='public' AND tablename='budget_data';
+SQL
+failure=$(mktemp)
+trap 'rm -f "$failure"' EXIT
+if psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261114190000_tighten_legacy_budget_data_access.sql >"$failure" 2>&1; then
+  echo 'Unexpected migration success' >&2; exit 1
+fi
+grep -q 'Unexpected policies' "$failure"
+psql -X -v ON_ERROR_STOP=1 <<'SQL'
+DO $ BEGIN
+ IF EXISTS (SELECT relacl,relrowsecurity FROM pg_class WHERE oid='public.budget_data'::regclass EXCEPT SELECT * FROM audit_snapshot.before_acl)
+ OR EXISTS (SELECT * FROM pg_policies WHERE schemaname='public' AND tablename='budget_data' EXCEPT SELECT * FROM audit_snapshot.before_policies)
+ OR EXISTS (SELECT * FROM audit_snapshot.before_policies EXCEPT SELECT * FROM pg_policies WHERE schemaname='public' AND tablename='budget_data')
+ OR EXISTS (SELECT user_id,state,updated_at FROM public.budget_data EXCEPT SELECT * FROM audit_snapshot.before_legacy)
+ OR EXISTS (SELECT * FROM audit_snapshot.before_legacy EXCEPT SELECT user_id,state,updated_at FROM public.budget_data)
+ THEN RAISE EXCEPTION 'Failed migration did not roll back'; END IF;
+END $;
+DROP POLICY fixture_unexpected ON public.budget_data;
+SQL
+
 # Apply the standalone legacy security migration before the redesign sequence.
 psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261114190000_tighten_legacy_budget_data_access.sql
 psql -X -v ON_ERROR_STOP=1 -f tests/legacy-budget-access-runtime.sql
