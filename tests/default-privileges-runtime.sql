@@ -128,4 +128,47 @@ BEGIN
  IF FOUND IS FALSE THEN RAISE EXCEPTION 'Unused category deletion failed'; END IF;
 END $category_cross_owner$;
 RESET ROLE;
+DO $embedded_acl$
+DECLARE r text;
+BEGIN
+ FOREACH r IN ARRAY ARRAY['anon','authenticated','service_role'] LOOP
+  IF has_schema_privilege(r,'budget_internal','USAGE') OR has_table_privilege(r,'budget_internal.year_category_refs','INSERT,UPDATE,DELETE,SELECT') OR has_function_privilege(r,'budget_internal.sync_year_category_refs()','EXECUTE') THEN
+   RAISE EXCEPTION 'Internal reference privileges exposed';
+  END IF;
+ END LOOP;
+END $embedded_acl$;
+SET ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000105',true);
+INSERT INTO public.budget_expense_categories(user_id,id,name) VALUES (auth.uid(),'embedded','Embedded');
+INSERT INTO public.budget_ui_years(user_id,year,budget_data) VALUES
+ (auth.uid(),2030,'{"months":[{"expenses":[{"categoryId":"embedded"}]}]}'),
+ (auth.uid(),2031,'{"months":[{"fixed":[{"category_id":"embedded"}]}]}');
+DO $embedded_refs$
+BEGIN
+ BEGIN
+  DELETE FROM public.budget_expense_categories WHERE id='embedded';
+  RAISE EXCEPTION 'Referenced category deleted';
+ EXCEPTION WHEN foreign_key_violation THEN NULL;
+ END;
+ BEGIN
+  UPDATE public.budget_ui_years SET budget_data='{"months":[{"expenses":[{"categoryId":"missing"}]}]}' WHERE year=2030;
+  RAISE EXCEPTION 'Missing embedded category accepted';
+ EXCEPTION WHEN foreign_key_violation THEN NULL;
+ END;
+ BEGIN
+  UPDATE public.budget_ui_years SET budget_data='{"months":[{"expenses":{}}]}' WHERE year=2030;
+  RAISE EXCEPTION 'Malformed expense collection accepted';
+ EXCEPTION WHEN check_violation THEN NULL;
+ END;
+ DELETE FROM public.budget_ui_years WHERE year=2030;
+ BEGIN
+  DELETE FROM public.budget_expense_categories WHERE id='embedded';
+  RAISE EXCEPTION 'Second year reference lost';
+ EXCEPTION WHEN foreign_key_violation THEN NULL;
+ END;
+ UPDATE public.budget_ui_years SET budget_data='{"months":[{"fixed":[]}]}' WHERE year=2031;
+ DELETE FROM public.budget_expense_categories WHERE id='embedded';
+ IF NOT FOUND THEN RAISE EXCEPTION 'Unused category deletion failed'; END IF;
+END $embedded_refs$;
+RESET ROLE;
 ROLLBACK;

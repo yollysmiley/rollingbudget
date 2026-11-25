@@ -86,3 +86,6 @@ The shared disposable upgrade/restore fixture checks ownership, RLS, effective g
 
 ## Phase 3C.2B candidate migration
 After the existing eight redesign migrations, apply `supabase/migrations/20261125120000_enforce_recurring_category_owner.sql` only after separate cutover approval and managed rehearsal. Reserved category collisions or orphaned recurring categories cause transactional failure; do not rewrite records. The generated column excludes built-ins; the composite foreign key protects disabled rules as well. Embedded budget dependencies remain Phase 3C.2C. The generated column is read-only; clients must continue sending explicit writable fields.
+
+## Phase 3C.2C candidate migration
+Apply `supabase/migrations/20261125121000_protect_embedded_category_refs.sql` after 3C.2B only with separate production approval. The private dependency table is populated from existing year documents without changing their financial data. Missing legacy collections are tolerated; present malformed collections or invalid explicit references abort the transaction. Foreign keys protect concurrent category deletion; independent-session concurrency tests and managed rehearsal remain required.

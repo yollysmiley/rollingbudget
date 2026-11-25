@@ -123,3 +123,5 @@
 - Phase 3C.2A: align reserved category identifiers and strengthen category reference validation; add regression coverage.
 
 - Phase 3C.2B: add owner-scoped recurring category foreign key and reserved ID constraint, with upgrade/restore regression probes.
+
+- Phase 3C.2C: maintain private year category dependencies transactionally; add upgrade and restore regression probes.

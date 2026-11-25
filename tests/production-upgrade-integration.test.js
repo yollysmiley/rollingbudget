@@ -62,3 +62,13 @@ test("recurring category migration is explicit and owner scoped", () => {
  assert.match(readFileSync(path,"utf8"), /FOREIGN KEY \(user_id,custom_category_id\)/);
  assert.ok(readFileSync("tests/default-privileges-runtime.sql","utf8").includes("DO $category_cross_owner$"));
 });
+
+test("embedded category migration is explicit and private", () => {
+ const path="supabase/migrations/20261125121000_protect_embedded_category_refs.sql";
+ assert.ok(upgrade.includes(path));
+ const sql=readFileSync(path,"utf8");
+ assert.match(sql,/FOREIGN KEY \(user_id,category_id\)/);
+ assert.match(sql,/AFTER INSERT OR UPDATE/);
+ assert.match(sql,/SET search_path = pg_catalog/);
+ assert.ok(readFileSync("tests/default-privileges-runtime.sql","utf8").includes("DO $embedded_refs$"));
+});
