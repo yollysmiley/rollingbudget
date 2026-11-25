@@ -33,3 +33,5 @@ test("legacy budget hardening never changes or deletes financial records", () =>
 test("migration checks effective grants before commit",()=>{assert.match(migration,/has_table_privilege/);assert.match(migration,/SET LOCAL lock_timeout/);assert.match(migration,/relrowsecurity/);});
 
 test('migration rejects unexpected column grants, delegation and role escalation',()=>{for(const guard of ['has_any_column_privilege','WITH GRANT OPTION','pg_has_role','rolbypassrls','Missing service privilege']) assert.ok(migration.includes(guard),guard);});
+
+test('column and delegation diagnostics remain distinct',()=>{assert.match(migration,/Unexpected column privilege:/);assert.match(migration,/Unexpected column grant option:/);});

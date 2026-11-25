@@ -1,5 +1,7 @@
 ## Unreleased — Legacy budget access hardening
 
+- Correct CI #102 direct-column remediation expectation; add inherited-column and independent membership rejection, exact diagnostics and full rollback snapshots.
+
 - Add fail-closed column, delegation, role and administrative guards and negative rollback regressions; match production FK cascade.
 
 - CI #96 passed on 799fbe7; add rollback and isolated browser cloud compatibility regression (fresh CI pending).

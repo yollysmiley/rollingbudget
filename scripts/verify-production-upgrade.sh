@@ -86,36 +86,59 @@ END $rollback$;
 DROP POLICY fixture_unexpected ON public.budget_data;
 SQL
 
-# Each negative fixture must fail for the intended reason and leave original policies intact.
+# Snapshot each unsafe fixture before testing its exact rejection reason.
 expect_guard_failure() {
+  echo "Testing rejection: $1"
+  psql -X -v ON_ERROR_STOP=1 <<'SQL'
+DROP TABLE IF EXISTS audit_snapshot.negative_before;
+CREATE TABLE audit_snapshot.negative_before AS
+SELECT jsonb_build_object(
+ 'table', (SELECT to_jsonb(c) FROM (SELECT relacl,relrowsecurity,relforcerowsecurity,relowner FROM pg_class WHERE oid='public.budget_data'::regclass) c),
+ 'columns', (SELECT jsonb_agg(to_jsonb(a) ORDER BY attnum) FROM (SELECT attnum,attacl FROM pg_attribute WHERE attrelid='public.budget_data'::regclass AND attnum>0 AND NOT attisdropped) a),
+ 'policies', (SELECT jsonb_agg(to_jsonb(p) ORDER BY policyname) FROM pg_policies p WHERE schemaname='public' AND tablename='budget_data'),
+ 'legacy', (SELECT jsonb_agg(to_jsonb(b) ORDER BY id) FROM public.budget_data b),
+ 'years', (SELECT jsonb_agg(to_jsonb(y) ORDER BY user_id,year) FROM public.budget_ui_years y)
+) AS snapshot;
+SQL
   if psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261114190000_tighten_legacy_budget_data_access.sql >"$failure" 2>&1; then
-    echo 'Unexpected migration success' >&2; exit 1
+    echo "Unexpected migration success: $1" >&2; exit 1
   fi
-  if ! grep -Fq "$1" "$failure"; then cat "$failure" >&2; exit 1; fi
+  if ! grep -Fq "ERROR:  $1" "$failure"; then cat "$failure" >&2; exit 1; fi
   psql -X -v ON_ERROR_STOP=1 <<'SQL'
 DO $negative$
 BEGIN
- IF (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND tablename='budget_data' AND roles=ARRAY['public']::name[]) <> 4
- OR NOT has_table_privilege('anon','public.budget_data','TRUNCATE')
- THEN RAISE EXCEPTION 'Negative fixture did not roll back'; END IF;
+ IF (SELECT snapshot FROM audit_snapshot.negative_before) IS DISTINCT FROM jsonb_build_object(
+ 'table', (SELECT to_jsonb(c) FROM (SELECT relacl,relrowsecurity,relforcerowsecurity,relowner FROM pg_class WHERE oid='public.budget_data'::regclass) c),
+ 'columns', (SELECT jsonb_agg(to_jsonb(a) ORDER BY attnum) FROM (SELECT attnum,attacl FROM pg_attribute WHERE attrelid='public.budget_data'::regclass AND attnum>0 AND NOT attisdropped) a),
+ 'policies', (SELECT jsonb_agg(to_jsonb(p) ORDER BY policyname) FROM pg_policies p WHERE schemaname='public' AND tablename='budget_data'),
+ 'legacy', (SELECT jsonb_agg(to_jsonb(b) ORDER BY id) FROM public.budget_data b),
+ 'years', (SELECT jsonb_agg(to_jsonb(y) ORDER BY user_id,year) FROM public.budget_ui_years y)
+ ) THEN RAISE EXCEPTION 'Negative fixture did not roll back'; END IF;
 END $negative$;
 SQL
 }
-psql -X -v ON_ERROR_STOP=1 -c 'GRANT SELECT(state) ON public.budget_data TO anon'
-expect_guard_failure 'Unexpected column privilege'
-psql -X -v ON_ERROR_STOP=1 -c 'REVOKE SELECT(state) ON public.budget_data FROM anon'
+psql -X -v ON_ERROR_STOP=1 -c 'CREATE ROLE fixture_column NOLOGIN; GRANT SELECT(state) ON public.budget_data TO fixture_column; GRANT fixture_column TO anon WITH INHERIT TRUE'
+expect_guard_failure 'Unexpected column privilege: SELECT'
+psql -X -v ON_ERROR_STOP=1 -c 'REVOKE fixture_column FROM anon; REVOKE SELECT(state) ON public.budget_data FROM fixture_column; DROP ROLE fixture_column'
 psql -X -v ON_ERROR_STOP=1 -c 'GRANT DELETE ON public.budget_data TO authenticated WITH GRANT OPTION'
-expect_guard_failure 'Unexpected grant option'
+expect_guard_failure 'Unexpected grant option: DELETE'
 psql -X -v ON_ERROR_STOP=1 -c 'REVOKE GRANT OPTION FOR DELETE ON public.budget_data FROM authenticated'
-psql -X -v ON_ERROR_STOP=1 -c 'GRANT service_role TO authenticated'
-expect_guard_failure 'Unexpected effective privilege'
+psql -X -v ON_ERROR_STOP=1 -c 'GRANT service_role TO authenticated WITH INHERIT TRUE'
+expect_guard_failure 'Unexpected effective privilege: TRUNCATE'
 psql -X -v ON_ERROR_STOP=1 -c 'REVOKE service_role FROM authenticated'
+psql -X -v ON_ERROR_STOP=1 -c 'CREATE ROLE fixture_empty NOLOGIN; GRANT fixture_empty TO authenticated'
+expect_guard_failure 'Unexpected client role escalation'
+psql -X -v ON_ERROR_STOP=1 -c 'REVOKE fixture_empty FROM authenticated; DROP ROLE fixture_empty'
 psql -X -v ON_ERROR_STOP=1 -c 'ALTER ROLE authenticated BYPASSRLS'
 expect_guard_failure 'Unexpected client role escalation'
 psql -X -v ON_ERROR_STOP=1 -c 'ALTER ROLE authenticated NOBYPASSRLS'
 psql -X -v ON_ERROR_STOP=1 -c 'REVOKE MAINTAIN ON public.budget_data FROM service_role'
-expect_guard_failure 'Missing service privilege'
+expect_guard_failure 'Missing service privilege: MAINTAIN'
 psql -X -v ON_ERROR_STOP=1 -c 'GRANT MAINTAIN ON public.budget_data TO service_role'
+
+# Direct column grants are removed by the normal table revoke.
+echo 'Testing direct anonymous column grant remediation'
+psql -X -v ON_ERROR_STOP=1 -c 'GRANT SELECT(state) ON public.budget_data TO anon'
 
 # Apply the standalone legacy security migration before the redesign sequence.
 psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261114190000_tighten_legacy_budget_data_access.sql
