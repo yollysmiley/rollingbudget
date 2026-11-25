@@ -7,6 +7,17 @@ and the exact production tenant's session pooler URL (port 5432 with
 `sslmode=require`) in the `PRODUCTION_DB_URL` secret. The encrypted GitHub
 Actions artifact expires after seven days.
 
+## Connection validation troubleshooting
+
+If the export reports an unexpected production connection configuration, use
+the fixed diagnostic reason to check the protocol, production project username,
+session pooler hostname and port 5432, database name, password presence, or
+SSL query parameters. The script does not print the connection URI or password.
+Malformed URLs are rejected without a parser traceback. Correct the protected
+environment secret privately; do not paste credentials into logs or issues.
+A configuration rejection occurs before database export and does not establish
+whether the password is valid.
+
 ## Download and protect the recovery point
 
 1. From a trusted workstation, sign in to GitHub and confirm repository
