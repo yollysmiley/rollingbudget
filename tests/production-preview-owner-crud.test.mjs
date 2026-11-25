@@ -126,3 +126,12 @@ test('category reference contract reserves all built-in identifiers and preserve
   assert.equal(canDeleteExpenseCategory('custom',{2026:{months:[{fixed:[],variable:[],expenses:{}}]}},[]),false);
   assert.throws(()=>normalizeRecurringRule({id:'rule',name:'Bill',category:'missing',amount:1,startDate:'2026-01-01'}),/Unsupported recurring category/);
 });
+
+for (const viewport of ['desktop','mobile']) {
+ test('category delete handles concurrent database rejection ('+viewport+')', async () => {
+  const {deleteExpenseCategory}=await import('../production-next/scripts/expense-category-storage.mjs');
+  const row={id:'custom',name:'Custom',updated_at:'2026-01-01T00:00:00Z'};
+  const client={from(table){let deleting=false;return {select(){return this;},eq(){return this;},delete(){deleting=true;return this;},then(resolve,reject){return Promise.resolve(deleting?{error:{code:'23503'}}:{data:table==='budget_expense_categories'?[row]:[],error:null}).then(resolve,reject);}};}};
+  await assert.rejects(deleteExpenseCategory(client,'owner',[{...row,updatedAt:row.updated_at}],'custom'),/Category is in use by a saved budget or recurring rule/);
+ });
+}

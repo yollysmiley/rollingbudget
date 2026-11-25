@@ -89,3 +89,5 @@ After the existing eight redesign migrations, apply `supabase/migrations/2026112
 
 ## Phase 3C.2C candidate migration
 Apply `supabase/migrations/20261125121000_protect_embedded_category_refs.sql` after 3C.2B only with separate production approval. The private dependency table is populated from existing year documents without changing their financial data. Missing legacy collections are tolerated; present malformed collections or invalid explicit references abort the transaction. Foreign keys protect concurrent category deletion; independent-session concurrency tests and managed rehearsal remain required.
+
+Phase 3C.2D: category deletion maps SQLSTATE 23503 to actionable feedback. Existing browser inventories remain advisory. The disposable concurrency runner uses two independent authenticated sessions, observes lock contention, and requires SQLSTATE 23503 for the losing transaction in both write/delete orders. Managed rehearsal remains mandatory.

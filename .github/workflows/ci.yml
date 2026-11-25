@@ -98,6 +98,7 @@ jobs:
         run: |
           bash -n scripts/verify-production-upgrade.sh
           bash -n scripts/verify-production-restore.sh
+          bash -n scripts/verify-category-concurrency.sh
       - name: Replay additive migrations and rehearse synthetic backup restoration
         env:
           POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
@@ -106,6 +107,7 @@ jobs:
           test -n "$POSTGRES_CONTAINER"
           docker exec "$POSTGRES_CONTAINER" mkdir -p /tmp/rollingbudget-ci/scripts /tmp/rollingbudget-ci/supabase/migrations /tmp/rollingbudget-ci/tests
           docker cp scripts/verify-production-upgrade.sh "$POSTGRES_CONTAINER:/tmp/rollingbudget-ci/scripts/"
+          docker cp scripts/verify-category-concurrency.sh "$POSTGRES_CONTAINER:/tmp/rollingbudget-ci/scripts/"
           docker cp scripts/verify-production-restore.sh "$POSTGRES_CONTAINER:/tmp/rollingbudget-ci/scripts/"
           docker cp tests/legacy-budget-access-runtime.sql "$POSTGRES_CONTAINER:/tmp/rollingbudget-ci/tests/"
           docker cp tests/default-privileges-runtime.sql "$POSTGRES_CONTAINER:/tmp/rollingbudget-ci/tests/"
@@ -120,6 +122,7 @@ jobs:
               done
               psql -X -v ON_ERROR_STOP=1 -c "SELECT current_database(), version();"
               bash scripts/verify-production-restore.sh
+              bash scripts/verify-category-concurrency.sh
             '
 
   production-preview-build:

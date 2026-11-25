@@ -61,7 +61,7 @@ export async function updateExpenseCategory(client, userId, categories, id, name
 export async function deleteExpenseCategory(client, userId, categories, id) {
   requireOwner(client, userId);
   if (!categories.some(category => category.id === id)) throw new Error('Expense category not found');
-  // Read every owner-scoped cloud year and recurring rule. A failed or partial read must never authorize deletion.
+  // Advisory inventory check; database foreign keys are authoritative even if reads are paginated or stale.
   const { data: years, error: yearError } = await client.from('budget_ui_years')
     .select('year,budget_data').eq('user_id', userId);
   if (yearError) throw yearError;
@@ -80,6 +80,7 @@ export async function deleteExpenseCategory(client, userId, categories, id) {
   const revision = await currentRevision(client, userId, categories, id);
   const { data, error } = await client.from(tableName).delete()
     .eq('user_id', userId).eq('id', id).eq('updated_at', revision).select('id');
+  if (error?.code === '23503') throw new Error('Category is in use by a saved budget or recurring rule. Remove its references before deleting.');
   if (error) throw error;
   if (!Array.isArray(data) || data.length !== 1) throw new Error('Category changed on another device; reload');
 }
