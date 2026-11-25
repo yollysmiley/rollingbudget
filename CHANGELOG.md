@@ -149,3 +149,5 @@
 - Phase 3C.3A: shared account reference inventory and regression coverage for custom expenses, historical versions and legacy seeding.
 
 - Added release management governance covering scope freeze, change control, defect classification, fixed staging candidates, dependency and database readiness, regression review, CI and a single authoritative release PR checklist.
+
+- Phase 3C.3B: owner-scoped embedded account foreign keys, transactional reference synchronization, aligned zero legacy income semantics and runtime regression fixtures.

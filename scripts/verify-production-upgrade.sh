@@ -193,8 +193,9 @@ migrations=(
   supabase/migrations/20261125121000_protect_embedded_category_refs.sql
   supabase/migrations/20261125122000_complete_category_references.sql
   supabase/migrations/20261125123000_optimize_category_reference_sync.sql
+  supabase/migrations/20261125124000_protect_embedded_account_refs.sql
 )
-if [[ "${#migrations[@]}" -ne 12 ]]; then
+if [[ "${#migrations[@]}" -ne 13 ]]; then
   echo "Expected exactly twelve approved migrations" >&2
   exit 1
 fi

@@ -31,11 +31,14 @@ function requireReferenceArray(value) {
 }
 function collectAccountFields(entry, refs) {
   requireReferenceObject(entry);
+  let prior;
   for (const field of ['accountId', 'account_id', 'acct']) {
     if (!Object.hasOwn(entry, field)) continue;
     const id = entry[field];
     if (id === null || id === '') continue;
-    if (typeof id !== 'string' || !id.trim() || id !== id.trim()) throw new TypeError('Invalid account reference');
+    if (typeof id !== 'string' || !id.trim() || id !== id.trim() || [...id].length > 80) throw new TypeError('Invalid account reference');
+    if (prior !== undefined && prior !== id) throw new TypeError('Conflicting account aliases');
+    prior = id;
     refs.add(id);
   }
 }
@@ -47,7 +50,7 @@ export function extractRuleAccountRefs(rules, refs = new Set()) {
   }
   return refs;
 }
-export function extractBudgetAccountRefs(year, { includeZeroLegacy = true } = {}) {
+export function extractBudgetAccountRefs(year) {
   requireReferenceObject(year);
   const refs = new Set();
   if (Object.hasOwn(year, 'recurringRules')) extractRuleAccountRefs(year.recurringRules, refs);
@@ -62,7 +65,10 @@ export function extractBudgetAccountRefs(year, { includeZeroLegacy = true } = {}
         collectAccountFields(entry, refs);
         if (key === 'income') {
           for (const id of ['cpm', 'usaa']) {
-            if (Object.hasOwn(entry, id) && (includeZeroLegacy || (Number(entry[id]) || 0) !== 0)) refs.add(id);
+            const raw = entry[id];
+            if (raw == null || (typeof raw === 'string' && !raw.trim())) continue;
+            if (!['string','number'].includes(typeof raw) || !/^[+-]?(?:[0-9]+(?:[.][0-9]*)?|[.][0-9]+)(?:[eE][+-]?[0-9]+)?$/.test(String(raw).trim()) || !Number.isFinite(Number(raw))) throw new TypeError('Invalid legacy income');
+            if (Number(raw) !== 0) refs.add(id);
           }
         }
       }
@@ -74,7 +80,7 @@ export function requiredLegacyAccounts(yearDocuments = {}) {
   requireReferenceObject(yearDocuments);
   const required = new Set();
   for (const year of Object.values(yearDocuments)) {
-    for (const id of extractBudgetAccountRefs(year, { includeZeroLegacy: false })) required.add(id);
+    for (const id of extractBudgetAccountRefs(year)) required.add(id);
   }
   return LEGACY_ACCOUNTS.filter(account => required.has(account.id));
 }
