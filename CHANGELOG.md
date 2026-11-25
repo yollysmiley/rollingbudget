@@ -3,6 +3,8 @@
 - Add protected manual Supabase logical export with Age encryption and contract tests. No application changes or production execution.
 - Validate encryption recipient before export, publish completed ciphertext only, and add synthetic runtime regression with mocked CLI and real Age. Production CI #91 passed on b635e99; actual CLI compatibility, artifact access and owner key recovery remain separate gates.
 
+- Added a pinned Supabase CLI 2.79.0 export and encrypted restoration rehearsal against disposable PostgreSQL 17 fixtures with simplified Auth schema, migration history and two-owner RLS checks. CI evidence pending; managed Supabase compatibility and real recovery remain unverified.
+
 ## Unreleased — Phase 2D.1 (PR preparation)
 
 - Staged eight reviewed, additive staging-derived SQL migrations for production accounts, recurring rules, custom expense categories, RLS and privilege hardening; **not applied to production**.
