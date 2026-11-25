@@ -127,3 +127,5 @@
 - Phase 3C.2C: maintain private year category dependencies transactionally; add upgrade and restore regression probes.
 
 - Phase 3C.2D: category conflict feedback and independent-session concurrency regression in existing schema CI job.
+
+- Phase 3C.2E: protect historical and embedded recurring category references and reject missing expense category IDs.

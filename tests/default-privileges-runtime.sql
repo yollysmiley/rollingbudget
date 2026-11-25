@@ -171,4 +171,32 @@ BEGIN
  IF NOT FOUND THEN RAISE EXCEPTION 'Unused category deletion failed'; END IF;
 END $embedded_refs$;
 RESET ROLE;
+SET ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000105',true);
+INSERT INTO public.budget_expense_categories(user_id,id,name) VALUES (auth.uid(),'history','History');
+INSERT INTO public.budget_recurring_rules(user_id,id,name,category,amount,frequency,start_date,versions) VALUES (auth.uid(),'history-rule','History','fixed',1,'monthly','2026-01-01','[{"categoryId":"history"}]');
+DO $historical_refs$
+BEGIN
+ BEGIN
+  DELETE FROM public.budget_expense_categories WHERE id='history';
+  RAISE EXCEPTION 'Historical rule category deleted';
+ EXCEPTION WHEN foreign_key_violation THEN NULL;
+ END;
+ DELETE FROM public.budget_recurring_rules WHERE id='history-rule';
+ INSERT INTO public.budget_ui_years(user_id,year,budget_data) VALUES (auth.uid(),2042,'{"recurringRules":[{"category":"history"}]}');
+ BEGIN
+  DELETE FROM public.budget_expense_categories WHERE id='history';
+  RAISE EXCEPTION 'Embedded rule category deleted';
+ EXCEPTION WHEN foreign_key_violation THEN NULL;
+ END;
+ BEGIN
+  UPDATE public.budget_ui_years SET budget_data='{"months":[{"expenses":[{"amount":1}]}]}' WHERE year=2042;
+  RAISE EXCEPTION 'Missing category accepted';
+ EXCEPTION WHEN check_violation THEN NULL;
+ END;
+ DELETE FROM public.budget_ui_years WHERE year=2042;
+ DELETE FROM public.budget_expense_categories WHERE id='history';
+ IF NOT FOUND THEN RAISE EXCEPTION 'Unused historical category not deleted'; END IF;
+END $historical_refs$;
+RESET ROLE;
 ROLLBACK;

@@ -72,3 +72,10 @@ test("embedded category migration is explicit and private", () => {
  assert.match(sql,/SET search_path = pg_catalog/);
  assert.ok(readFileSync("tests/default-privileges-runtime.sql","utf8").includes("DO $embedded_refs$"));
 });
+
+test("historical category integrity migration is included",()=>{
+ const path="supabase/migrations/20261125122000_complete_category_references.sql";
+ assert.ok(upgrade.includes(path));
+ assert.match(readFileSync(path,"utf8"),/FOREIGN KEY\(user_id,category_id\)/);
+ assert.ok(readFileSync("tests/default-privileges-runtime.sql","utf8").includes("DO $historical_refs$"));
+});
