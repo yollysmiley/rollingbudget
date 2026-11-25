@@ -16,7 +16,7 @@ DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='anon') THEN CREATE ROLE anon NOLOGIN; END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='authenticated') THEN CREATE ROLE authenticated NOLOGIN; END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='service_role') THEN CREATE ROLE service_role NOLOGIN; END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='service_role') THEN CREATE ROLE service_role NOLOGIN BYPASSRLS; END IF;
 END $$;
 CREATE SCHEMA auth;
 CREATE TABLE auth.users (id uuid PRIMARY KEY);
@@ -25,13 +25,17 @@ CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS
 GRANT USAGE ON SCHEMA auth TO authenticated;
 CREATE TABLE public.budget_data (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid UNIQUE NOT NULL REFERENCES auth.users(id),
+  user_id uuid UNIQUE NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   state jsonb NOT NULL DEFAULT '{}'::jsonb,
   updated_at timestamptz DEFAULT now()
 );
 ALTER TABLE public.budget_data ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users own their data" ON public.budget_data FOR ALL
   USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+GRANT ALL ON public.budget_data TO anon, authenticated, service_role;
+CREATE POLICY "Users can read own data" ON public.budget_data FOR SELECT USING (auth.uid()=user_id);
+CREATE POLICY "Users can insert own data" ON public.budget_data FOR INSERT WITH CHECK (auth.uid()=user_id);
+CREATE POLICY "Users can update own data" ON public.budget_data FOR UPDATE USING (auth.uid()=user_id) WITH CHECK (auth.uid()=user_id);
 INSERT INTO auth.users(id) VALUES
  ('00000000-0000-4000-8000-000000000101'),
  ('00000000-0000-4000-8000-000000000102');
@@ -48,7 +52,7 @@ INSERT INTO public.budget_ui_years(user_id,year,budget_data) VALUES
  ('00000000-0000-4000-8000-000000000102',2027,'{"months":[{"owner":"b"}],"sentinel":"untouched-b"}');
 CREATE SCHEMA audit_snapshot;
 CREATE TABLE audit_snapshot.before_years AS SELECT user_id,year,budget_data,updated_at FROM public.budget_ui_years;
-CREATE TABLE audit_snapshot.before_legacy AS SELECT user_id,state,updated_at FROM public.budget_data;
+CREATE TABLE audit_snapshot.before_legacy AS SELECT id,user_id,state,updated_at FROM public.budget_data;
 SQL
 
 # Optional synthetic backup checkpoint for the CI restoration rehearsal.
@@ -58,6 +62,94 @@ if [[ -n "${REHEARSAL_DIR:-}" ]]; then
   pg_dump --data-only --inserts --file="${REHEARSAL_DIR}/before.data"
 fi
 
+# Force the final policy-count guard to fail after grants and policies are changed.
+psql -X -v ON_ERROR_STOP=1 <<'SQL'
+CREATE POLICY fixture_unexpected ON public.budget_data FOR SELECT USING (false);
+CREATE TABLE audit_snapshot.before_acl AS SELECT relacl,relrowsecurity FROM pg_class WHERE oid='public.budget_data'::regclass;
+CREATE TABLE audit_snapshot.before_policies AS SELECT * FROM pg_policies WHERE schemaname='public' AND tablename='budget_data';
+SQL
+failure=$(mktemp)
+trap 'rm -f "$failure"' EXIT
+if psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261114190000_tighten_legacy_budget_data_access.sql >"$failure" 2>&1; then
+  echo 'Unexpected migration success' >&2; exit 1
+fi
+if ! grep -q 'Unexpected policies' "$failure"; then
+  cat "$failure" >&2
+  exit 1
+fi
+psql -X -v ON_ERROR_STOP=1 <<'SQL'
+DO $rollback$
+BEGIN
+ IF EXISTS (SELECT relacl,relrowsecurity FROM pg_class WHERE oid='public.budget_data'::regclass EXCEPT SELECT * FROM audit_snapshot.before_acl)
+ OR EXISTS (SELECT * FROM audit_snapshot.before_acl EXCEPT SELECT relacl,relrowsecurity FROM pg_class WHERE oid='public.budget_data'::regclass)
+ OR EXISTS (SELECT * FROM pg_policies WHERE schemaname='public' AND tablename='budget_data' EXCEPT SELECT * FROM audit_snapshot.before_policies)
+ OR EXISTS (SELECT * FROM audit_snapshot.before_policies EXCEPT SELECT * FROM pg_policies WHERE schemaname='public' AND tablename='budget_data')
+ OR EXISTS (SELECT id,user_id,state,updated_at FROM public.budget_data EXCEPT SELECT * FROM audit_snapshot.before_legacy)
+ OR EXISTS (SELECT * FROM audit_snapshot.before_legacy EXCEPT SELECT id,user_id,state,updated_at FROM public.budget_data)
+ OR EXISTS (SELECT user_id,year,budget_data,updated_at FROM public.budget_ui_years EXCEPT SELECT * FROM audit_snapshot.before_years)
+ OR EXISTS (SELECT * FROM audit_snapshot.before_years EXCEPT SELECT user_id,year,budget_data,updated_at FROM public.budget_ui_years)
+ THEN RAISE EXCEPTION 'Failed migration did not roll back'; END IF;
+END $rollback$;
+DROP POLICY fixture_unexpected ON public.budget_data;
+SQL
+
+# Snapshot each unsafe fixture before testing its exact rejection reason.
+expect_guard_failure() {
+  echo "Testing rejection: $1"
+  psql -X -v ON_ERROR_STOP=1 <<'SQL'
+DROP TABLE IF EXISTS audit_snapshot.negative_before;
+CREATE TABLE audit_snapshot.negative_before AS
+SELECT jsonb_build_object(
+ 'table', (SELECT to_jsonb(c) FROM (SELECT relacl,relrowsecurity,relforcerowsecurity,relowner FROM pg_class WHERE oid='public.budget_data'::regclass) c),
+ 'columns', (SELECT jsonb_agg(to_jsonb(a) ORDER BY attnum) FROM (SELECT attnum,attacl FROM pg_attribute WHERE attrelid='public.budget_data'::regclass AND attnum>0 AND NOT attisdropped) a),
+ 'policies', (SELECT jsonb_agg(to_jsonb(p) ORDER BY policyname) FROM pg_policies p WHERE schemaname='public' AND tablename='budget_data'),
+ 'legacy', (SELECT jsonb_agg(to_jsonb(b) ORDER BY id) FROM public.budget_data b),
+ 'years', (SELECT jsonb_agg(to_jsonb(y) ORDER BY user_id,year) FROM public.budget_ui_years y)
+) AS snapshot;
+SQL
+  if psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261114190000_tighten_legacy_budget_data_access.sql >"$failure" 2>&1; then
+    echo "Unexpected migration success: $1" >&2; exit 1
+  fi
+  if ! grep -Fq "ERROR:  $1" "$failure"; then cat "$failure" >&2; exit 1; fi
+  psql -X -v ON_ERROR_STOP=1 <<'SQL'
+DO $negative$
+BEGIN
+ IF (SELECT snapshot FROM audit_snapshot.negative_before) IS DISTINCT FROM jsonb_build_object(
+ 'table', (SELECT to_jsonb(c) FROM (SELECT relacl,relrowsecurity,relforcerowsecurity,relowner FROM pg_class WHERE oid='public.budget_data'::regclass) c),
+ 'columns', (SELECT jsonb_agg(to_jsonb(a) ORDER BY attnum) FROM (SELECT attnum,attacl FROM pg_attribute WHERE attrelid='public.budget_data'::regclass AND attnum>0 AND NOT attisdropped) a),
+ 'policies', (SELECT jsonb_agg(to_jsonb(p) ORDER BY policyname) FROM pg_policies p WHERE schemaname='public' AND tablename='budget_data'),
+ 'legacy', (SELECT jsonb_agg(to_jsonb(b) ORDER BY id) FROM public.budget_data b),
+ 'years', (SELECT jsonb_agg(to_jsonb(y) ORDER BY user_id,year) FROM public.budget_ui_years y)
+ ) THEN RAISE EXCEPTION 'Negative fixture did not roll back'; END IF;
+END $negative$;
+SQL
+}
+psql -X -v ON_ERROR_STOP=1 -c 'CREATE ROLE fixture_column NOLOGIN; GRANT SELECT(state) ON public.budget_data TO fixture_column; GRANT fixture_column TO anon WITH INHERIT TRUE'
+expect_guard_failure 'Unexpected column privilege: SELECT'
+psql -X -v ON_ERROR_STOP=1 -c 'REVOKE fixture_column FROM anon; REVOKE SELECT(state) ON public.budget_data FROM fixture_column; DROP ROLE fixture_column'
+psql -X -v ON_ERROR_STOP=1 -c 'GRANT DELETE ON public.budget_data TO authenticated WITH GRANT OPTION'
+expect_guard_failure 'Unexpected grant option: DELETE'
+psql -X -v ON_ERROR_STOP=1 -c 'REVOKE GRANT OPTION FOR DELETE ON public.budget_data FROM authenticated'
+psql -X -v ON_ERROR_STOP=1 -c 'GRANT service_role TO authenticated WITH INHERIT TRUE'
+expect_guard_failure 'Unexpected effective privilege: TRUNCATE'
+psql -X -v ON_ERROR_STOP=1 -c 'REVOKE service_role FROM authenticated'
+psql -X -v ON_ERROR_STOP=1 -c 'CREATE ROLE fixture_empty NOLOGIN; GRANT fixture_empty TO authenticated'
+expect_guard_failure 'Unexpected client role escalation'
+psql -X -v ON_ERROR_STOP=1 -c 'REVOKE fixture_empty FROM authenticated; DROP ROLE fixture_empty'
+psql -X -v ON_ERROR_STOP=1 -c 'ALTER ROLE authenticated BYPASSRLS'
+expect_guard_failure 'Unexpected client role escalation'
+psql -X -v ON_ERROR_STOP=1 -c 'ALTER ROLE authenticated NOBYPASSRLS'
+psql -X -v ON_ERROR_STOP=1 -c 'REVOKE MAINTAIN ON public.budget_data FROM service_role'
+expect_guard_failure 'Missing service privilege: MAINTAIN'
+psql -X -v ON_ERROR_STOP=1 -c 'GRANT MAINTAIN ON public.budget_data TO service_role'
+
+# Direct column grants are removed by the normal table revoke.
+echo 'Testing direct anonymous column grant remediation'
+psql -X -v ON_ERROR_STOP=1 -c 'GRANT SELECT(state) ON public.budget_data TO anon'
+
+# Apply the standalone legacy security migration before the redesign sequence.
+psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261114190000_tighten_legacy_budget_data_access.sql
+psql -X -v ON_ERROR_STOP=1 -f tests/legacy-budget-access-runtime.sql
 # Explicit, reviewed production upgrade manifest. Never discover draft SQL files.
 migrations=(
   supabase/migrations/20261114192802_harden_public_default_privileges.sql
@@ -92,10 +184,10 @@ BEGIN
                EXCEPT SELECT user_id,year,budget_data,updated_at FROM public.budget_ui_years) THEN
     RAISE EXCEPTION 'Existing budget-year records changed';
   END IF;
-  IF EXISTS (SELECT user_id,state,updated_at FROM public.budget_data
-             EXCEPT SELECT user_id,state,updated_at FROM audit_snapshot.before_legacy)
-    OR EXISTS (SELECT user_id,state,updated_at FROM audit_snapshot.before_legacy
-               EXCEPT SELECT user_id,state,updated_at FROM public.budget_data) THEN
+  IF EXISTS (SELECT id,user_id,state,updated_at FROM public.budget_data
+             EXCEPT SELECT id,user_id,state,updated_at FROM audit_snapshot.before_legacy)
+    OR EXISTS (SELECT id,user_id,state,updated_at FROM audit_snapshot.before_legacy
+               EXCEPT SELECT id,user_id,state,updated_at FROM public.budget_data) THEN
     RAISE EXCEPTION 'Existing legacy budget records changed';
   END IF;
   SELECT count(*) INTO n FROM pg_class c JOIN pg_namespace s ON s.oid=c.relnamespace
@@ -167,6 +259,7 @@ then
   exit 1
 fi
 
+psql -X -v ON_ERROR_STOP=1 -f tests/legacy-budget-access-runtime.sql
 # Phase 2D.6: exercise actual PostgreSQL RLS as distinct JWT owners and without a JWT.
 # These checks run only in the disposable local database; no production SQL is executed.
 psql -X -v ON_ERROR_STOP=1 <<'SQL'
@@ -179,7 +272,7 @@ INSERT INTO public.budget_expense_categories(user_id,id,name) VALUES
 INSERT INTO public.budget_recurring_rules
  (user_id,id,name,category,amount,frequency,start_date,account_id)
  VALUES ('00000000-0000-4000-8000-000000000102','travel-fund','Travel fund','travel',40,'monthly','2026-01-01','savings');
-DO $$
+DO $
 DECLARE affected integer;
 BEGIN
   -- Cross-tenant UPDATE and DELETE must affect zero rows, not merely avoid errors.
@@ -207,10 +300,10 @@ BEGIN
   DELETE FROM public.budget_ui_years WHERE user_id='00000000-0000-4000-8000-000000000101';
   GET DIAGNOSTICS affected = ROW_COUNT;
   IF affected <> 0 THEN RAISE EXCEPTION 'Cross-owner budget DELETE succeeded'; END IF;
-END $$;
+END $;
 -- An authenticated DB role without a user JWT must not see or change any owner rows.
 SELECT set_config('request.jwt.claim.sub','',false);
-DO $$
+DO $
 DECLARE affected integer;
 BEGIN
   IF (SELECT count(*) FROM public.budget_accounts) <> 0
@@ -222,10 +315,10 @@ BEGIN
   UPDATE public.budget_accounts SET name='ATTACK';
   GET DIAGNOSTICS affected = ROW_COUNT;
   IF affected <> 0 THEN RAISE EXCEPTION 'Missing JWT allowed UPDATE'; END IF;
-END $$;
+END $;
 RESET ROLE;
 -- Verify neither tenant's data was modified by the denied attempts.
-DO $$
+DO $
 BEGIN
  IF NOT EXISTS (SELECT 1 FROM public.budget_accounts WHERE user_id='00000000-0000-4000-8000-000000000101' AND name='Owner A checking')
  OR NOT EXISTS (SELECT 1 FROM public.budget_accounts WHERE user_id='00000000-0000-4000-8000-000000000102' AND name='Owner B savings')
@@ -235,7 +328,7 @@ BEGIN
  OR NOT EXISTS (SELECT 1 FROM public.budget_expense_categories WHERE user_id='00000000-0000-4000-8000-000000000102' AND name='Travel') THEN
   RAISE EXCEPTION 'Cross-owner attack modified data';
  END IF;
-END $$;
+END $;
 SQL
 
 # Owner spoofing through INSERT and UPDATE must fail their WITH CHECK policy.

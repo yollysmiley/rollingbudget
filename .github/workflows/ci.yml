@@ -104,9 +104,10 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$POSTGRES_CONTAINER"
-          docker exec "$POSTGRES_CONTAINER" mkdir -p /tmp/rollingbudget-ci/scripts /tmp/rollingbudget-ci/supabase/migrations
+          docker exec "$POSTGRES_CONTAINER" mkdir -p /tmp/rollingbudget-ci/scripts /tmp/rollingbudget-ci/supabase/migrations /tmp/rollingbudget-ci/tests
           docker cp scripts/verify-production-upgrade.sh "$POSTGRES_CONTAINER:/tmp/rollingbudget-ci/scripts/"
           docker cp scripts/verify-production-restore.sh "$POSTGRES_CONTAINER:/tmp/rollingbudget-ci/scripts/"
+          docker cp tests/legacy-budget-access-runtime.sql "$POSTGRES_CONTAINER:/tmp/rollingbudget-ci/tests/"
           docker cp supabase/migrations/. "$POSTGRES_CONTAINER:/tmp/rollingbudget-ci/supabase/migrations/"
           docker exec -i \
             -e PGHOST=127.0.0.1 -e PGPORT=5432 -e PGUSER=postgres \

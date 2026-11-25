@@ -68,3 +68,7 @@ Phase 2D.9B.2 introduces a manual synthetic-only backup workflow and contract te
 ## Phase 2D.9B.3 — Encrypted backup recovery regression
 
 Phase 2D.9B.3 adds a required synthetic encrypted backup regression job to PR CI and shares the verifier with the manual workflow. It checks ciphertext and payload checksums, wrong-key and truncated-ciphertext rejection, restores the fixture role and database into a fresh network-isolated PostgreSQL 17 container, and asserts exact financial and identity fixtures, migration history, FK, grants and two-owner RLS. Fixture identity and RLS are simplified, not managed Auth or full production role recovery. No production secrets, connections or records. Existing migration and browser regressions retained. Runtime validation pending CI.
+
+## PR #3 synchronization
+
+Main baseline afe49dca9447ec5a192bccf19a5f561686493f5e includes the standalone legacy security migration, not yet applied live. CI rehearses it before the eight additive migrations, retaining pre-hardening and post-upgrade restore checkpoints, exact legacy IDs, guard rollback tests, owner/JWT checks and both browser suites. Docker copies the legacy runtime SQL dependency. All five CI jobs retained; fresh combined CI required. PR #6 remains separate; private storage, key recovery and actual recovery gates remain outstanding. Do not apply the legacy migration twice; verify its ledger entry and effective privileges before the eight-file sequence. No merge or deployment authorized.

@@ -34,8 +34,8 @@ BEGIN
  END IF;
  IF EXISTS (SELECT user_id,year,budget_data,updated_at FROM public.budget_ui_years EXCEPT SELECT * FROM audit_snapshot.before_years)
  OR EXISTS (SELECT user_id,year,budget_data,updated_at FROM audit_snapshot.before_years EXCEPT SELECT user_id,year,budget_data,updated_at FROM public.budget_ui_years)
- OR EXISTS (SELECT user_id,state,updated_at FROM public.budget_data EXCEPT SELECT * FROM audit_snapshot.before_legacy)
- OR EXISTS (SELECT user_id,state,updated_at FROM audit_snapshot.before_legacy EXCEPT SELECT user_id,state,updated_at FROM public.budget_data) THEN
+ OR EXISTS (SELECT id,user_id,state,updated_at FROM public.budget_data EXCEPT SELECT * FROM audit_snapshot.before_legacy)
+ OR EXISTS (SELECT user_id,state,updated_at FROM audit_snapshot.before_legacy EXCEPT SELECT id,user_id,state,updated_at FROM public.budget_data) THEN
    RAISE EXCEPTION 'Legacy financial records changed';
  END IF;
 END $$;

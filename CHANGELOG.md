@@ -1,3 +1,7 @@
+## Unreleased — PR #5 synchronization
+
+- Inherit merged PR #3 security baseline, retain pre/post restoration checkpoints and expanded owner/JWT tests, copy legacy runtime SQL into Docker CI, compare legacy primary keys on restore. Combined CI pending.
+
 ## Unreleased — Encrypted backup recovery regression
 
 - Phase 2D.9B.3 adds a required synthetic encrypted backup regression job to PR CI and shares the verifier with the manual workflow. It checks ciphertext and payload checksums, wrong-key and truncated-ciphertext rejection, restores the fixture role and database into a fresh network-isolated PostgreSQL 17 container, and asserts exact financial and identity fixtures, migration history, FK, grants and two-owner RLS. Fixture identity and RLS are simplified, not managed Auth or full production role recovery. No production secrets, connections or records. Existing migration and browser regressions retained. Runtime validation pending CI.
@@ -49,6 +53,20 @@
 - Added a build-only CI job, auth/isolation contracts, and desktop/mobile public homepage and password-recovery dialog browser acceptance tests.
 - Documented deployment blockers, callback configuration and database prerequisites; no deployment or live Supabase changes.
 
+## Unreleased — Legacy budget access hardening
+
+- Phase 3F.2: consolidate release documentation, record CI #103 (5eaf024, all three jobs passed), and document downstream integration and recovery gates. Documentation-only increment requires fresh CI; no migration or application changes.
+
+- Correct CI #102 direct-column remediation expectation; add inherited-column and independent membership rejection, exact diagnostics and full rollback snapshots.
+
+- Add fail-closed column, delegation, role and administrative guards and negative rollback regressions; match production FK cascade.
+
+- CI #96 passed on 799fbe7; add rollback and isolated browser cloud compatibility regression (subsequently validated by CI #103).
+
+- Restrict legacy table grants and policies, verify effective privileges transactionally, and exercise synthetic owner CRUD before and after the eight additive migrations. Production application pending separate approval.
+
+- Correct legacy rollback SQL delimiters after CI #97 and strengthen ACL, identity, year preservation and service-role checks; subsequently validated by CI #103.
+
 ## Unreleased — Phase 2D.1 (PR preparation)
 
 - Staged eight reviewed, additive staging-derived SQL migrations for production accounts, recurring rules, custom expense categories, RLS and privilege hardening; **not applied to production**.
@@ -72,14 +90,3 @@
 - Added CI coverage for JavaScript syntax, migration regression tests, production auth/database policy contracts, and Chromium smoke tests at desktop and mobile viewport sizes.
 - Replaced the brittle HTML-sink grep with executable security and RLS contract tests.
 - Added least-privilege workflow permissions and concurrency cancellation.
-
-## Unreleased — Phase 2D.8 release preparation
-- Added production migration, backup, verification and rollback runbook and documentation links. No application or schema changes; expanded regression execution remains pending.
-
-### Production release preparation
-
-- Added release artifact builder, release regression contracts and manual main-only Pages workflow with exact-commit CI gate.
-- Added release build checks to existing CI; no production deployment or migrations performed.
-- Recorded owner-validated staging recovery expiration and deferred additional database integrity coverage.
-
-- Added synthetic pre/post-migration backup and restoration regression to PostgreSQL CI, retaining existing migration and RLS tests. Actual production backup and restore remain unperformed.
