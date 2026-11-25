@@ -32,3 +32,9 @@ test("default privilege probes run after upgrade and restoration", () => {
     require("node:assert/strict").match(fs.readFileSync(path, "utf8"), /-f tests\/default-privileges-runtime\.sql/);
   }
 });
+
+test("upgrade checks fixtures before database execution", () => {
+ assert.ok(upgrade.indexOf('test -r "$fixture"') >= 0);
+ assert.ok(upgrade.indexOf('test -r "$fixture"') < upgrade.indexOf("psql -X"));
+ assert.ok(restore.includes('test -r "$fixture"'));
+});

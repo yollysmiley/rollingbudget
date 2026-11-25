@@ -75,3 +75,5 @@ retention, purge and automated recovery-point management are deferred.
 
 ## Phase 3C.1 default privilege regression
 The disposable upgrade fixture seeds schema-local client and service-role default grants, then verifies newly created objects have no implicit access after hardening. Explicit authenticated access is checked with RLS. The same transactional probe runs after restoration. Managed-role defaults and managed Supabase rehearsal remain separate release gates.
+
+The fixture also checks insecure pre-migration defaults, explicit two-owner RLS, actual application table grants and empty new-user visibility. CI copies both runtime SQL fixtures explicitly.

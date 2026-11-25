@@ -113,3 +113,5 @@
 
 ### Phase 3C.1 — Security regression coverage
 - Exercise schema-local default grants for tables, views, sequences and functions after upgrade and restoration; preserve existing migrations.
+
+- Correct SQL delimiters and CI fixture copying; expand positive controls, ownership and new-user security checks.

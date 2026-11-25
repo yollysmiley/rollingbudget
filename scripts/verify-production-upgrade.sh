@@ -11,6 +11,10 @@ if [[ "${PGHOST}" != "127.0.0.1" && "${PGHOST}" != "localhost" ]] || [[ "${PGDAT
   exit 1
 fi
 
+for fixture in tests/legacy-budget-access-runtime.sql tests/default-privileges-runtime.sql; do
+  test -r "$fixture" || { echo "Missing SQL fixture: $fixture" >&2; exit 1; }
+done
+
 psql -X -v ON_ERROR_STOP=1 <<'SQL'
 DO $$
 BEGIN
@@ -151,6 +155,27 @@ psql -X -v ON_ERROR_STOP=1 -c 'GRANT MAINTAIN ON public.budget_data TO service_r
 echo 'Testing direct anonymous column grant remediation'
 psql -X -v ON_ERROR_STOP=1 -c 'GRANT SELECT(state) ON public.budget_data TO anon'
 
+# Positive controls: prove the fixture reproduces permissive defaults.
+psql -X -v ON_ERROR_STOP=1 <<'SQL'
+BEGIN;
+CREATE TABLE public.fixture_before_acl (id integer);
+CREATE VIEW public.fixture_before_view AS SELECT id FROM public.fixture_before_acl;
+CREATE SEQUENCE public.fixture_before_sequence;
+CREATE FUNCTION public.fixture_before_function() RETURNS integer LANGUAGE sql AS 'SELECT 1';
+DO $before$
+DECLARE r text;
+BEGIN
+ FOREACH r IN ARRAY ARRAY['anon','authenticated','service_role'] LOOP
+  IF NOT has_table_privilege(r,'public.fixture_before_acl','SELECT')
+   OR NOT has_table_privilege(r,'public.fixture_before_view','SELECT')
+   OR NOT has_sequence_privilege(r,'public.fixture_before_sequence','USAGE')
+   OR NOT has_function_privilege(r,'public.fixture_before_function()','EXECUTE')
+  THEN RAISE EXCEPTION 'Missing insecure positive control: %',r; END IF;
+ END LOOP;
+END $before$;
+ROLLBACK;
+SQL
+
 # Apply the standalone legacy security migration before the redesign sequence.
 psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261114190000_tighten_legacy_budget_data_access.sql
 psql -X -v ON_ERROR_STOP=1 -f tests/legacy-budget-access-runtime.sql
@@ -181,7 +206,7 @@ done
 psql -X -v ON_ERROR_STOP=1 -f tests/default-privileges-runtime.sql
 
 psql -X -v ON_ERROR_STOP=1 <<'SQL'
-DO $
+DO $$
 DECLARE n integer;
 BEGIN
   IF EXISTS (SELECT user_id,year,budget_data,updated_at FROM public.budget_ui_years

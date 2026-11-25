@@ -5,6 +5,10 @@ if [[ "$PGHOST" != 127.0.0.1 && "$PGHOST" != localhost ]] || [[ "$PGDATABASE" !=
   echo "Refusing non-fixture database" >&2
   exit 1
 fi
+for fixture in tests/legacy-budget-access-runtime.sql tests/default-privileges-runtime.sql; do
+  test -r "$fixture" || { echo "Missing SQL fixture: $fixture" >&2; exit 1; }
+done
+
 export REHEARSAL_DIR
 REHEARSAL_DIR=$(mktemp -d)
 trap 'rm -rf "$REHEARSAL_DIR"' EXIT
