@@ -137,3 +137,5 @@
 - Correct 3C.2G reference-removal race expectations: accept immediate foreign key rejection or lock wait, retry after committed removal, verify rollback preserves dependencies.
 
 - Phase 3C.2H.1: desktop/mobile category manager browser CRUD and conflict acceptance.
+
+- Phase 3C.2H.2: custom expense card and persisted budget reference browser acceptance.

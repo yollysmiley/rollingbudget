@@ -35,24 +35,26 @@ for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: '
         const user = { id: 'synthetic-category-owner', email: 'category@example.invalid' };
         const key = 'synthetic-category-rows';
         const rows = JSON.parse(sessionStorage.getItem(key) || '[]');
-        const state = window.__categoryFixture = { rows, deletes: 0, blocked: false };
-        const persist = () => sessionStorage.setItem(key, JSON.stringify(rows));
+        const years = JSON.parse(sessionStorage.getItem(key + '-years') || '[]');
+        const state = window.__categoryFixture = { rows, years, deletes: 0, blocked: false };
+        const persist = () => { sessionStorage.setItem(key, JSON.stringify(rows)); sessionStorage.setItem(key + '-years', JSON.stringify(years)); };
         const queryFor = table => {
           let operation = 'select', payload, filters = [];
           const run = () => {
-            if (table !== 'budget_expense_categories') return { data: [], error: null };
-            const matches = rows.filter(row => filters.every(([field, value]) => row[field] === value));
+            if (!['budget_expense_categories','budget_ui_years'].includes(table)) return { data: [], error: null };
+            const records = table === 'budget_ui_years' ? years : rows;
+            const matches = records.filter(row => filters.every(([field, value]) => row[field] === value));
             if (operation === 'insert') {
               if (payload.user_id !== user.id) throw new Error('Wrong owner');
-              rows.push({ ...payload, updated_at: new Date().toISOString() }); persist();
+              records.push({ ...structuredClone(payload), updated_at: payload.updated_at || new Date().toISOString() }); persist();
               return { data: null, error: null };
             }
             if (!filters.some(([field,value]) => field === 'user_id' && value === user.id)) throw new Error('Missing owner filter');
             if (operation === 'update') { matches.forEach(row => Object.assign(row,payload)); persist(); }
             if (operation === 'delete') {
               state.deletes++;
-              if (state.blocked) return { data: null, error: { code: '23503' } };
-              matches.forEach(row => rows.splice(rows.indexOf(row),1)); persist();
+              if (state.blocked || years.some(year => year.budget_data.months?.some(month => month.expenses?.some(entry => matches.some(row => row.id === entry.categoryId))))) return { data: null, error: { code: '23503' } };
+              matches.forEach(row => records.splice(records.indexOf(row),1)); persist();
             }
             return { data: matches.map(row => ({ ...row })), error: null };
           };
@@ -88,6 +90,25 @@ for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: '
       await form.locator('button').click();
       await row.filter({hasText:'Synthetic Travel'}).waitFor();
       const id = await row.getAttribute('data-expense-category-id');
+      const goBudget = async () => {
+        if (viewport.name === 'mobile') { await page.locator('#mobileMenuButton').click(); await page.locator('[data-mobile-tab="plan"]').click(); }
+        else await page.locator('#desktopBudgetButton').click();
+      };
+      const goSettings = async () => {
+        if (viewport.name === 'mobile') { await page.locator('#mobileMenuButton').click(); await page.locator('[data-mobile-tab="settings"]').click(); }
+        else await page.locator('#desktopSettingsButton').click();
+        await open();
+      };
+      await goBudget();
+      const card = page.locator('[data-custom-expense-card="' + id + '"]');
+      await card.waitFor();
+      await page.waitForFunction(() => accountReadyOwner === currentUser?.id);
+      await card.getByLabel('New expense name').fill('Synthetic Train');
+      await card.getByLabel('New expense amount').fill('42.50');
+      await card.locator('form button[type="submit"]').click();
+      await page.waitForFunction(id => window.__categoryFixture.years.some(year => year.budget_data.months.some(month => month.expenses?.some(entry => entry.categoryId === id && entry.name === 'Synthetic Train' && entry.amount === 42.5))), id);
+      await card.getByLabel('Expense name', {exact:true}).waitFor();
+      await goSettings();
       await row.locator('[data-expense-category-action="rename"]').click();
       await row.locator('input').fill('Renamed Travel');
       await row.locator('button[type="submit"]').click();
@@ -100,16 +121,25 @@ for (const viewport of [{ name: 'desktop', width: 1280, height: 900 }, { name: '
       await row.locator('[data-expense-category-action="delete"]').click();
       await page.locator('#rbDialogCancel').click();
       assert.equal(await page.evaluate(() => window.__categoryFixture.deletes),0);
-      await page.evaluate(() => { window.__categoryFixture.blocked=true; });
+      // The persisted budget reference now supplies the mock foreign key rejection.
       await row.locator('[data-expense-category-action="delete"]').click();
       await page.locator('#rbDialogAccept').click();
       await root.getByRole('status').filter({hasText:'Category is in use by a saved budget or recurring rule'}).waitFor();
       assert.equal(await row.count(),1);
-      await page.evaluate(() => { window.__categoryFixture.blocked=false; });
+      await goBudget();
+      await card.getByLabel('Expense name', {exact:true}).waitFor();
+      assert.equal(await card.getByLabel('Expense name', {exact:true}).inputValue(),'Synthetic Train');
+      assert.equal(await card.getByLabel('Expense amount', {exact:true}).inputValue(),'42.5');
+      assert.match(await card.locator('h2').innerText(),/Renamed Travel/);
+      await card.getByRole('button',{name:'Delete expense'}).click();
+      await page.waitForFunction(id => window.__categoryFixture.years.every(year => year.budget_data.months.every(month => !month.expenses?.some(entry => entry.categoryId === id))),id);
+      await goSettings();
       await row.locator('[data-expense-category-action="delete"]').click();
       await page.locator('#rbDialogAccept').click();
       await row.waitFor({state:'detached'});
       assert.equal(await page.evaluate(() => window.__categoryFixture.rows.length),0);
+      await goBudget();
+      assert.equal(await card.count(),0);
     } finally { await browser.close(); }
   });
 }
