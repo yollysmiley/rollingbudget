@@ -7,9 +7,28 @@ umask 077
 # Require the exact production tenant and session pooler port; never print the URL.
 python3 - <<'PY'
 import os, urllib.parse
-u=urllib.parse.urlsplit(os.environ['PRODUCTION_DB_URL'])
-if not (u.scheme in ('postgres','postgresql') and u.username=='postgres.awalptqpsjflrahkrjzk' and u.hostname and u.hostname.endswith('.pooler.supabase.com') and u.port==5432 and u.path=='/postgres' and u.password and urllib.parse.parse_qs(u.query)=={'sslmode':['require']}):
-    raise SystemExit('Unexpected production connection configuration')
+def reject(reason):
+    raise SystemExit("Unexpected production connection configuration: " + reason)
+
+try:
+    u = urllib.parse.urlsplit(os.environ['PRODUCTION_DB_URL'])
+    port = u.port
+except (ValueError, UnicodeError):
+    reject("malformed connection string")
+if u.scheme not in ('postgres', 'postgresql'):
+    reject("invalid connection protocol")
+if u.username != 'postgres.awalptqpsjflrahkrjzk':
+    reject("incorrect production project username")
+if not u.hostname or not u.hostname.endswith('.pooler.supabase.com'):
+    reject("invalid session pooler hostname")
+if port != 5432:
+    reject("expected session pooler port 5432")
+if u.path != '/postgres':
+    reject("incorrect database name")
+if not u.password:
+    reject("missing password")
+if urllib.parse.parse_qs(u.query) != {'sslmode': ['require']}:
+    reject("expected sslmode=require with no additional query parameters")
 PY
 # Validate the recipient before connecting to the database.
 printf '' | age -r "$BACKUP_RECIPIENT" >/dev/null
