@@ -19,3 +19,14 @@ test("production backup is protected and uploads ciphertext only", () => {
   assert.match(script,/supabase_migrations/);
   assert.doesNotMatch(workflow.split("actions/upload-artifact")[1],/\.sql|tool.log/);
 });
+
+test("production backup compresses the tar stream before Age encryption", () => {
+  assert.match(script, /tar [^\n]+ \| gzip -n \| age -r "\$BACKUP_RECIPIENT" -o "\$work\/encrypted\/backup\.tar\.gz\.age"/);
+  assert.match(script, /sha256sum backup\.tar\.gz\.age > backup\.tar\.gz\.age\.sha256/);
+  const uploadedPaths = workflow.split("path: |")[1].split("retention-days:")[0].trim().split(/\n\s*/);
+  const artifactDir = "${{ runner.temp }}/encrypted-production-backup";
+  assert.deepEqual(uploadedPaths, [
+    artifactDir + "/backup.tar.gz.age",
+    artifactDir + "/backup.tar.gz.age.sha256",
+  ]);
+});

@@ -35,6 +35,6 @@ for f in "${files[@]}"; do test -s "$work/$f"; done
 printf '%s\n' 'Logical export; separate snapshots require a verified write freeze for cutover consistency. Auth configuration, storage objects and managed schema customizations require separate verification.' > "$work/coverage.txt"
 files+=(coverage.txt)
 (cd "$work" && sha256sum "${files[@]}" > SHA256SUMS)
-tar -C "$work" -cf - "${files[@]}" SHA256SUMS | age -r "$BACKUP_RECIPIENT" -o "$work/encrypted/backup.tar.age"
-(cd "$work/encrypted" && sha256sum backup.tar.age > backup.tar.age.sha256)
+tar -C "$work" -cf - "${files[@]}" SHA256SUMS | gzip -n | age -r "$BACKUP_RECIPIENT" -o "$work/encrypted/backup.tar.gz.age"
+(cd "$work/encrypted" && sha256sum backup.tar.gz.age > backup.tar.gz.age.sha256)
 mv "$work/encrypted" "$BACKUP_OUTPUT"

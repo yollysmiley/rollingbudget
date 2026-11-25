@@ -43,13 +43,13 @@ reject() {
 bash "$root/scripts/export-production-backup.sh"
 [[ -z "$(ls -A "$TMPDIR")" ]]
 [[ $(ls -1 "$BACKUP_OUTPUT" | wc -l) == 2 ]]
-(cd "$BACKUP_OUTPUT" && sha256sum -c backup.tar.age.sha256)
+(cd "$BACKUP_OUTPUT" && sha256sum -c backup.tar.gz.age.sha256)
 mkdir "$work/restored"
-age -d -i "$work/key" "$BACKUP_OUTPUT/backup.tar.age" | tar -xf - -C "$work/restored"
+age -d -i "$work/key" "$BACKUP_OUTPUT/backup.tar.gz.age" | gzip -dc | tar -xf - -C "$work/restored"
 (cd "$work/restored" && sha256sum -c SHA256SUMS)
 for f in roles.sql schema.sql data.sql history_schema.sql history_data.sql; do
   grep -qx 'synthetic fixture' "$work/restored/$f"
 done
 age-keygen -o "$work/wrong" 2>/dev/null
-if age -d -i "$work/wrong" "$BACKUP_OUTPUT/backup.tar.age" >/dev/null 2>&1; then exit 1; fi
+if age -d -i "$work/wrong" "$BACKUP_OUTPUT/backup.tar.gz.age" >/dev/null 2>&1; then exit 1; fi
 echo 'Synthetic export and encryption checks passed'

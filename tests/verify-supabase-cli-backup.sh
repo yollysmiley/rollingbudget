@@ -52,9 +52,10 @@ supabase db dump --db-url "$url" -f "$work/history_data.sql" --use-copy --data-o
 files=(roles.sql schema.sql data.sql history_schema.sql history_data.sql)
 (cd "$work" && sha256sum "${files[@]}" > SHA256SUMS)
 age-keygen -o "$work/key" 2>/dev/null
-tar -C "$work" -cf - "${files[@]}" SHA256SUMS | age -r "$(age-keygen -y "$work/key")" -o "$work/archive.age"
+tar -C "$work" -cf - "${files[@]}" SHA256SUMS | gzip -n | age -r "$(age-keygen -y "$work/key")" -o "$work/backup.tar.gz.age"
+(cd "$work" && sha256sum backup.tar.gz.age > backup.tar.gz.age.sha256 && sha256sum -c backup.tar.gz.age.sha256)
 mkdir "$work/restored"
-age -d -i "$work/key" "$work/archive.age" | tar -xf - -C "$work/restored"
+age -d -i "$work/key" "$work/backup.tar.gz.age" | gzip -dc | tar -xf - -C "$work/restored"
 (cd "$work/restored" && sha256sum -c SHA256SUMS)
 for f in "${files[@]}"; do
   docker cp "$work/restored/$f" "$target_container:/tmp/$f"

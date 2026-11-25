@@ -36,7 +36,7 @@ jobs:
         with:
           name: encrypted-production-backup
           path: |
-            ${{ runner.temp }}/encrypted-production-backup/backup.tar.age
-            ${{ runner.temp }}/encrypted-production-backup/backup.tar.age.sha256
+            ${{ runner.temp }}/encrypted-production-backup/backup.tar.gz.age
+            ${{ runner.temp }}/encrypted-production-backup/backup.tar.gz.age.sha256
           retention-days: 7
           if-no-files-found: error
