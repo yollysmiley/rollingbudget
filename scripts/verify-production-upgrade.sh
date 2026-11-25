@@ -16,7 +16,7 @@ DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='anon') THEN CREATE ROLE anon NOLOGIN; END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='authenticated') THEN CREATE ROLE authenticated NOLOGIN; END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='service_role') THEN CREATE ROLE service_role NOLOGIN; END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='service_role') THEN CREATE ROLE service_role NOLOGIN BYPASSRLS; END IF;
 END $$;
 CREATE SCHEMA auth;
 CREATE TABLE auth.users (id uuid PRIMARY KEY);
@@ -52,7 +52,7 @@ INSERT INTO public.budget_ui_years(user_id,year,budget_data) VALUES
  ('00000000-0000-4000-8000-000000000102',2027,'{"months":[{"owner":"b"}],"sentinel":"untouched-b"}');
 CREATE SCHEMA audit_snapshot;
 CREATE TABLE audit_snapshot.before_years AS SELECT user_id,year,budget_data,updated_at FROM public.budget_ui_years;
-CREATE TABLE audit_snapshot.before_legacy AS SELECT user_id,state,updated_at FROM public.budget_data;
+CREATE TABLE audit_snapshot.before_legacy AS SELECT id,user_id,state,updated_at FROM public.budget_data;
 SQL
 
 # Force the final policy-count guard to fail after grants and policies are changed.
@@ -66,16 +66,23 @@ trap 'rm -f "$failure"' EXIT
 if psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261114190000_tighten_legacy_budget_data_access.sql >"$failure" 2>&1; then
   echo 'Unexpected migration success' >&2; exit 1
 fi
-grep -q 'Unexpected policies' "$failure"
+if ! grep -q 'Unexpected policies' "$failure"; then
+  cat "$failure" >&2
+  exit 1
+fi
 psql -X -v ON_ERROR_STOP=1 <<'SQL'
-DO $ BEGIN
+DO $rollback$
+BEGIN
  IF EXISTS (SELECT relacl,relrowsecurity FROM pg_class WHERE oid='public.budget_data'::regclass EXCEPT SELECT * FROM audit_snapshot.before_acl)
+ OR EXISTS (SELECT * FROM audit_snapshot.before_acl EXCEPT SELECT relacl,relrowsecurity FROM pg_class WHERE oid='public.budget_data'::regclass)
  OR EXISTS (SELECT * FROM pg_policies WHERE schemaname='public' AND tablename='budget_data' EXCEPT SELECT * FROM audit_snapshot.before_policies)
  OR EXISTS (SELECT * FROM audit_snapshot.before_policies EXCEPT SELECT * FROM pg_policies WHERE schemaname='public' AND tablename='budget_data')
- OR EXISTS (SELECT user_id,state,updated_at FROM public.budget_data EXCEPT SELECT * FROM audit_snapshot.before_legacy)
- OR EXISTS (SELECT * FROM audit_snapshot.before_legacy EXCEPT SELECT user_id,state,updated_at FROM public.budget_data)
+ OR EXISTS (SELECT id,user_id,state,updated_at FROM public.budget_data EXCEPT SELECT * FROM audit_snapshot.before_legacy)
+ OR EXISTS (SELECT * FROM audit_snapshot.before_legacy EXCEPT SELECT id,user_id,state,updated_at FROM public.budget_data)
+ OR EXISTS (SELECT user_id,year,budget_data,updated_at FROM public.budget_ui_years EXCEPT SELECT * FROM audit_snapshot.before_years)
+ OR EXISTS (SELECT * FROM audit_snapshot.before_years EXCEPT SELECT user_id,year,budget_data,updated_at FROM public.budget_ui_years)
  THEN RAISE EXCEPTION 'Failed migration did not roll back'; END IF;
-END $;
+END $rollback$;
 DROP POLICY fixture_unexpected ON public.budget_data;
 SQL
 
@@ -116,10 +123,10 @@ BEGIN
                EXCEPT SELECT user_id,year,budget_data,updated_at FROM public.budget_ui_years) THEN
     RAISE EXCEPTION 'Existing budget-year records changed';
   END IF;
-  IF EXISTS (SELECT user_id,state,updated_at FROM public.budget_data
-             EXCEPT SELECT user_id,state,updated_at FROM audit_snapshot.before_legacy)
-    OR EXISTS (SELECT user_id,state,updated_at FROM audit_snapshot.before_legacy
-               EXCEPT SELECT user_id,state,updated_at FROM public.budget_data) THEN
+  IF EXISTS (SELECT id,user_id,state,updated_at FROM public.budget_data
+             EXCEPT SELECT id,user_id,state,updated_at FROM audit_snapshot.before_legacy)
+    OR EXISTS (SELECT id,user_id,state,updated_at FROM audit_snapshot.before_legacy
+               EXCEPT SELECT id,user_id,state,updated_at FROM public.budget_data) THEN
     RAISE EXCEPTION 'Existing legacy budget records changed';
   END IF;
   SELECT count(*) INTO n FROM pg_class c JOIN pg_namespace s ON s.oid=c.relnamespace

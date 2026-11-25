@@ -4,6 +4,14 @@ DO $$ DECLARE p text; BEGIN
  IF has_table_privilege('anon','public.budget_data',p) OR has_table_privilege('authenticated','public.budget_data',p) <> (p IN ('SELECT','INSERT','UPDATE','DELETE')) OR NOT has_table_privilege('service_role','public.budget_data',p) THEN RAISE EXCEPTION 'Privilege mismatch: %',p; END IF;
  END LOOP;
 END $$;
+SET ROLE service_role;
+DO $service$
+BEGIN
+ IF (SELECT count(*) FROM public.budget_data) <> 2 THEN RAISE EXCEPTION 'Service role cannot read both fixture owners'; END IF;
+ UPDATE public.budget_data SET state=state;
+ IF NOT FOUND THEN RAISE EXCEPTION 'Service role update failed'; END IF;
+END $service$;
+RESET ROLE;
 SET ROLE anon;
 DO $$ BEGIN
  BEGIN PERFORM * FROM public.budget_data; RAISE EXCEPTION 'Anonymous read allowed'; EXCEPTION WHEN insufficient_privilege THEN NULL; END;

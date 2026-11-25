@@ -27,3 +27,5 @@
 - Added CI coverage for JavaScript syntax, migration regression tests, production auth/database policy contracts, and Chromium smoke tests at desktop and mobile viewport sizes.
 - Replaced the brittle HTML-sink grep with executable security and RLS contract tests.
 - Added least-privilege workflow permissions and concurrency cancellation.
+
+- Correct legacy rollback regression SQL delimiters and strengthen ACL, record identity, year preservation and service-role checks after CI #97. Validation pending.
