@@ -76,3 +76,9 @@ Main baseline afe49dca9447ec5a192bccf19a5f561686493f5e includes the standalone l
 ## CI #107 integration corrections
 
 CI #107 passed four jobs but failed PostgreSQL regression after all nine migrations applied to synthetic fixtures. Correct three malformed SQL block delimiters and the reverse four-column legacy comparison. Static contracts now check matching delimiters and bidirectional primary-key-inclusive comparisons; PostgreSQL runtime remains authoritative. Require all five jobs to pass before release review. No live database operations authorized.
+
+## Phase 3C.1D administrative access contract (PR #5)
+
+After authorized cutover, all five application tables must be owned by postgres and RLS enabled. Anonymous access is denied; authenticated receives owner-scoped CRUD only. Preserve existing service_role privileges on budget_data and budget_ui_years for compatibility; no service_role grants on accounts, recurring rules or categories. postgres retains administrative access. Do not alter supabase_admin or managed Auth/Storage roles or their defaults. New application objects must be created by postgres with explicit grants. The global postgres function default revocation requires managed compatibility verification.
+
+The shared disposable upgrade/restore fixture checks ownership, RLS, effective grants, client role attributes, membership and schema CREATE permissions. Preview and release tests scan shipped text assets for privileged JWTs, secret key markers and database connection URLs without printing credential values. These checks are not exhaustive secret detection or managed API validation. The authorized backup uses a protected PostgreSQL connection, not a service API key. Before production execution verify actual managed role attributes, schema permissions, Auth/API behavior, backup and recovery on an isolated managed target; preserve the write-freeze and separate approval gates.

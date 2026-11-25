@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 const read = path => readFileSync('production-release-dist/' + path, 'utf8');
 test('release retains all routes, configuration and shared assets', () => {
   for (const page of ['index.html','app/index.html','rollover-budget-app.html','auth-confirmation.html','reset-password.html']) {
@@ -28,4 +28,28 @@ test('release preserves preview source and changes only preview banners', () => 
     assert.equal(read(page), preview.replace(/\n  <aside role="note"[^>]*>PRODUCTION PREVIEW — NOT DEPLOYED — awalptqpsjflrahkrjzk<\/aside>/g, ''));
   }
   assert.equal(read('index.html'), readFileSync('production-preview-dist/index.html','utf8'));
+});
+
+test('all shipped text assets exclude privileged credentials', () => {
+  const root = "production-release-dist";
+  let publicKeys = 0;
+  function scan(dir) {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = dir + '/' + entry.name;
+      if (entry.isDirectory()) { scan(path); continue; }
+      if (!/\.(?:html|js|mjs|css|json|map|txt|svg|xml|webmanifest)$/i.test(entry.name)) continue;
+      const source = readFileSync(path, 'utf8');
+      assert.ok(!/\bsb_secret_[A-Za-z0-9_-]+|\bpostgres(?:ql)?:\/\/|\bPRODUCTION_DB_URL\b/.test(source), 'Privileged credential marker in ' + path);
+      for (const token of source.matchAll(/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g)) {
+        let claims;
+        try { claims = JSON.parse(Buffer.from(token[0].split('.')[1], 'base64url').toString('utf8')); }
+        catch { assert.fail('Unparseable embedded JWT in ' + path); }
+        assert.ok(claims.role === 'anon', 'Non-anonymous embedded JWT in ' + path);
+        publicKeys++;
+      }
+      publicKeys += [...source.matchAll(/\bsb_publishable_[A-Za-z0-9_-]+/g)].length;
+    }
+  }
+  scan(root);
+  assert.ok(publicKeys > 0, 'Expected public client configuration');
 });

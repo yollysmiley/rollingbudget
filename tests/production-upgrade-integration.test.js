@@ -49,3 +49,9 @@ test("standalone SQL fixtures retain matching DO block delimiters", () => {
     assert.deepEqual(opens, closes, name);
   }
 });
+
+test("administrative access contract runs in shared upgrade and restore fixture", () => {
+ const sql = readFileSync("tests/default-privileges-runtime.sql", "utf8");
+ assert.ok(sql.includes("DO $administrative_contract$"));
+ for (const runner of [upgrade, restore]) assert.ok(runner.includes("-f tests/default-privileges-runtime.sql"));
+});

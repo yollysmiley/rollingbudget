@@ -117,3 +117,5 @@
 - Correct SQL delimiters and CI fixture copying; expand positive controls, ownership and new-user security checks.
 
 - Repair standalone SQL fixture dollar quoting and validate standalone DO block delimiters in unit tests.
+
+- Phase 3C.1D: document administrative access boundaries and add shared database and frontend artifact credential regression checks; managed rehearsal remains required.

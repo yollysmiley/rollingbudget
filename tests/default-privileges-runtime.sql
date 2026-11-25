@@ -5,6 +5,28 @@ DO $fixture_guard$ BEGIN
  END IF;
 END $fixture_guard$;
 BEGIN;
+DO $administrative_contract$
+DECLARE t text; p text; r text;
+BEGIN
+ FOREACH r IN ARRAY ARRAY['anon','authenticated'] LOOP
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname=r AND (rolsuper OR rolbypassrls OR rolcreaterole OR rolcreatedb OR rolcanlogin))
+   OR EXISTS (SELECT 1 FROM pg_roles WHERE rolname<>r AND pg_has_role(r,oid,'MEMBER'))
+   OR has_schema_privilege(r,'public','CREATE') OR has_schema_privilege(r,'auth','CREATE')
+  THEN RAISE EXCEPTION 'Unsafe client role: %',r; END IF;
+ END LOOP;
+ IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='service_role' AND rolbypassrls AND NOT rolsuper AND NOT rolcanlogin AND NOT rolcreaterole)
+ THEN RAISE EXCEPTION 'Unexpected service role attributes'; END IF;
+ FOREACH t IN ARRAY ARRAY['public.budget_data','public.budget_ui_years','public.budget_accounts','public.budget_recurring_rules','public.budget_expense_categories'] LOOP
+  IF NOT EXISTS (SELECT 1 FROM pg_class WHERE oid=t::regclass AND relrowsecurity AND pg_get_userbyid(relowner)='postgres')
+  THEN RAISE EXCEPTION 'Unexpected owner or RLS: %',t; END IF;
+  FOREACH p IN ARRAY ARRAY['SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER','MAINTAIN'] LOOP
+   IF has_table_privilege('anon',t,p) OR has_table_privilege('authenticated',t,p) IS DISTINCT FROM (p IN ('SELECT','INSERT','UPDATE','DELETE'))
+    OR has_table_privilege('service_role',t,p) IS DISTINCT FROM (t IN ('public.budget_data','public.budget_ui_years'))
+    OR NOT has_table_privilege('postgres',t,p)
+   THEN RAISE EXCEPTION 'Administrative access contract failed: % %',t,p; END IF;
+  END LOOP;
+ END LOOP;
+END $administrative_contract$;
 CREATE TABLE public.fixture_default_acl (id integer, user_id uuid);
 ALTER TABLE public.fixture_default_acl ENABLE ROW LEVEL SECURITY;
 CREATE VIEW public.fixture_default_view WITH (security_invoker=true) AS SELECT id FROM public.fixture_default_acl;
