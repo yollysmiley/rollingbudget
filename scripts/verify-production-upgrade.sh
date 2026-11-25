@@ -189,9 +189,10 @@ migrations=(
   supabase/migrations/20261117071635_create_budget_expense_categories.sql
   supabase/migrations/20261117071637_remove_expense_category_kind.sql
   supabase/migrations/20261117071639_allow_custom_recurring_categories.sql
+  supabase/migrations/20261125120000_enforce_recurring_category_owner.sql
 )
-if [[ "${#migrations[@]}" -ne 8 ]]; then
-  echo "Expected exactly eight approved migrations" >&2
+if [[ "${#migrations[@]}" -ne 9 ]]; then
+  echo "Expected exactly nine approved migrations" >&2
   exit 1
 fi
 for migration in "${migrations[@]}"; do

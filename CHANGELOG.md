@@ -121,3 +121,5 @@
 - Phase 3C.1D: document administrative access boundaries and add shared database and frontend artifact credential regression checks; managed rehearsal remains required.
 
 - Phase 3C.2A: align reserved category identifiers and strengthen category reference validation; add regression coverage.
+
+- Phase 3C.2B: add owner-scoped recurring category foreign key and reserved ID constraint, with upgrade/restore regression probes.

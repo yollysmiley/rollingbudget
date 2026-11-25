@@ -55,3 +55,10 @@ test("administrative access contract runs in shared upgrade and restore fixture"
  assert.ok(sql.includes("DO $administrative_contract$"));
  for (const runner of [upgrade, restore]) assert.ok(runner.includes("-f tests/default-privileges-runtime.sql"));
 });
+
+test("recurring category migration is explicit and owner scoped", () => {
+ const path = "supabase/migrations/20261125120000_enforce_recurring_category_owner.sql";
+ assert.ok(upgrade.includes(path));
+ assert.match(readFileSync(path,"utf8"), /FOREIGN KEY \(user_id,custom_category_id\)/);
+ assert.ok(readFileSync("tests/default-privileges-runtime.sql","utf8").includes("DO $category_cross_owner$"));
+});

@@ -82,4 +82,50 @@ DO $fixture_check_3$ BEGIN
  OR EXISTS (SELECT 1 FROM public.budget_expense_categories) THEN RAISE EXCEPTION 'New user sees existing records'; END IF;
 END $fixture_check_3$;
 RESET ROLE;
+INSERT INTO auth.users(id) VALUES ('00000000-0000-4000-8000-000000000104'),('00000000-0000-4000-8000-000000000105');
+SET ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000104',true);
+INSERT INTO public.budget_expense_categories(user_id,id,name) VALUES (auth.uid(),'fixture-cat','Fixture category');
+DO $category_owner$
+DECLARE reserved text;
+BEGIN
+ FOREACH reserved IN ARRAY ARRAY['income','fixed','variable','loan','cc'] LOOP
+  BEGIN
+   INSERT INTO public.budget_expense_categories(user_id,id,name) VALUES (auth.uid(),reserved,'Reserved');
+   RAISE EXCEPTION 'Reserved category accepted';
+  EXCEPTION WHEN check_violation THEN NULL;
+  END;
+  INSERT INTO public.budget_recurring_rules(user_id,id,name,category,amount,frequency,start_date)
+   VALUES (auth.uid(),reserved,'Built in',reserved,1,'monthly','2026-01-01');
+ END LOOP;
+ INSERT INTO public.budget_recurring_rules(user_id,id,name,category,amount,frequency,start_date,active)
+ VALUES (auth.uid(),'fixture-rule','Custom','fixture-cat',1,'monthly','2026-01-01',false);
+ BEGIN
+  DELETE FROM public.budget_expense_categories WHERE id='fixture-cat';
+  RAISE EXCEPTION 'Referenced category deleted';
+ EXCEPTION WHEN foreign_key_violation THEN NULL;
+ END;
+ BEGIN
+  UPDATE public.budget_recurring_rules SET category='missing' WHERE id='fixture-rule';
+  RAISE EXCEPTION 'Missing category accepted';
+ EXCEPTION WHEN foreign_key_violation THEN NULL;
+ END;
+END $category_owner$;
+SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000105',true);
+DO $category_cross_owner$
+BEGIN
+ BEGIN
+  INSERT INTO public.budget_recurring_rules(user_id,id,name,category,amount,frequency,start_date)
+   VALUES (auth.uid(),'fixture-rule','Custom','fixture-cat',1,'monthly','2026-01-01');
+  RAISE EXCEPTION 'Cross-owner category accepted';
+ EXCEPTION WHEN foreign_key_violation THEN NULL;
+ END;
+ INSERT INTO public.budget_expense_categories(user_id,id,name) VALUES (auth.uid(),'fixture-cat','Same ID');
+ INSERT INTO public.budget_recurring_rules(user_id,id,name,category,amount,frequency,start_date)
+  VALUES (auth.uid(),'fixture-rule','Custom','fixture-cat',1,'monthly','2026-01-01');
+ DELETE FROM public.budget_recurring_rules WHERE id='fixture-rule';
+ DELETE FROM public.budget_expense_categories WHERE id='fixture-cat';
+ IF FOUND IS FALSE THEN RAISE EXCEPTION 'Unused category deletion failed'; END IF;
+END $category_cross_owner$;
+RESET ROLE;
 ROLLBACK;
