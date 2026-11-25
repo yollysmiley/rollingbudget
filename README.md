@@ -18,7 +18,7 @@ The retained `public.budget_data` table supports legacy conversion into year-bas
 Legacy source fields and records that do not have a direct field in the new UI are retained under `legacyMetadata`, `legacyPaycheck`, `legacyExpense`, and `legacyRecurring` in the destination JSON so historical details are not discarded.
 
 ## Development and tests
-The application is a static HTML/JavaScript project. A single GitHub Actions workflow, **Production CI**, runs on pull requests targeting `main`, pushes to `main`, and manual dispatch. It has five jobs:
+The application is a static HTML/JavaScript project. A single GitHub Actions workflow, **Production CI**, runs on pull requests targeting `main`, pushes to `main`, and manual dispatch. It has six jobs:
 
 - **Unit, syntax, and security contracts:** validates JavaScript syntax and runs migration regression, application contract, and Supabase RLS policy tests.
 - **Desktop and mobile browser smoke tests:** installs the pinned Playwright version and Chromium, then checks the application at desktop and mobile viewport sizes.
@@ -27,6 +27,7 @@ The application is a static HTML/JavaScript project. A single GitHub Actions wor
 
 - **Isolated production preview build and auth contracts:** build-only preview and release validation.
 - **Synthetic encrypted backup restoration:** disposable fixtures, no production credentials.
+- **Synthetic authorized backup runtime:** guarded export, encryption and pinned Supabase CLI restoration against disposable fixtures; no production credentials.
 
 The separate legacy security workflow has been retired because its checks are included in the primary CI workflow. CI uses read-only repository permissions, requires no production credentials, and does not deploy.
 
@@ -56,3 +57,4 @@ Apply the migration in `supabase/migrations/20261114010000_create_budget_ui_year
 - [Legacy security hardening runbook](docs/PRODUCTION_SECURITY_HARDENING.md): security baseline, validation and release gates.
 - [Production preview guide](docs/PRODUCTION_PREVIEW.md): isolated build and acceptance.
 - [Production release runbook](docs/PRODUCTION_RELEASE_RUNBOOK.md): operational gates.
+- [Production backup preparation](docs/PRODUCTION_BACKUP.md): protected export, synthetic verification and recovery gates.

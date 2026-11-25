@@ -162,3 +162,20 @@ jobs:
           bash -n scripts/verify-encrypted-backup.sh
       - name: Verify encrypted backup restoration
         run: bash scripts/verify-encrypted-backup.sh
+
+  backup-runtime:
+    name: Synthetic authorized backup runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: sudo apt-get update && sudo apt-get install -y age
+      - run: bash -n scripts/export-production-backup.sh tests/verify-authorized-backup.sh
+      - run: bash tests/verify-authorized-backup.sh
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.79.0
+      - run: bash -n tests/verify-supabase-cli-backup.sh
+      - run: bash tests/verify-supabase-cli-backup.sh
