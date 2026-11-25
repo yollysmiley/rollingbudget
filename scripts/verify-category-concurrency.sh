@@ -116,3 +116,20 @@ test "$(sql -Atc "SELECT category FROM public.budget_recurring_rules WHERE user_
 test "$(sql -Atc "SELECT count(*) FROM budget_internal.year_category_refs WHERE user_id='$owner' AND year=2055 AND category_id='race-15'")" = 1
 test "$(sql -Atc "SELECT count(*) FROM public.budget_expense_categories WHERE user_id='$owner' AND id='race-15'")" = 1
 echo 'Independent-session category concurrency checks passed'
+
+# Essential release gate: embedded account references versus deletion, both orders.
+sql -c "INSERT INTO public.budget_accounts(user_id,id,name) VALUES ('$owner','account-race-a','Account race A'),('$owner','account-race-b','Account race B'),('$owner','account-race-c','Account race C');"
+account_delete() { printf "DELETE FROM public.budget_accounts WHERE user_id='%s' AND id='%s';" "$owner" "$1"; }
+account_year() { printf "INSERT INTO public.budget_ui_years(user_id,year,budget_data) VALUES ('%s',%s,'{\"months\":[{\"fixed\":[{\"accountId\":\"%s\",\"amount\":12}]}]}');" "$owner" "$1" "$2"; }
+race "$(account_year 2061 account-race-a)" "$(account_delete account-race-a)" account-write-first
+race "$(account_delete account-race-b)" "$(account_year 2062 account-race-b)" account-delete-first
+race "INSERT INTO public.budget_recurring_rules(user_id,id,name,category,amount,frequency,start_date,versions) VALUES ('$owner','account-history','Account history','fixed',1,'monthly','2026-01-01','[{\"accountId\":\"account-race-c\"}]');" "$(account_delete account-race-c)" account-history-first
+test "$(sql -Atc "SELECT count(*) FROM budget_internal.year_account_refs WHERE user_id='$owner' AND year=2061 AND account_id='account-race-a'")" = 1
+test "$(sql -Atc "SELECT count(*) FROM public.budget_ui_years WHERE user_id='$owner' AND year=2062")" = 0
+test "$(sql -Atc "SELECT count(*) FROM budget_internal.rule_account_refs WHERE user_id='$owner' AND rule_id='account-history' AND account_id='account-race-c'")" = 1
+# Real PostgreSQL CAS: two sessions share the same original revision.
+sql -c "INSERT INTO public.budget_ui_years(user_id,year,budget_data,updated_at) VALUES ('$owner',2063,'{}','2026-01-01T00:00:00Z');"
+race "UPDATE public.budget_ui_years SET budget_data='{\"note\":\"winner\"}',updated_at='2026-01-02T00:00:00Z' WHERE user_id='$owner' AND year=2063 AND updated_at='2026-01-01T00:00:00Z';" "UPDATE public.budget_ui_years SET budget_data='{\"note\":\"stale\"}',updated_at='2026-01-03T00:00:00Z' WHERE user_id='$owner' AND year=2063 AND updated_at='2026-01-01T00:00:00Z';" account-stale-save COMMIT success
+test "$(sql -Atc "SELECT budget_data->>'note' FROM public.budget_ui_years WHERE user_id='$owner' AND year=2063")" = winner
+grep -q 'UPDATE 0' "$tmp/account-stale-save.second"
+echo 'Essential account concurrency and stale-save checks passed'

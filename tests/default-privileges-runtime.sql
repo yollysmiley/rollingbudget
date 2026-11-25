@@ -233,3 +233,19 @@ BEGIN
  IF has_table_privilege('authenticated','budget_internal.year_account_refs','INSERT') OR has_table_privilege('authenticated','budget_internal.rule_account_refs','UPDATE') THEN RAISE EXCEPTION 'Private account refs exposed'; END IF;
 END $account_probe$;
 ROLLBACK;
+
+BEGIN;
+INSERT INTO auth.users(id) VALUES ('00000000-0000-4000-8000-000000000109'),('00000000-0000-4000-8000-000000000110');
+INSERT INTO public.budget_accounts(user_id,id,name) VALUES ('00000000-0000-4000-8000-000000000109','cpm','CPM Federal');
+INSERT INTO public.budget_ui_years(user_id,year,budget_data) VALUES ('00000000-0000-4000-8000-000000000109',2064,'{"months":[{"income":[{"cpm":"125.50","usaa":0}]}]}');
+DO $release_account_probe$
+BEGIN
+ IF (SELECT count(*) FROM budget_internal.year_account_refs WHERE user_id='00000000-0000-4000-8000-000000000109' AND account_id='cpm')<>1 THEN RAISE EXCEPTION 'Legacy nonzero reference lost'; END IF;
+ IF (SELECT budget_data FROM public.budget_ui_years WHERE user_id='00000000-0000-4000-8000-000000000109' AND year=2064) IS DISTINCT FROM '{"months":[{"income":[{"cpm":"125.50","usaa":0}]}]}'::jsonb THEN RAISE EXCEPTION 'Legacy document changed'; END IF;
+ BEGIN
+ INSERT INTO public.budget_ui_years(user_id,year,budget_data) VALUES ('00000000-0000-4000-8000-000000000110',2064,'{"months":[{"income":[{"cpm":125}]}]}');
+ RAISE EXCEPTION 'Cross-owner legacy reference accepted';
+ EXCEPTION WHEN foreign_key_violation THEN NULL; END;
+ IF EXISTS (SELECT 1 FROM public.budget_accounts WHERE user_id='00000000-0000-4000-8000-000000000110') THEN RAISE EXCEPTION 'New owner unexpectedly seeded'; END IF;
+END $release_account_probe$;
+ROLLBACK;
